@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/installments",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/budget-alerts",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/process-webhook",
+      "schedule": "* * * * *"
+    }
+  ]
+}

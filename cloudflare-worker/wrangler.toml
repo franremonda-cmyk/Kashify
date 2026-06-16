@@ -1,0 +1,12 @@
+name = "neo-webhook"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+APP_URL = "https://tu-app.vercel.app"
+
+# Secrets — configurar con: wrangler secret put WHATSAPP_VERIFY_TOKEN
+# WHATSAPP_VERIFY_TOKEN
+# WHATSAPP_APP_SECRET
+# SUPABASE_URL
+# SUPABASE_SERVICE_ROLE_KEY
