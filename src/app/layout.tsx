@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SplashScreen from "@/components/SplashScreen";
+import NeoBanner from "@/components/NeoBanner";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${dmSans.variable} ${dmMono.variable} ${spaceGrotesk.variable}`}>
       <body>
         <SplashScreen />
+        <NeoBanner />
         {children}
       </body>
     </html>

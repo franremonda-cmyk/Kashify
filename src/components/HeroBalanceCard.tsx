@@ -4,25 +4,42 @@ import type { Balance } from "@/types";
 
 const SYMBOLS: Record<string, string> = {
   ARS: "$", USD: "US$", EUR: "€", CHF: "Fr", BRL: "R$",
-  GBP: "£", UYU: "$U", CLP: "$", MXN: "$", COP: "$",
+  GBP: "£", UYU: "$U", CLP: "$", COP: "$", PEN: "S/", PYG: "₲",
 };
 
-function useCounter(target: number, duration = 700) {
+const NAMES: Record<string, string> = {
+  ARS: "pesos argentinos", USD: "dólares", EUR: "euros", CHF: "francos suizos",
+  BRL: "reales", GBP: "libras", UYU: "pesos uruguayos", CLP: "pesos chilenos",
+};
+
+function compact(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (abs >= 100_000) return `${Math.round(n / 1_000)}K`;
+  return n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+}
+
+function useCounter(target: number, duration = 650) {
   const [value, setValue] = useState(0);
   const startRef = useRef<number | null>(null);
+  const prevTarget = useRef(target);
 
   useEffect(() => {
     startRef.current = null;
+    const from = prevTarget.current === target ? 0 : value;
+    const to = target;
+    prevTarget.current = target;
+
     const step = (ts: number) => {
       if (!startRef.current) startRef.current = ts;
-      const elapsed = ts - startRef.current;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      setValue(target * ease);
-      if (progress < 1) requestAnimationFrame(step);
+      const p = Math.min((ts - startRef.current) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      setValue(from + (to - from) * ease);
+      if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
-  }, [target, duration]);
+  }, [target, duration]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return value;
 }
@@ -40,69 +57,114 @@ export default function HeroBalanceCard({ balances, primaryCurrency }: Props) {
   const isNeg = amount < 0;
   const symbol = SYMBOLS[selected] ?? selected;
 
-  const formatted = animated.toLocaleString("es-AR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const formatted = Math.abs(amount) >= 10_000
+    ? animated.toLocaleString("es-AR", { maximumFractionDigits: 0 })
+    : animated.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div
-      className="glass-elevated lift p-6 flex flex-col gap-4 enter-up"
+      className="enter-up"
       style={{
-        background: `linear-gradient(135deg, rgba(0,200,83,0.08) 0%, rgba(255,255,255,0.06) 100%)`,
-        backdropFilter: "blur(28px) saturate(200%)",
+        borderRadius: 24,
+        background: "linear-gradient(145deg, rgba(0,200,83,0.09) 0%, rgba(255,255,255,0.055) 100%)",
+        backdropFilter: "blur(36px) saturate(230%)",
+        WebkitBackdropFilter: "blur(36px) saturate(230%)",
+        border: "0.5px solid rgba(0,200,83,0.20)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 40px rgba(0,0,0,0.60)",
+        overflow: "hidden",
       }}
+      data-delay="1"
     >
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium" style={{ color: "var(--ink-muted)" }}>
-          Balance total
-        </span>
-        <div className="flex gap-1 flex-wrap justify-end">
-          {balances.map((b) => (
-            <button
-              key={b.currency_code}
-              onClick={() => setSelected(b.currency_code)}
-              className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-              style={{
-                background: selected === b.currency_code ? "var(--accent)" : "var(--glass-1)",
-                color: selected === b.currency_code ? "#060C09" : "var(--ink-muted)",
-                border: selected === b.currency_code
-                  ? "none"
-                  : "0.5px solid var(--glass-border)",
-              }}
-            >
-              {b.currency_code}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Top section: label + amount */}
+      <div style={{ padding: "22px 20px 18px" }}>
+        <p style={{
+          fontSize: 10,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.10em",
+          color: "var(--ink-dim)",
+          marginBottom: 10,
+        }}>
+          Balance
+        </p>
 
-      <div className="flex flex-col gap-1">
         <div
-          className="display font-bold leading-none"
+          className="display"
           style={{
-            fontSize: "clamp(2.5rem, 10vw, 3.5rem)",
+            fontSize: "clamp(2.4rem, 10vw, 3.5rem)",
+            fontWeight: 700,
             color: isNeg ? "var(--negative)" : "var(--ink)",
-            letterSpacing: "-0.02em",
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            fontVariantNumeric: "tabular-nums",
+            textShadow: isNeg ? "none" : "0 0 80px rgba(0,200,83,0.22)",
           }}
         >
           {isNeg ? "−" : ""}{symbol} {formatted}
         </div>
-        {balances.length === 0 && (
-          <p className="text-sm" style={{ color: "var(--ink-muted)" }}>
-            Mandá tu primer mensaje a Neo para empezar
-          </p>
-        )}
+
+        <p style={{ marginTop: 6, fontSize: 11, color: "var(--ink-dim)" }}>
+          {NAMES[selected] ?? selected}
+        </p>
       </div>
 
-      {/* Emerald glow line at bottom */}
-      <div
-        className="h-px rounded-full"
-        style={{
-          background: "linear-gradient(90deg, transparent, var(--accent), transparent)",
-          opacity: 0.4,
-        }}
-      />
+      {/* Currency tab strip */}
+      <div style={{
+        borderTop: "0.5px solid rgba(255,255,255,0.06)",
+        background: "rgba(0,0,0,0.15)",
+        padding: "10px 12px",
+        display: "flex",
+        gap: 4,
+        flexWrap: "wrap",
+      }}>
+        {balances.length === 0 ? (
+          <p style={{ fontSize: 11, color: "var(--ink-dim)", padding: "4px 8px" }}>
+            Sin saldos — enviá tu primer mensaje a Neo
+          </p>
+        ) : (
+          balances.map((b) => {
+            const isActive = selected === b.currency_code;
+            return (
+              <button
+                key={b.currency_code}
+                onClick={() => setSelected(b.currency_code)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "5px 10px 5px 8px",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.01em",
+                  background: isActive ? "rgba(0,200,83,0.15)" : "rgba(255,255,255,0.05)",
+                  color: isActive ? "var(--accent)" : "var(--ink-dim)",
+                  border: isActive ? "0.5px solid rgba(0,200,83,0.30)" : "0.5px solid rgba(255,255,255,0.08)",
+                  transition: "all 160ms ease-out",
+                }}
+              >
+                <span style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: isActive ? "var(--accent)" : "rgba(255,255,255,0.20)",
+                  boxShadow: isActive ? "0 0 6px var(--accent-glow)" : "none",
+                  flexShrink: 0,
+                  transition: "all 200ms ease-out",
+                }} />
+                {b.currency_code}
+                <span style={{
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 10,
+                  opacity: 0.6,
+                }}>
+                  {compact(b.amount)}
+                </span>
+              </button>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

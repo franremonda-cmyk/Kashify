@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import HeroBalanceCard from "@/components/HeroBalanceCard";
-import MetricCard from "@/components/MetricCard";
+import MetricStrip from "@/components/MetricStrip";
 import DashboardClient from "./DashboardClient";
 
 export default async function DashboardPage() {
@@ -82,15 +82,12 @@ export default async function DashboardPage() {
       {/* Hero balance */}
       <HeroBalanceCard balances={sortedBalances} primaryCurrency={primaryCurrency} />
 
-      {/* Métricas */}
-      <div className="flex gap-2">
-        <MetricCard label="Ingresos" value={monthlyIncome} currencyCode={primaryCurrency}
-          variant="positive" delay="1" />
-        <MetricCard label="Gastos" value={monthlyExpense} currencyCode={primaryCurrency}
-          variant="negative" delay="2" />
-        <MetricCard label="Neto" value={monthlyIncome - monthlyExpense} currencyCode={primaryCurrency}
-          variant="neutral" delay="3" />
-      </div>
+      {/* Métricas del mes */}
+      <MetricStrip
+        income={monthlyIncome}
+        expense={monthlyExpense}
+        currencyCode={primaryCurrency}
+      />
 
       {/* Transacciones recientes */}
       {recent.length > 0 && (
