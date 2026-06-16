@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, DM_Mono } from "next/font/google";
+import { DM_Sans, DM_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -16,15 +16,22 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Kashify",
-  description: "Registrá tus gastos por WhatsApp con Neo",
+  description: "Tus finanzas, por WhatsApp. Con Neo.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Kashify" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#171009",
+  themeColor: "#060C09",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -32,7 +39,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${dmSans.variable} ${dmMono.variable}`}>
+    <html lang="es" className={`${dmSans.variable} ${dmMono.variable} ${spaceGrotesk.variable}`}>
       <body>{children}</body>
     </html>
   );
