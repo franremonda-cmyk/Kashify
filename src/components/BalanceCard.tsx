@@ -21,27 +21,30 @@ export default function BalanceCard({ balance, isPrimary }: Props) {
 
   return (
     <div
-      className="glass p-4 flex flex-col gap-1"
-      style={isPrimary ? { border: "1px solid rgba(99, 102, 241, 0.4)" } : {}}
+      className="glass p-4 flex flex-col gap-2"
+      style={isPrimary ? { borderColor: "var(--accent)" } : {}}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+        <span className="text-xs font-medium" style={{ color: "var(--ink-muted)" }}>
           {balance.currency_code}
-          {isPrimary && (
-            <span
-              className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full"
-              style={{ background: "rgba(99, 102, 241, 0.2)", color: "var(--accent)" }}
-            >
-              principal
-            </span>
-          )}
         </span>
+        {isPrimary && (
+          <span
+            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+            style={{
+              background: "oklch(0.71 0.16 35 / 0.15)",
+              color: "var(--accent)",
+            }}
+          >
+            principal
+          </span>
+        )}
       </div>
       <span
-        className="text-2xl font-bold"
-        style={{ color: isNegative ? "var(--accent-red)" : "var(--text-primary)" }}
+        className="num text-2xl font-medium leading-none"
+        style={{ color: isNegative ? "var(--accent-red)" : "var(--ink)" }}
       >
-        {isNegative ? "-" : ""}{symbol} {formatted}
+        {isNegative ? "−" : ""}{symbol} {formatted}
       </span>
     </div>
   );

@@ -42,27 +42,32 @@ export default async function DashboardPage() {
     spentByCategory[t.category_id] = (spentByCategory[t.category_id] ?? 0) + Number(t.amount);
   }
 
+  const firstName = profile?.display_name?.split(" ")[0] ?? "";
+  const today = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold">Hola {profile?.display_name?.split(" ")[0] ?? ""} 👋</h1>
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+        <h1 className="text-xl font-semibold">
+          Hola{firstName ? `, ${firstName}` : ""}
+        </h1>
+        <p className="text-sm mt-0.5" style={{ color: "var(--ink-muted)" }}>
+          {today}
         </p>
       </div>
 
       <DashboardClient pending={pending} userId={user.id} />
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>TUS SALDOS</h2>
+      <section className="flex flex-col gap-3">
+        <p className="text-xs font-medium" style={{ color: "var(--ink-muted)" }}>Saldos</p>
         <div className="grid grid-cols-2 gap-2">
           {sortedBalances.map((b) => (
             <BalanceCard key={b.id} balance={b} isPrimary={b.currency_code === primaryCurrency} />
           ))}
           {sortedBalances.length === 0 && (
             <div className="col-span-2 glass p-6 text-center">
-              <p style={{ color: "var(--text-secondary)" }} className="text-sm">
-                Mandá tu primer mensaje por WhatsApp para empezar
+              <p style={{ color: "var(--ink-muted)" }} className="text-sm">
+                Mandá tu primer mensaje por WhatsApp a Neo para empezar
               </p>
             </div>
           )}
@@ -70,22 +75,29 @@ export default async function DashboardPage() {
       </section>
 
       {budgets.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>PRESUPUESTOS DEL MES</h2>
-          <div className="flex flex-col gap-2">
+        <section className="flex flex-col">
+          <p className="text-xs font-medium mb-1" style={{ color: "var(--ink-muted)" }}>Este mes</p>
+          <div
+            className="glass px-4 py-1"
+            style={{ paddingTop: "0.75rem" }}
+          >
             {budgets.map((b: {
               id: string; category_id: string; monthly_limit: number; currency_code: string;
               categories: { name: string; color: string; icon: string } | null;
-            }) => (
-              <BudgetProgress
+            }, i, arr) => (
+              <div
                 key={b.id}
-                categoryName={b.categories?.name ?? ""}
-                icon={b.categories?.icon ?? "📦"}
-                color={b.categories?.color ?? "#6366f1"}
-                spent={spentByCategory[b.category_id] ?? 0}
-                limit={b.monthly_limit}
-                currencyCode={b.currency_code}
-              />
+                style={i === arr.length - 1 ? { borderBottom: "none" } : {}}
+              >
+                <BudgetProgress
+                  categoryName={b.categories?.name ?? ""}
+                  icon={b.categories?.icon ?? "📦"}
+                  color={b.categories?.color ?? "var(--accent)"}
+                  spent={spentByCategory[b.category_id] ?? 0}
+                  limit={b.monthly_limit}
+                  currencyCode={b.currency_code}
+                />
+              </div>
             ))}
           </div>
         </section>

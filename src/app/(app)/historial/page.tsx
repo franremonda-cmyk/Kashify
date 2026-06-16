@@ -141,7 +141,7 @@ function TransactionModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
             type="submit"
             disabled={saving}
             className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-50"
-            style={{ background: "var(--accent-blue)", color: "white" }}
+            style={{ background: "var(--accent)", color: "white" }}
           >
             {saving ? "Guardando..." : "Guardar"}
           </button>
@@ -239,7 +239,11 @@ export default function HistorialPage() {
         )}
 
         {transactions.map((t) => (
-          <div key={t.id} className="glass p-3 flex items-center gap-3">
+          <div
+            key={t.id}
+            className="flex items-center gap-3 py-3"
+            style={{ borderBottom: "1px solid var(--border)" }}
+          >
             <span className="text-xl">{t.category?.icon ?? "📦"}</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{t.description}</p>
@@ -249,7 +253,7 @@ export default function HistorialPage() {
               </p>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-sm font-bold" style={{ color: typeColors[t.type] }}>
+              <p className="num text-sm font-medium" style={{ color: typeColors[t.type] }}>
                 {t.type === "income" ? "+" : "-"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
               </p>
               <p className="text-[10px]" style={{ color: "var(--text-secondary)" }}>
@@ -287,8 +291,8 @@ export default function HistorialPage() {
       {/* Botón flotante */}
       <button
         onClick={() => setShowModal(true)}
-        className="fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center text-2xl font-light shadow-lg transition-all"
-        style={{ background: "var(--accent-blue)", color: "white" }}
+        className="fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center text-2xl font-light"
+        style={{ background: "var(--accent)", color: "white" }}
       >
         +
       </button>
