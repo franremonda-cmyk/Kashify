@@ -2,12 +2,162 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Transaction } from "@/types";
 
+interface Category { id: string; name: string; icon: string; }
+
+const CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU", "CLP", "PYG", "BOB", "COP", "PEN"];
+
+function TransactionModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [form, setForm] = useState({
+    type: "expense",
+    description: "",
+    amount: "",
+    currency_code: "ARS",
+    category_id: "",
+    date: new Date().toISOString().slice(0, 10),
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/categories").then((r) => r.json()).then(setCategories);
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.description || !form.amount || !form.category_id) {
+      setError("Completá todos los campos");
+      return;
+    }
+    setSaving(true);
+    const res = await fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
+    });
+    if (res.ok) { onSaved(); onClose(); }
+    else { setError("Error al guardar"); setSaving(false); }
+  }
+
+  const inputStyle = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    color: "var(--text-primary)",
+    borderRadius: "0.75rem",
+    padding: "0.625rem 0.875rem",
+    fontSize: "0.875rem",
+    width: "100%",
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="glass-strong w-full max-w-sm rounded-2xl p-5 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-base">Nueva transacción</h2>
+          <button onClick={onClose} style={{ color: "var(--text-secondary)" }}>✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {/* Tipo */}
+          <div className="flex gap-2">
+            {(["expense", "income"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, type: t }))}
+                className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
+                style={{
+                  background: form.type === t
+                    ? t === "expense" ? "rgba(239,68,68,0.25)" : "rgba(34,197,94,0.25)"
+                    : "rgba(255,255,255,0.06)",
+                  border: form.type === t
+                    ? t === "expense" ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(34,197,94,0.5)"
+                    : "1px solid rgba(255,255,255,0.1)",
+                  color: form.type === t
+                    ? t === "expense" ? "#f87171" : "#4ade80"
+                    : "var(--text-secondary)",
+                }}
+              >
+                {t === "expense" ? "Gasto" : "Ingreso"}
+              </button>
+            ))}
+          </div>
+
+          {/* Descripción */}
+          <input
+            style={inputStyle}
+            placeholder="Descripción"
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          />
+
+          {/* Monto + Moneda */}
+          <div className="flex gap-2">
+            <input
+              style={{ ...inputStyle, width: "60%" }}
+              placeholder="0.00"
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.amount}
+              onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+            />
+            <select
+              style={{ ...inputStyle, width: "40%" }}
+              value={form.currency_code}
+              onChange={(e) => setForm((f) => ({ ...f, currency_code: e.target.value }))}
+            >
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Categoría */}
+          <select
+            style={inputStyle}
+            value={form.category_id}
+            onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
+          >
+            <option value="">Categoría...</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+            ))}
+          </select>
+
+          {/* Fecha */}
+          <input
+            style={inputStyle}
+            type="date"
+            value={form.date}
+            onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+          />
+
+          {error && <p className="text-xs" style={{ color: "#f87171" }}>{error}</p>}
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-50"
+            style={{ background: "var(--accent-blue)", color: "white" }}
+          >
+            {saving ? "Guardando..." : "Guardar"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function HistorialPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -33,6 +183,13 @@ export default function HistorialPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      {showModal && (
+        <TransactionModal
+          onClose={() => setShowModal(false)}
+          onSaved={fetchTransactions}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Historial</h1>
         <div className="flex gap-2">
@@ -70,7 +227,14 @@ export default function HistorialPage() {
 
         {!loading && transactions.length === 0 && (
           <div className="glass p-6 text-center">
-            <p style={{ color: "var(--text-secondary)" }} className="text-sm">Sin resultados</p>
+            <p style={{ color: "var(--text-secondary)" }} className="text-sm">Sin transacciones</p>
+            <button
+              onClick={() => setShowModal(true)}
+              className="mt-3 text-sm font-medium"
+              style={{ color: "var(--accent-blue)" }}
+            >
+              + Agregar la primera
+            </button>
           </div>
         )}
 
@@ -119,6 +283,15 @@ export default function HistorialPage() {
           </button>
         </div>
       )}
+
+      {/* Botón flotante */}
+      <button
+        onClick={() => setShowModal(true)}
+        className="fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center text-2xl font-light shadow-lg transition-all"
+        style={{ background: "var(--accent-blue)", color: "white" }}
+      >
+        +
+      </button>
     </div>
   );
 }
