@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import HeroBalanceCard from "@/components/HeroBalanceCard";
 import MetricCard from "@/components/MetricCard";
-import FolderCard from "@/components/FolderCard";
 import DashboardClient from "./DashboardClient";
 
 export default async function DashboardPage() {
@@ -13,26 +12,22 @@ export default async function DashboardPage() {
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().split("T")[0];
 
-  const [balancesRes, profileRes, pendingRes, budgetsRes, txRes, categoriesRes] = await Promise.all([
+  const [balancesRes, profileRes, pendingRes, txRes] = await Promise.all([
     supabase.from("balances").select("*").eq("user_id", user.id).order("currency_code"),
     supabase.from("profiles").select("*").eq("user_id", user.id).single(),
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
-    supabase.from("category_budgets").select("*, categories(name, color, icon)").eq("user_id", user.id),
     supabase.from("transactions").select("category_id, amount, currency_code, type, description, date, categories(name, icon)")
       .eq("user_id", user.id).is("deleted_at", null)
       .gte("date", monthStart)
       .order("created_at", { ascending: false })
       .limit(30),
-    supabase.from("categories").select("*, category_budgets(*)").eq("user_id", user.id).order("name"),
   ]);
 
   const balances = balancesRes.data ?? [];
   const profile = profileRes.data;
   const pending = pendingRes.data ?? [];
-  const budgets = budgetsRes.data ?? [];
   const txAll = txRes.data ?? [];
-  const categories = categoriesRes.data ?? [];
 
   const primaryCurrency = profile?.primary_currency ?? "ARS";
   const sortedBalances = [
@@ -47,13 +42,6 @@ export default async function DashboardPage() {
   const monthlyExpense = txAll
     .filter((t) => ["expense", "installment-payment"].includes(t.type) && t.currency_code === primaryCurrency)
     .reduce((s, t) => s + Number(t.amount), 0);
-
-  // Spent by category
-  const spentByCat: Record<string, number> = {};
-  for (const t of txAll) {
-    if (!t.category_id || !["expense", "installment-payment"].includes(t.type)) continue;
-    spentByCat[t.category_id] = (spentByCat[t.category_id] ?? 0) + Number(t.amount);
-  }
 
   // Recent transactions (last 5)
   const recent = txAll.slice(0, 5);
@@ -104,34 +92,6 @@ export default async function DashboardPage() {
           variant="neutral" delay="3" />
       </div>
 
-      {/* Folders / categorías */}
-      {categories.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <p className="text-xs font-medium enter-up" style={{ color: "var(--ink-muted)" }}>
-            Categorías
-          </p>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4"
-            style={{ scrollbarWidth: "none" }}>
-            {categories.map((cat, i) => {
-              const budget = (cat as { category_budgets?: { monthly_limit: number; currency_code: string }[] })
-                .category_budgets?.[0];
-              return (
-                <FolderCard
-                  key={cat.id}
-                  name={cat.name}
-                  icon={cat.icon}
-                  color={cat.color}
-                  spent={spentByCat[cat.id] ?? 0}
-                  limit={budget?.monthly_limit}
-                  currencyCode={budget?.currency_code ?? primaryCurrency}
-                  delay={String(Math.min(i + 1, 6))}
-                />
-              );
-            })}
-          </div>
-        </section>
-      )}
-
       {/* Transacciones recientes */}
       {recent.length > 0 && (
         <section className="flex flex-col gap-3 enter-up" data-delay="4">
@@ -151,10 +111,14 @@ export default async function DashboardPage() {
                   }}
                 >
                   <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0"
-                    style={{ background: "rgba(255,255,255,0.06)" }}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm"
+                    style={{ background: isIncome ? "rgba(105,255,218,0.10)" : "rgba(255,255,255,0.06)" }}
                   >
-                    {cat?.icon ?? "💸"}
+                    {cat?.icon ? (
+                      <span>{cat.icon}</span>
+                    ) : (
+                      <div className="w-3 h-3 rounded-full" style={{ background: isIncome ? "var(--positive)" : "var(--ink-dim)" }} />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--ink)" }}>
@@ -181,10 +145,12 @@ export default async function DashboardPage() {
       {recent.length === 0 && balances.length === 0 && (
         <div className="glass p-8 text-center flex flex-col gap-3 enter-up" data-delay="3">
           <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-2xl mx-auto"
-            style={{ background: "var(--accent-soft)" }}
+            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
+            style={{ background: "var(--accent-soft)", border: "0.5px solid var(--glass-border-hover)" }}
           >
-            💬
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "var(--accent)" }}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
           </div>
           <div>
             <p className="font-medium" style={{ color: "var(--ink)" }}>Neo te espera</p>

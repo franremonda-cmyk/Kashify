@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -50,8 +50,35 @@ export default function OnboardingPage() {
   const [extraCurrencies, setExtraCurrencies] = useState<string[]>([]);
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   const supabase = createClient();
+
+  // Pre-fill name from Google auth and skip if returning user
+  useEffect(() => {
+    async function check() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setChecking(false); return; }
+
+      // Check if user already has transactions (returning user)
+      const { count } = await supabase
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      if ((count ?? 0) > 0) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      // Pre-fill name from Google
+      const googleName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? "";
+      if (googleName) setName(googleName);
+
+      setChecking(false);
+    }
+    check();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleCurrency(c: string) {
     if (c === currency) return;
@@ -177,8 +204,7 @@ export default function OnboardingPage() {
           </p>
         </div>
         <div className="glass p-4 flex flex-col gap-2">
-          {["🍔 Comida", "🚌 Transporte", "🎬 Ocio", "🏠 Hogar", "💊 Salud",
-            "📚 Educación", "👕 Indumentaria", "💼 Trabajo"].map((cat) => (
+          {["Comida", "Transporte", "Ocio", "Hogar", "Salud", "Educación", "Indumentaria", "Trabajo"].map((cat) => (
             <div key={cat} className="flex items-center gap-3 py-1.5">
               <div
                 className="w-5 h-5 rounded-full flex items-center justify-center"
@@ -205,10 +231,12 @@ export default function OnboardingPage() {
         </div>
         <div className="glass-elevated p-5 flex flex-col gap-4">
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+            className="w-12 h-12 rounded-2xl flex items-center justify-center"
             style={{ background: "rgba(37,211,102,0.15)" }}
           >
-            💬
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "#25d366" }}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
           </div>
           <input
             style={inp}
@@ -234,13 +262,15 @@ export default function OnboardingPage() {
     4: (
       <div className="flex flex-col gap-6 items-center text-center scale-up">
         <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
+          className="w-20 h-20 rounded-full flex items-center justify-center"
           style={{
             background: "linear-gradient(135deg, var(--accent), rgba(0,200,83,0.3))",
             boxShadow: "0 0 60px var(--accent-glow)",
           }}
         >
-          ✓
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#060C09" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
         <div>
           <h2
@@ -269,6 +299,19 @@ export default function OnboardingPage() {
       </div>
     ),
   };
+
+  if (checking) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg font-bold"
+          style={{ background: "var(--accent)", color: "#060C09", animation: "pulse-glow 1.5s ease-in-out infinite" }}
+        >
+          K
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">

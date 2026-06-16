@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import SplashScreen from "@/components/SplashScreen";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -40,7 +41,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${dmSans.variable} ${dmMono.variable} ${spaceGrotesk.variable}`}>
-      <body>{children}</body>
+      <body>
+        <SplashScreen />
+        {children}
+      </body>
     </html>
   );
 }

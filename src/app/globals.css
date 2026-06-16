@@ -10,9 +10,9 @@
   --base:    #0D1810;
 
   /* Glass surfaces */
-  --glass-1: rgba(255, 255, 255, 0.05);
-  --glass-2: rgba(255, 255, 255, 0.09);
-  --glass-3: rgba(255, 255, 255, 0.14);
+  --glass-1: rgba(255, 255, 255, 0.06);
+  --glass-2: rgba(255, 255, 255, 0.10);
+  --glass-3: rgba(255, 255, 255, 0.16);
 
   /* Glass borders */
   --glass-border:       rgba(0, 200, 83, 0.14);
@@ -21,8 +21,8 @@
 
   /* Brand: Electric Emerald */
   --accent:       #00C853;
-  --accent-soft:  rgba(0, 200, 83, 0.12);
-  --accent-glow:  rgba(0, 200, 83, 0.22);
+  --accent-soft:  rgba(0, 200, 83, 0.14);
+  --accent-glow:  rgba(0, 200, 83, 0.30);
 
   /* Semantic */
   --positive:  #69FFDA;
@@ -41,8 +41,8 @@
   --shadow-xl: 0 20px 80px rgba(0, 0, 0, 0.80), 0 4px 20px rgba(0, 0, 0, 0.50);
 
   /* Specular — top-edge glass highlight */
-  --spec:    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  --spec-sm: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --spec:    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --spec-sm: inset 0 1px 0 rgba(255, 255, 255, 0.10);
 
   /* Legacy aliases — existing components keep working */
   --bg-primary:    var(--void);
@@ -68,10 +68,12 @@ html { scroll-behavior: smooth; }
 body {
   background-color: var(--void);
   background-image:
-    radial-gradient(ellipse 100% 55% at 50% -5%,
-      rgba(0, 200, 83, 0.07) 0%, transparent 65%),
-    radial-gradient(ellipse 60% 60% at 85% 95%,
-      rgba(0, 80, 40, 0.06) 0%, transparent 65%);
+    radial-gradient(ellipse 120% 60% at 50% -10%,
+      rgba(0, 200, 83, 0.11) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 90% 100%,
+      rgba(0, 80, 40, 0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 80%,
+      rgba(0, 40, 20, 0.05) 0%, transparent 60%);
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans, 'DM Sans'), system-ui, sans-serif;
@@ -84,8 +86,8 @@ body {
 
 .glass {
   background: var(--glass-1);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
   border: 0.5px solid var(--glass-border);
   border-radius: 20px;
   box-shadow: var(--spec), var(--shadow-md);
@@ -93,8 +95,8 @@ body {
 
 .glass-elevated {
   background: var(--glass-2);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(36px) saturate(230%);
+  -webkit-backdrop-filter: blur(36px) saturate(230%);
   border: 0.5px solid var(--glass-border-hover);
   border-radius: 20px;
   box-shadow: var(--spec), var(--shadow-lg);
@@ -102,9 +104,9 @@ body {
 
 .glass-strong {
   background: var(--glass-3);
-  backdrop-filter: blur(32px) saturate(220%);
-  -webkit-backdrop-filter: blur(32px) saturate(220%);
-  border: 0.5px solid rgba(0, 200, 83, 0.22);
+  backdrop-filter: blur(48px) saturate(260%);
+  -webkit-backdrop-filter: blur(48px) saturate(260%);
+  border: 0.5px solid rgba(0, 200, 83, 0.26);
   border-radius: 24px;
   box-shadow: var(--spec), var(--shadow-xl);
 }

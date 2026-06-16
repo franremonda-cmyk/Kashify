@@ -137,8 +137,8 @@ const LEFT_NAV = [
   { href: "/historial",  label: "Historial", icon: ListIcon },
 ];
 const RIGHT_NAV = [
-  { href: "/categorias", label: "Folders",   icon: FolderIcon },
-  { href: "/perfil",     label: "Perfil",    icon: UserIcon },
+  { href: "/cuotas", label: "Cuotas",  icon: CuotasIcon },
+  { href: "/perfil", label: "Perfil",  icon: UserIcon },
 ];
 
 export default function BottomNav() {
@@ -230,10 +230,13 @@ function ListIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
-function FolderIcon({ active }: { active: boolean }) {
+function CuotasIcon({ active }: { active: boolean }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
-      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20" />
+      <path d="M7 15h2" />
+      <path d="M11 15h2" />
     </svg>
   );
 }
