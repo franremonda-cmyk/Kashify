@@ -6,11 +6,11 @@
     },
     {
       "path": "/api/cron/budget-alerts",
-      "schedule": "0 */4 * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/process-webhook",
-      "schedule": "* * * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }
