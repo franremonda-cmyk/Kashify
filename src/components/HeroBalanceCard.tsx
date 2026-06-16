@@ -8,38 +8,36 @@ const SYMBOLS: Record<string, string> = {
 };
 
 const NAMES: Record<string, string> = {
-  ARS: "pesos argentinos", USD: "dólares", EUR: "euros", CHF: "francos suizos",
-  BRL: "reales", GBP: "libras", UYU: "pesos uruguayos", CLP: "pesos chilenos",
+  ARS: "pesos argentinos", USD: "dólares estadounidenses", EUR: "euros",
+  CHF: "francos suizos", BRL: "reales", GBP: "libras esterlinas",
+  UYU: "pesos uruguayos", CLP: "pesos chilenos",
 };
 
 function compact(n: number): string {
   const abs = Math.abs(n);
   if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (abs >= 100_000) return `${Math.round(n / 1_000)}K`;
+  if (abs >= 1_000_000)     return `${(n / 1_000_000).toFixed(1)}M`;
+  if (abs >= 100_000)       return `${Math.round(n / 1_000)}K`;
   return n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 }
 
 function useCounter(target: number, duration = 650) {
   const [value, setValue] = useState(0);
-  const startRef = useRef<number | null>(null);
-  const prevTarget = useRef(target);
+  const raf = useRef<number>(0);
 
   useEffect(() => {
-    startRef.current = null;
-    const from = prevTarget.current === target ? 0 : value;
-    const to = target;
-    prevTarget.current = target;
-
-    const step = (ts: number) => {
-      if (!startRef.current) startRef.current = ts;
-      const p = Math.min((ts - startRef.current) / duration, 1);
+    const start = performance.now();
+    const from = 0;
+    cancelAnimationFrame(raf.current);
+    const step = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
       const ease = 1 - Math.pow(1 - p, 3);
-      setValue(from + (to - from) * ease);
-      if (p < 1) requestAnimationFrame(step);
+      setValue(from + (target - from) * ease);
+      if (p < 1) raf.current = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
-  }, [target, duration]); // eslint-disable-line react-hooks/exhaustive-deps
+    raf.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf.current);
+  }, [target, duration]);
 
   return value;
 }
@@ -51,10 +49,11 @@ interface Props {
 
 export default function HeroBalanceCard({ balances, primaryCurrency }: Props) {
   const [selected, setSelected] = useState(primaryCurrency);
+
   const current = balances.find((b) => b.currency_code === selected);
-  const amount = current?.amount ?? 0;
+  const amount  = current?.amount ?? 0;
   const animated = useCounter(Math.abs(amount));
-  const isNeg = amount < 0;
+  const isNeg  = amount < 0;
   const symbol = SYMBOLS[selected] ?? selected;
 
   const formatted = Math.abs(amount) >= 10_000
@@ -66,105 +65,147 @@ export default function HeroBalanceCard({ balances, primaryCurrency }: Props) {
       className="enter-up"
       style={{
         borderRadius: 24,
-        background: "linear-gradient(145deg, rgba(0,200,83,0.09) 0%, rgba(255,255,255,0.055) 100%)",
+        background: "linear-gradient(160deg, rgba(0,200,83,0.08) 0%, rgba(255,255,255,0.04) 100%)",
         backdropFilter: "blur(36px) saturate(230%)",
         WebkitBackdropFilter: "blur(36px) saturate(230%)",
-        border: "0.5px solid rgba(0,200,83,0.20)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 40px rgba(0,0,0,0.60)",
+        border: "0.5px solid rgba(0,200,83,0.18)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 40px rgba(0,0,0,0.55)",
         overflow: "hidden",
       }}
       data-delay="1"
     >
-      {/* Top section: label + amount */}
-      <div style={{ padding: "22px 20px 18px" }}>
+      {/* ── Label ── */}
+      <div style={{ padding: "20px 20px 14px" }}>
         <p style={{
-          fontSize: 10,
+          fontSize: 9.5,
           fontWeight: 600,
           textTransform: "uppercase",
           letterSpacing: "0.10em",
           color: "var(--ink-dim)",
-          marginBottom: 10,
+          marginBottom: 14,
         }}>
           Balance
         </p>
 
-        <div
-          className="display"
-          style={{
-            fontSize: "clamp(2.4rem, 10vw, 3.5rem)",
-            fontWeight: 700,
-            color: isNeg ? "var(--negative)" : "var(--ink)",
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-            fontVariantNumeric: "tabular-nums",
-            textShadow: isNeg ? "none" : "0 0 80px rgba(0,200,83,0.22)",
-          }}
-        >
-          {isNeg ? "−" : ""}{symbol} {formatted}
-        </div>
-
-        <p style={{ marginTop: 6, fontSize: 11, color: "var(--ink-dim)" }}>
-          {NAMES[selected] ?? selected}
-        </p>
-      </div>
-
-      {/* Currency tab strip */}
-      <div style={{
-        borderTop: "0.5px solid rgba(255,255,255,0.06)",
-        background: "rgba(0,0,0,0.15)",
-        padding: "10px 12px",
-        display: "flex",
-        gap: 4,
-        flexWrap: "wrap",
-      }}>
+        {/* ── Currency mini-cards row ── */}
         {balances.length === 0 ? (
-          <p style={{ fontSize: 11, color: "var(--ink-dim)", padding: "4px 8px" }}>
-            Sin saldos — enviá tu primer mensaje a Neo
+          <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>
+            Enviá tu primer mensaje a Neo para empezar
           </p>
         ) : (
-          balances.map((b) => {
-            const isActive = selected === b.currency_code;
-            return (
-              <button
-                key={b.currency_code}
-                onClick={() => setSelected(b.currency_code)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "5px 10px 5px 8px",
-                  borderRadius: 999,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: "0.01em",
-                  background: isActive ? "rgba(0,200,83,0.15)" : "rgba(255,255,255,0.05)",
-                  color: isActive ? "var(--accent)" : "var(--ink-dim)",
-                  border: isActive ? "0.5px solid rgba(0,200,83,0.30)" : "0.5px solid rgba(255,255,255,0.08)",
-                  transition: "all 160ms ease-out",
-                }}
-              >
-                <span style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: "50%",
-                  background: isActive ? "var(--accent)" : "rgba(255,255,255,0.20)",
-                  boxShadow: isActive ? "0 0 6px var(--accent-glow)" : "none",
-                  flexShrink: 0,
-                  transition: "all 200ms ease-out",
-                }} />
-                {b.currency_code}
-                <span style={{
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 10,
-                  opacity: 0.6,
-                }}>
-                  {compact(b.amount)}
-                </span>
-              </button>
-            );
-          })
+          <div style={{
+            display: "flex",
+            gap: 8,
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            marginLeft: -4,
+            paddingLeft: 4,
+            paddingBottom: 2,
+          }}>
+            {balances.map((b) => {
+              const isActive = selected === b.currency_code;
+              const sym = SYMBOLS[b.currency_code] ?? b.currency_code;
+              const isNegB = b.amount < 0;
+
+              return (
+                <button
+                  key={b.currency_code}
+                  onClick={() => setSelected(b.currency_code)}
+                  style={{
+                    flex: "0 0 auto",
+                    minWidth: 80,
+                    padding: "10px 14px 11px",
+                    borderRadius: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 5,
+                    alignItems: "flex-start",
+                    background: isActive
+                      ? "linear-gradient(145deg, rgba(0,200,83,0.18) 0%, rgba(0,200,83,0.08) 100%)"
+                      : "rgba(255,255,255,0.045)",
+                    border: isActive
+                      ? "0.5px solid rgba(0,200,83,0.38)"
+                      : "0.5px solid rgba(255,255,255,0.08)",
+                    boxShadow: isActive
+                      ? "inset 0 1px 0 rgba(255,255,255,0.18), 0 4px 16px rgba(0,200,83,0.18)"
+                      : "inset 0 1px 0 rgba(255,255,255,0.06)",
+                    transform: isActive ? "translateY(-2px)" : "translateY(0)",
+                    transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {/* Currency code */}
+                  <span style={{
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: isActive ? "var(--accent)" : "var(--ink-dim)",
+                    transition: "color 200ms ease-out",
+                  }}>
+                    {b.currency_code}
+                  </span>
+
+                  {/* Amount compact */}
+                  <span
+                    className="display"
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: isActive
+                        ? (isNegB ? "var(--negative)" : "var(--ink)")
+                        : "var(--ink-dim)",
+                      fontVariantNumeric: "tabular-nums",
+                      lineHeight: 1,
+                      transition: "color 200ms ease-out",
+                    }}
+                  >
+                    {isNegB ? "−" : ""}{sym}{compact(Math.abs(b.amount))}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
+
+      {/* ── Separator ── */}
+      {balances.length > 0 && (
+        <div style={{
+          height: "0.5px",
+          background: "linear-gradient(90deg, transparent, rgba(0,200,83,0.15), transparent)",
+          margin: "0 20px",
+        }} />
+      )}
+
+      {/* ── Big number for selected currency ── */}
+      {balances.length > 0 && (
+        <div style={{ padding: "16px 20px 20px" }}>
+          <div
+            className="display"
+            style={{
+              fontSize: "clamp(2.4rem, 10vw, 3.4rem)",
+              fontWeight: 700,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: isNeg ? "var(--negative)" : "var(--ink)",
+              fontVariantNumeric: "tabular-nums",
+              textShadow: isNeg ? "none" : "0 0 80px rgba(0,200,83,0.20)",
+            }}
+          >
+            {isNeg ? "−" : ""}{symbol} {formatted}
+          </div>
+          <p style={{
+            fontSize: 11,
+            color: "var(--ink-dim)",
+            marginTop: 6,
+            letterSpacing: "0.01em",
+          }}>
+            {NAMES[selected] ?? selected}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
