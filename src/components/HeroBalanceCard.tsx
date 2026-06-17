@@ -87,7 +87,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: isActive ? "var(--accent)" : "var(--raised)",
                     border: isActive ? "none" : "0.5px solid var(--glass-border)",
-                    filter: isActive ? "drop-shadow(0 6px 14px var(--shadow-accent))" : "none",
+                    boxShadow: isActive ? "0 6px 20px var(--shadow-accent), 0 2px 8px var(--shadow-accent)" : "none",
                     transform: isActive ? "translateY(-2px)" : "translateY(0)",
                     transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
                     cursor: "pointer", outline: "none",
