@@ -1,0 +1,137 @@
+// Lightweight icon metadata — no Phosphor component imports.
+// Used by CategoryIcon (renders on every page) to avoid bundling 90 icon components.
+// IconPicker (lazy-loaded modal) imports the full iconList.ts with Components.
+
+export interface IconMeta { id: string; label: string; emoji: string }
+export interface IconGroupMeta { group: string; icons: IconMeta[] }
+
+export const ICON_GROUPS_META: IconGroupMeta[] = [
+  { group: "Comida y bebida", icons: [
+    { id: "fork-knife",    label: "Cubiertos",    emoji: "🍽️" },
+    { id: "coffee",        label: "Café",          emoji: "☕" },
+    { id: "shopping-cart", label: "Supermercado",  emoji: "🛒" },
+    { id: "pizza",         label: "Pizza",         emoji: "🍕" },
+    { id: "hamburger",     label: "Comida rápida", emoji: "🍔" },
+    { id: "beer-stein",    label: "Bar / Bebidas", emoji: "🍺" },
+    { id: "wine",          label: "Vino",          emoji: "🍷" },
+    { id: "cooking-pot",   label: "Cocina casera", emoji: "🍲" },
+    { id: "cake",          label: "Pastelería",    emoji: "🎂" },
+    { id: "bread",         label: "Panadería",     emoji: "🥖" },
+    { id: "orange",        label: "Frutas",        emoji: "🍊" },
+    { id: "ice-cream",     label: "Helados",       emoji: "🍦" },
+  ]},
+  { group: "Transporte", icons: [
+    { id: "car",        label: "Auto",         emoji: "🚗" },
+    { id: "gas-pump",   label: "Nafta",        emoji: "⛽" },
+    { id: "bus",        label: "Colectivo",    emoji: "🚌" },
+    { id: "train",      label: "Tren / Subte", emoji: "🚂" },
+    { id: "airplane",   label: "Avión",        emoji: "✈️" },
+    { id: "bicycle",    label: "Bicicleta",    emoji: "🚲" },
+    { id: "taxi",       label: "Taxi / Uber",  emoji: "🚕" },
+    { id: "motorcycle", label: "Moto",         emoji: "🏍️" },
+  ]},
+  { group: "Hogar", icons: [
+    { id: "house",       label: "Casa / Hogar",     emoji: "🏠" },
+    { id: "buildings",   label: "Depto / Edificio", emoji: "🏢" },
+    { id: "key",         label: "Alquiler / Llave", emoji: "🔑" },
+    { id: "couch",       label: "Muebles",           emoji: "🛋️" },
+    { id: "wrench",      label: "Reparaciones",      emoji: "🔧" },
+    { id: "broom",       label: "Limpieza",          emoji: "🧹" },
+    { id: "toolbox",     label: "Herramientas",      emoji: "🧰" },
+    { id: "paint-brush", label: "Pintura / Deco",    emoji: "🎨" },
+  ]},
+  { group: "Servicios", icons: [
+    { id: "lightning",  label: "Electricidad",       emoji: "⚡" },
+    { id: "drop",       label: "Agua",               emoji: "💧" },
+    { id: "flame",      label: "Gas",                emoji: "🔥" },
+    { id: "wifi-high",  label: "Internet",           emoji: "📶" },
+    { id: "phone",      label: "Teléfono / Celular", emoji: "📱" },
+    { id: "television", label: "TV / Cable",         emoji: "📺" },
+    { id: "broadcast",  label: "Streaming",          emoji: "📡" },
+  ]},
+  { group: "Salud", icons: [
+    { id: "heart",       label: "Salud general", emoji: "❤️" },
+    { id: "heartbeat",   label: "Médico",        emoji: "💓" },
+    { id: "pill",        label: "Farmacia",      emoji: "💊" },
+    { id: "stethoscope", label: "Doctor",        emoji: "🩺" },
+    { id: "barbell",     label: "Gym / Deporte", emoji: "🏋️" },
+    { id: "brain",       label: "Salud mental",  emoji: "🧠" },
+    { id: "tooth",       label: "Dentista",      emoji: "🦷" },
+    { id: "eye",         label: "Oftalmología",  emoji: "👁️" },
+    { id: "baby",        label: "Pediatría",     emoji: "👶" },
+  ]},
+  { group: "Educación", icons: [
+    { id: "book-open",      label: "Libros",          emoji: "📖" },
+    { id: "graduation-cap", label: "Universidad",     emoji: "🎓" },
+    { id: "pencil-simple",  label: "Estudios",        emoji: "✏️" },
+    { id: "music-notes",    label: "Música",          emoji: "🎵" },
+    { id: "palette",        label: "Arte / Diseño",   emoji: "🎨" },
+    { id: "globe",          label: "Idiomas",         emoji: "🌐" },
+    { id: "certificate",    label: "Certificaciones", emoji: "📜" },
+  ]},
+  { group: "Ocio y entretenimiento", icons: [
+    { id: "play-circle",     label: "Streaming",      emoji: "▶️" },
+    { id: "film-slate",      label: "Cine",           emoji: "🎬" },
+    { id: "game-controller", label: "Videojuegos",    emoji: "🎮" },
+    { id: "headphones",      label: "Música / Audio", emoji: "🎧" },
+    { id: "ticket",          label: "Eventos",        emoji: "🎫" },
+    { id: "trophy",          label: "Deportes",       emoji: "🏆" },
+    { id: "camera",          label: "Fotografía",     emoji: "📸" },
+    { id: "confetti",        label: "Celebraciones",  emoji: "🎉" },
+  ]},
+  { group: "Compras", icons: [
+    { id: "shopping-bag", label: "Compras",    emoji: "🛍️" },
+    { id: "t-shirt",      label: "Ropa",       emoji: "👕" },
+    { id: "watch",        label: "Accesorios", emoji: "⌚" },
+    { id: "diamond",      label: "Joyería",    emoji: "💎" },
+    { id: "gift",         label: "Regalos",    emoji: "🎁" },
+    { id: "package",      label: "Paquetes",   emoji: "📦" },
+    { id: "scissors",     label: "Peluquería", emoji: "✂️" },
+  ]},
+  { group: "Trabajo", icons: [
+    { id: "briefcase", label: "Trabajo",         emoji: "💼" },
+    { id: "laptop",    label: "Computadora",     emoji: "💻" },
+    { id: "monitor",   label: "Monitor",         emoji: "🖥️" },
+    { id: "printer",   label: "Impresora",       emoji: "🖨️" },
+    { id: "envelope",  label: "Email / Correo",  emoji: "📧" },
+    { id: "cloud",     label: "Cloud / Hosting", emoji: "☁️" },
+    { id: "code",      label: "Software / Dev",  emoji: "💻" },
+  ]},
+  { group: "Finanzas", icons: [
+    { id: "trend-up",    label: "Inversiones", emoji: "📈" },
+    { id: "piggy-bank",  label: "Ahorros",     emoji: "🐷" },
+    { id: "wallet",      label: "Billetera",   emoji: "👛" },
+    { id: "credit-card", label: "Tarjeta",     emoji: "💳" },
+    { id: "bank",        label: "Banco",       emoji: "🏛️" },
+    { id: "receipt",     label: "Factura",     emoji: "🧾" },
+    { id: "coins",       label: "Monedas",     emoji: "🪙" },
+    { id: "money",       label: "Dinero",      emoji: "💵" },
+  ]},
+  { group: "Mascotas", icons: [
+    { id: "paw-print", label: "Mascotas", emoji: "🐾" },
+    { id: "dog",       label: "Perro",    emoji: "🐶" },
+    { id: "cat",       label: "Gato",     emoji: "🐱" },
+    { id: "bird",      label: "Pájaro",   emoji: "🐦" },
+    { id: "fish",      label: "Pez",      emoji: "🐠" },
+  ]},
+  { group: "Viajes", icons: [
+    { id: "map-pin",  label: "Destino",    emoji: "📍" },
+    { id: "suitcase", label: "Equipaje",   emoji: "🧳" },
+    { id: "compass",  label: "Turismo",    emoji: "🧭" },
+    { id: "sun",      label: "Vacaciones", emoji: "☀️" },
+    { id: "tent",     label: "Camping",    emoji: "⛺" },
+  ]},
+  { group: "Personal", icons: [
+    { id: "sparkle",     label: "Belleza",   emoji: "✨" },
+    { id: "star",        label: "Favoritos", emoji: "⭐" },
+    { id: "leaf",        label: "Naturaleza",emoji: "🌿" },
+    { id: "flower",      label: "Flores",    emoji: "🌸" },
+    { id: "shield",      label: "Seguro",    emoji: "🛡️" },
+    { id: "user-circle", label: "Personal",  emoji: "👤" },
+    { id: "smiley-wink", label: "Bienestar", emoji: "😊" },
+  ]},
+];
+
+export const ICON_MAP_META = new Map<string, IconMeta>(
+  ICON_GROUPS_META.flatMap(g => g.icons).map(i => [i.id, i])
+);

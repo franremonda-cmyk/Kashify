@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import ImportFlow from "@/components/ImportFlow";
+import dynamic from "next/dynamic";
+const ImportFlow = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 
 const CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU", "CLP", "GBP", "CHF"];
 const STEPS = 4;

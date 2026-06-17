@@ -1,7 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
-export async function createClient() {
+// cache() deduplicates calls within a single request's render tree —
+// so multiple server components calling createClient() share one instance.
+export const createClient = cache(async () => {
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,7 +24,7 @@ export async function createClient() {
       },
     }
   );
-}
+});
 
 export async function createServiceClient() {
   const cookieStore = await cookies();

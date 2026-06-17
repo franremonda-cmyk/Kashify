@@ -1,18 +1,49 @@
 "use client";
+import { useState, useEffect, type ComponentType } from "react";
 import { useIconStyle } from "@/context/IconStyleContext";
-import { ICON_MAP } from "@/lib/iconList";
+import { ICON_MAP_META } from "@/lib/iconMeta";
 import type { IconStyle } from "@/context/IconStyleContext";
 
 interface Props {
-  icon?: string;   // stored icon id e.g. "fork-knife", or legacy emoji "🍽️"
-  name?: string;   // category name for legacy keyword fallback
-  color?: string;  // category color for duotone mode
+  icon?: string;
+  name?: string;
+  color?: string;
   size?: number;
-  style?: IconStyle; // override context (for picker preview)
+  style?: IconStyle;
 }
 
 function isEmoji(str: string) {
   return /^\p{Emoji}/u.test(str) && str.length <= 4;
+}
+
+// "fork-knife" → "ForkKnife"
+function kebabToPascal(s: string) {
+  return s.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join("");
+}
+
+interface PhosphorIconProps { size?: number; weight?: string; color?: string }
+
+// Lazily loads a single Phosphor icon component by kebab-case id.
+// Shows emoji fallback during load — no layout shift, no blank flash.
+function PhosphorIcon({ iconId, size, weight, color, emoji }: {
+  iconId: string; size: number; weight: string; color?: string; emoji: string;
+}) {
+  const [Comp, setComp] = useState<ComponentType<PhosphorIconProps> | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const name = kebabToPascal(iconId);
+    import("@phosphor-icons/react").then(mod => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (active) setComp(() => ((mod as any)[name] as ComponentType<PhosphorIconProps> | undefined) ?? null);
+    });
+    return () => { active = false; };
+  }, [iconId]);
+
+  if (!Comp) {
+    return <span style={{ fontSize: size * 0.9, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{emoji}</span>;
+  }
+  return <Comp size={size} weight={weight as "light" | "fill" | "duotone"} color={color} />;
 }
 
 export default function CategoryIcon({ icon, name, color = "var(--accent)", size = 16, style: styleProp }: Props) {
@@ -25,25 +56,18 @@ export default function CategoryIcon({ icon, name, color = "var(--accent)", size
   }
 
   // 2 — known Phosphor icon id
-  const def = icon ? ICON_MAP.get(icon) : null;
+  const meta = icon ? ICON_MAP_META.get(icon) : null;
 
-  if (def) {
-    const { Component } = def;
-
+  if (meta) {
     if (style === "emoji") {
-      return <span style={{ fontSize: size * 0.95, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{def.emoji}</span>;
+      return <span style={{ fontSize: size * 0.95, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{meta.emoji}</span>;
     }
-    if (style === "solid") {
-      return <Component size={size} weight="fill" />;
-    }
-    if (style === "duotone") {
-      return <Component size={size} weight="duotone" color={color} />;
-    }
-    // "line" default
-    return <Component size={size} weight="light" />;
+    const weight = style === "solid" ? "fill" : style === "duotone" ? "duotone" : "light";
+    const iconColor = style === "duotone" ? color : undefined;
+    return <PhosphorIcon iconId={meta.id} size={size} weight={weight} color={iconColor} emoji={meta.emoji} />;
   }
 
-  // 3 — legacy keyword fallback (original thin-stroke SVGs)
+  // 3 — legacy keyword fallback
   return <LegacyIcon name={name ?? icon ?? ""} size={size} />;
 }
 
@@ -92,6 +116,5 @@ function LegacyIcon({ name, size }: { name: string; size: number }) {
   if (n.includes("regalo") || n.includes("fiesta") || n.includes("cumple") || n.includes("celebra"))
     return <svg {...p}><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>;
 
-  // Default tag
   return <svg {...p}><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>;
 }

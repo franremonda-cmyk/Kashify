@@ -1,5 +1,4 @@
 import Papa from "papaparse";
-import * as XLSX from "xlsx";
 
 export interface RawRow { [key: string]: string }
 
@@ -55,6 +54,7 @@ function parseCsv(file: File): Promise<{ headers: string[]; rows: RawRow[] }> {
 }
 
 async function parseExcel(file: File): Promise<{ headers: string[]; rows: RawRow[] }> {
+  const XLSX = await import("xlsx");
   const buffer = await file.arrayBuffer();
   const wb = XLSX.read(buffer, { type: "array", cellDates: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];

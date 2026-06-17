@@ -23,14 +23,16 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // getSession reads from cookie — no network round-trip. Sufficient for redirect guard;
+  // actual RLS enforces real security on every Supabase query.
+  const { data: { session } } = await supabase.auth.getSession();
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/login") || pathname.startsWith("/api/") || pathname.startsWith("/onboarding")) {
     return supabaseResponse;
   }
 
-  if (!user) {
+  if (!session) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

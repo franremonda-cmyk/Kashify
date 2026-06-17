@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback, useId, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import CategoryIcon from "@/components/CategoryIcon";
-import ImportFlow from "@/components/ImportFlow";
+import dynamic from "next/dynamic";
+const ImportFlow = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 import type { Transaction } from "@/types";
 
 interface Category { id: string; name: string; icon: string; color?: string; }

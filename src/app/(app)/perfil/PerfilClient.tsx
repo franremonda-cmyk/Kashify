@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useIconStyle } from "@/context/IconStyleContext";
 import type { IconStyle } from "@/context/IconStyleContext";
 import CategoryIcon from "@/components/CategoryIcon";
-import IconPicker from "@/components/IconPicker";
+import dynamic from "next/dynamic";
+const IconPicker = dynamic(() => import("@/components/IconPicker"), { ssr: false });
 import { suggestColor, CATEGORY_COLORS } from "@/lib/iconList";
 import type { Profile } from "@/types";
 
