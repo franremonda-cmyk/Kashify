@@ -1,9 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useIconStyle } from "@/context/IconStyleContext";
+import type { IconStyle } from "@/context/IconStyleContext";
+import CategoryIcon from "@/components/CategoryIcon";
+import IconPicker from "@/components/IconPicker";
+import { suggestColor, CATEGORY_COLORS } from "@/lib/iconList";
 import type { Profile } from "@/types";
 
 interface UserPhone { id: string; phone_number: string; verified: boolean }
+interface Category { id: string; name: string; icon?: string; color?: string }
 
 interface Props {
   profile: Profile | null;
@@ -19,6 +25,13 @@ const THEMES = [
   { id: "void",     label: "Void",     desc: "Negro total",       preview: "#30D158" },
   { id: "sand",     label: "Sand",     desc: "Cálido + tierra",   preview: "#C8820A" },
 ] as const;
+
+const ICON_STYLES: { id: IconStyle; label: string; desc: string }[] = [
+  { id: "line",    label: "Línea",   desc: "Trazo fino" },
+  { id: "solid",   label: "Sólido",  desc: "Relleno" },
+  { id: "duotone", label: "Duotone", desc: "Bicolor" },
+  { id: "emoji",   label: "Emoji",   desc: "Clásico" },
+];
 
 const inp: React.CSSProperties = {
   background: "var(--raised)",
@@ -53,17 +66,213 @@ function SaveButton({ onClick, saving, label = "Guardar" }: { onClick: () => voi
   );
 }
 
+// ─── Category edit modal ──────────────────────────────────────────────────────
+
+interface EditModalProps {
+  cat?: Category;                // undefined = create new
+  existingColors: string[];
+  currentStyle: IconStyle;
+  onSave: (cat: Partial<Category>) => Promise<void>;
+  onDelete?: () => Promise<void>;
+  onClose: () => void;
+}
+
+function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, onClose }: EditModalProps) {
+  const isNew = !cat;
+  const [name, setName]         = useState(cat?.name ?? "");
+  const [icon, setIcon]         = useState(cat?.icon ?? "");
+  const [color, setColor]       = useState(cat?.color ?? suggestColor(existingColors));
+  const [showPicker, setShowPicker] = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  async function handleSave() {
+    if (!name.trim()) return;
+    setSaving(true);
+    await onSave({ name: name.trim(), icon: icon || undefined, color: color || undefined });
+    setSaving(false);
+    onClose();
+  }
+
+  async function handleDelete() {
+    if (!onDelete) return;
+    setSaving(true);
+    await onDelete();
+    setSaving(false);
+    onClose();
+  }
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40 flex items-end justify-center"
+        style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
+        onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        <div
+          className="w-full max-w-sm flex flex-col"
+          style={{
+            borderRadius: "24px 24px 0 0",
+            background: "var(--base)",
+            border: "0.5px solid var(--glass-border)",
+            boxShadow: "0 -8px 40px rgba(0,0,0,0.14)",
+            padding: "0 0 calc(16px + env(safe-area-inset-bottom, 0px))",
+          }}
+        >
+          {/* Handle */}
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0" }} />
+
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0" }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
+              {isNew ? "Nueva categoría" : "Editar categoría"}
+            </p>
+            <button onClick={onClose}
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              ✕
+            </button>
+          </div>
+
+          <div style={{ padding: "16px 18px 0", display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* Icon preview + pick button */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button
+                onClick={() => setShowPicker(true)}
+                style={{
+                  width: 56, height: 56, borderRadius: 16, flexShrink: 0,
+                  background: icon ? color + "22" : "var(--raised)",
+                  border: icon ? `1.5px solid ${color}` : "1.5px dashed var(--glass-border-hover)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: icon ? color : "var(--ink-dim)", fontSize: 24,
+                }}>
+                {icon
+                  ? <CategoryIcon icon={icon} color={color} size={28} style={currentStyle} />
+                  : <span style={{ fontSize: 22 }}>＋</span>
+                }
+              </button>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 4 }}>
+                  {icon ? "Toca para cambiar el ícono" : "Toca para elegir un ícono"}
+                </p>
+                {/* Color swatches inline */}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {CATEGORY_COLORS.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setColor(c)}
+                      style={{
+                        width: 20, height: 20, borderRadius: "50%", background: c,
+                        border: color === c ? `3px solid var(--ink)` : "2px solid transparent",
+                        outline: color === c ? `2px solid ${c}` : "none",
+                        outlineOffset: 1,
+                        transition: "all 100ms ease-out",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Name input */}
+            <input
+              style={inp}
+              placeholder="Nombre de la categoría"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSave()}
+              autoFocus
+            />
+
+            {/* Save */}
+            <button
+              onClick={handleSave}
+              disabled={!name.trim() || saving}
+              style={{
+                padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
+                background: name.trim() ? "var(--accent)" : "var(--raised)",
+                color: name.trim() ? "#FFFFFF" : "var(--ink-dim)",
+                transition: "all 160ms ease-out",
+              }}>
+              {saving ? "Guardando..." : isNew ? "Crear categoría" : "Guardar cambios"}
+            </button>
+
+            {/* Delete */}
+            {!isNew && onDelete && (
+              confirmDel ? (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={handleDelete}
+                    disabled={saving}
+                    style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>
+                    Sí, eliminar
+                  </button>
+                  <button
+                    onClick={() => setConfirmDel(false)}
+                    style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDel(true)}
+                  style={{ padding: "10px", borderRadius: 12, fontSize: 12, color: "var(--negative)", background: "transparent", border: "0.5px solid var(--glass-border)" }}>
+                  Eliminar categoría
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Icon picker renders on top (z-50) */}
+      {showPicker && (
+        <IconPicker
+          selectedIcon={icon}
+          selectedColor={color}
+          selectedStyle={currentStyle}
+          existingColors={existingColors}
+          onSelect={(newIcon, newColor, _style) => {
+            setIcon(newIcon);
+            setColor(newColor);
+          }}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function PerfilClient({ profile, phones, email }: Props) {
-  const [displayName, setDisplayName]     = useState(profile?.display_name ?? "");
+  const [displayName, setDisplayName]         = useState(profile?.display_name ?? "");
   const [primaryCurrency, setPrimaryCurrency] = useState(profile?.primary_currency ?? "ARS");
-  const [newPhone, setNewPhone]           = useState("");
-  const [savingName, setSavingName]       = useState(false);
-  const [savingCurrency, setSavingCurrency] = useState(false);
-  const [savedName, setSavedName]         = useState(false);
-  const [savedCurrency, setSavedCurrency] = useState(false);
+  const [newPhone, setNewPhone]               = useState("");
+  const [savingName, setSavingName]           = useState(false);
+  const [savingCurrency, setSavingCurrency]   = useState(false);
+  const [savedName, setSavedName]             = useState(false);
+  const [savedCurrency, setSavedCurrency]     = useState(false);
   const [theme, setTheme] = useState<string>(() =>
     typeof window !== "undefined" ? (localStorage.getItem("kashify-theme") ?? "arctic") : "arctic"
   );
+
+  const { iconStyle, setIconStyle } = useIconStyle();
+
+  // Categories state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [catLoading, setCatLoading] = useState(true);
+  const [editingCat, setEditingCat] = useState<Category | null | "new">(null);
+
+  const supabase = createClient();
+
+  const fetchCategories = useCallback(async () => {
+    setCatLoading(true);
+    const res = await fetch("/api/categories");
+    if (res.ok) setCategories(await res.json());
+    setCatLoading(false);
+  }, []);
+
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
   function applyTheme(t: string) {
     setTheme(t);
@@ -74,8 +283,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       document.documentElement.setAttribute("data-theme", t);
     }
   }
-
-  const supabase = createClient();
 
   async function saveName() {
     if (!displayName.trim()) return;
@@ -108,7 +315,30 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     window.location.href = "/login";
   }
 
+  async function saveCategory(catId: string | null, patch: Partial<Category>) {
+    if (catId) {
+      await fetch(`/api/categories/${catId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+    } else {
+      await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+    }
+    await fetchCategories();
+  }
+
+  async function deleteCategory(catId: string) {
+    await fetch(`/api/categories/${catId}`, { method: "DELETE" });
+    await fetchCategories();
+  }
+
   const initials = (displayName || email || "K").slice(0, 1).toUpperCase();
+  const existingColors = categories.map(c => c.color).filter(Boolean) as string[];
 
   return (
     <div className="flex flex-col gap-6">
@@ -160,8 +390,9 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         </div>
       </Section>
 
-      {/* Tema */}
+      {/* Apariencia — tema + estilo de íconos */}
       <Section label="Apariencia">
+        {/* Tema */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {THEMES.map((t) => {
             const active = theme === t.id;
@@ -178,16 +409,95 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                   <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{t.label}</p>
                   <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{t.desc}</p>
                 </div>
-                {active && (
-                  <div style={{ marginLeft: "auto", fontSize: 11, color: "var(--accent)" }}>✓</div>
-                )}
+                {active && <div style={{ marginLeft: "auto", fontSize: 11, color: "var(--accent)" }}>✓</div>}
               </button>
             );
           })}
         </div>
+
+        {/* Divider */}
+        <div style={{ height: "0.5px", background: "var(--glass-border)", margin: "2px 0" }} />
+
+        {/* Estilo de íconos */}
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 8 }}>Estilo de íconos</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {ICON_STYLES.map((s) => {
+              const active = iconStyle === s.id;
+              return (
+                <button key={s.id} onClick={() => setIconStyle(s.id)}
+                  style={{
+                    padding: "10px 12px", borderRadius: 12, textAlign: "left",
+                    background: active ? "var(--accent-soft)" : "var(--raised)",
+                    border: active ? `0.5px solid var(--accent-glow)` : "0.5px solid var(--glass-border)",
+                    display: "flex", alignItems: "center", gap: 8,
+                  }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{s.label}</p>
+                    <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
+                  </div>
+                  {active && <div style={{ fontSize: 11, color: "var(--accent)", flexShrink: 0 }}>✓</div>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <p style={{ fontSize: 10, color: "var(--ink-muted)" }}>
-          El cambio se aplica al instante en toda la app.
+          Los cambios se aplican al instante en toda la app.
         </p>
+      </Section>
+
+      {/* Mis categorías */}
+      <Section label="Mis categorías">
+        {catLoading ? (
+          <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "8px 0" }}>Cargando...</p>
+        ) : categories.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Aún no tenés categorías personalizadas</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setEditingCat(cat)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "10px 12px", borderRadius: 12,
+                  background: "var(--raised)", border: "0.5px solid var(--glass-border)",
+                  textAlign: "left", width: "100%",
+                }}>
+                {/* Icon dot */}
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                  background: (cat.color ?? "var(--accent)") + "22",
+                  border: `1px solid ${cat.color ?? "var(--accent)"}33`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: cat.color ?? "var(--accent)",
+                }}>
+                  <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={18} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", flex: 1 }}>{cat.name}</span>
+                {/* Color badge */}
+                {cat.color && <div style={{ width: 10, height: 10, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />}
+                {/* Edit caret */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}>
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            ))}
+          </div>
+        )}
+        {/* Add new category */}
+        <button
+          onClick={() => setEditingCat("new")}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600,
+            background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)",
+            color: "var(--accent)",
+          }}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
+        </button>
       </Section>
 
       {/* WhatsApp vinculado */}
@@ -250,6 +560,23 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         }}>
         Cerrar sesión
       </button>
+
+      {/* Category edit / create modal */}
+      {editingCat !== null && (
+        <CategoryModal
+          cat={editingCat === "new" ? undefined : editingCat}
+          existingColors={existingColors}
+          currentStyle={iconStyle}
+          onSave={async (patch) => {
+            const catId = editingCat === "new" ? null : editingCat.id;
+            await saveCategory(catId, patch);
+          }}
+          onDelete={editingCat !== "new" ? async () => {
+            await deleteCategory(editingCat.id);
+          } : undefined}
+          onClose={() => setEditingCat(null)}
+        />
+      )}
     </div>
   );
 }

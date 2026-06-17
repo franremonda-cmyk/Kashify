@@ -4,6 +4,7 @@ import "./globals.css";
 import SplashScreen from "@/components/SplashScreen";
 import NeoBanner from "@/components/NeoBanner";
 import ThemeLoader from "@/components/ThemeLoader";
+import { IconStyleProvider } from "@/context/IconStyleContext";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -47,7 +48,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeLoader />
         <SplashScreen />
         <NeoBanner />
-        {children}
+        <IconStyleProvider>
+          {children}
+        </IconStyleProvider>
       </body>
     </html>
   );
