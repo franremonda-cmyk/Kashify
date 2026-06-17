@@ -206,6 +206,86 @@ button, a, input, select, textarea {
   }
 }
 
+/* ─── Themes ─────────────────────────────── */
+
+/* VOID — pure dark, emerald accent (original Kashify) */
+[data-theme="void"] {
+  --void:    #060C09;
+  --base:    #0D1A10;
+  --raised:  #0A1410;
+  --glass-1: rgba(13, 26, 16, 0.80);
+  --glass-2: rgba(15, 30, 18, 0.90);
+  --glass-3: rgba(18, 34, 21, 0.96);
+  --glass-border:       rgba(0, 200, 83, 0.12);
+  --glass-border-hover: rgba(0, 200, 83, 0.26);
+  --glass-border-dim:   rgba(0, 200, 83, 0.06);
+  --accent:       #00C853;
+  --accent-soft:  rgba(0, 200, 83, 0.12);
+  --accent-glow:  rgba(0, 200, 83, 0.28);
+  --ink:       #F0FFF4;
+  --ink-muted: rgba(240, 255, 244, 0.60);
+  --ink-dim:   rgba(240, 255, 244, 0.28);
+  --shadow-sm: 0 1px 4px  rgba(0,0,0,0.40);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.50);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.60);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.70);
+}
+[data-theme="void"] body {
+  background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(0,200,83,0.07) 0%, transparent 65%);
+}
+
+/* MIDNIGHT — deep blue night */
+[data-theme="midnight"] {
+  --void:    #070B1A;
+  --base:    #0F1629;
+  --raised:  #0B1120;
+  --glass-1: rgba(15, 22, 41, 0.80);
+  --glass-2: rgba(18, 26, 48, 0.90);
+  --glass-3: rgba(22, 32, 58, 0.96);
+  --glass-border:       rgba(10, 132, 255, 0.15);
+  --glass-border-hover: rgba(10, 132, 255, 0.30);
+  --glass-border-dim:   rgba(10, 132, 255, 0.07);
+  --accent:       #0A84FF;
+  --accent-soft:  rgba(10, 132, 255, 0.12);
+  --accent-glow:  rgba(10, 132, 255, 0.28);
+  --ink:       #F0F6FF;
+  --ink-muted: rgba(240, 246, 255, 0.60);
+  --ink-dim:   rgba(240, 246, 255, 0.28);
+  --shadow-sm: 0 1px 4px  rgba(0,0,0,0.40);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.50);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.60);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.70);
+}
+[data-theme="midnight"] body {
+  background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(10,132,255,0.08) 0%, transparent 65%);
+}
+
+/* SAND — warm light, amber accent */
+[data-theme="sand"] {
+  --void:    #FAF6EE;
+  --base:    #FFFFFF;
+  --raised:  #F5EFE3;
+  --glass-1: rgba(255, 255, 255, 0.72);
+  --glass-2: rgba(255, 255, 255, 0.88);
+  --glass-3: rgba(255, 255, 255, 0.96);
+  --glass-border:       rgba(120, 80, 20, 0.12);
+  --glass-border-hover: rgba(120, 80, 20, 0.25);
+  --glass-border-dim:   rgba(120, 80, 20, 0.06);
+  --accent:       #C8820A;
+  --accent-soft:  rgba(200, 130, 10, 0.10);
+  --accent-glow:  rgba(200, 130, 10, 0.22);
+  --ink:       #1A1000;
+  --ink-muted: rgba(26, 16, 0, 0.60);
+  --ink-dim:   rgba(26, 16, 0, 0.28);
+  --shadow-sm: 0 1px 4px  rgba(100,60,0,0.07);
+  --shadow-md: 0 4px 16px rgba(100,60,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(100,60,0,0.09);
+  --shadow-xl: 0 20px 60px rgba(100,60,0,0.11);
+}
+[data-theme="sand"] body {
+  background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(200,130,10,0.06) 0%, transparent 65%);
+}
+
 /* ─── Desktop sidebar layout ─────────────── */
 
 @media (min-width: 1024px) {

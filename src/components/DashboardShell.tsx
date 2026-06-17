@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import HeroBalanceCard from "./HeroBalanceCard";
+import CategoryIcon from "./CategoryIcon";
 import SpendingChart, { type ChartMonth } from "./SpendingChart";
 import type { Balance } from "@/types";
 
@@ -28,7 +29,6 @@ function useCounter(target: number, duration = 600) {
   const [value, setValue] = useState(target);
   const raf = useRef<number>(0);
   const from = useRef(target);
-
   useEffect(() => {
     const start = performance.now();
     const startVal = from.current;
@@ -43,50 +43,30 @@ function useCounter(target: number, duration = 600) {
     raf.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf.current);
   }, [target, duration]);
-
   return value;
-}
-
-function compact(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (abs >= 1_000_000)     return `${(n / 1_000_000).toFixed(1)}M`;
-  if (abs >= 100_000)       return `${Math.round(n / 1_000)}K`;
-  return n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 }
 
 function MetricCard({ label, value, sym, isIncome }: {
   label: string; value: number; sym: string; isIncome: boolean;
 }) {
   const animated = useCounter(value);
-  const color = isIncome ? "var(--positive)" : "var(--negative)";
-  const bg    = isIncome ? "rgba(52,199,89,0.07)"  : "rgba(255,59,48,0.06)";
+  const color  = isIncome ? "var(--positive)" : "var(--negative)";
+  const bg     = isIncome ? "rgba(52,199,89,0.07)"  : "rgba(255,59,48,0.06)";
   const border = isIncome ? "0.5px solid rgba(52,199,89,0.18)" : "0.5px solid rgba(255,59,48,0.16)";
+  const full   = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <div style={{
-      flex: 1, padding: "14px 16px", borderRadius: 14,
-      background: bg, border,
-      boxShadow: "var(--shadow-sm)",
-    }}>
+    <div style={{ flex: 1, padding: "14px 16px", borderRadius: 14, background: bg, border, boxShadow: "var(--shadow-sm)" }}>
       <p style={{
-        fontSize: 9, fontWeight: 600, textTransform: "uppercase",
-        letterSpacing: "0.08em", color: "var(--ink-dim)", marginBottom: 7,
+        fontSize: 10, fontWeight: 600, textTransform: "uppercase",
+        letterSpacing: "0.08em", color: "var(--ink-muted)", marginBottom: 8,
+      }}>{label}</p>
+      <p className="display" style={{
+        fontSize: "clamp(0.85rem, 3.2vw, 1.1rem)",
+        fontWeight: 700, color, letterSpacing: "-0.02em",
+        fontVariantNumeric: "tabular-nums", lineHeight: 1,
       }}>
-        {label}
-      </p>
-      <p
-        className="display"
-        style={{
-          fontSize: "clamp(1rem, 3.8vw, 1.25rem)",
-          fontWeight: 700,
-          color,
-          letterSpacing: "-0.02em",
-          fontVariantNumeric: "tabular-nums",
-          lineHeight: 1,
-        }}
-      >
-        {sym} {compact(animated)}
+        {sym} {full}
       </p>
     </div>
   );
@@ -102,7 +82,6 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Balance */}
       <HeroBalanceCard
         balances={balances}
         primaryCurrency={primaryCurrency}
@@ -110,53 +89,44 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         onSelectCurrency={setSelectedCurrency}
       />
 
-      {/* Metrics — animated counter on currency switch */}
       <div className="flex gap-3 enter-up" data-delay="2">
         <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  />
         <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} />
       </div>
 
-      {/* Recent transactions */}
       {recent.length > 0 && (
         <section className="flex flex-col gap-3 enter-up" data-delay="3">
-          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
             Últimas transacciones
           </p>
           <div style={{
             borderRadius: 16, overflow: "hidden",
             border: "0.5px solid var(--glass-border)",
-            background: "var(--base)",
-            boxShadow: "var(--shadow-sm)",
+            background: "var(--base)", boxShadow: "var(--shadow-sm)",
           }}>
             {recent.map((t, i) => {
               const cat = t.categories as { name?: string; icon?: string } | null;
-              const isIncome = t.type === "income";
-              const amtColor = isIncome ? "var(--positive)" : "var(--negative)";
+              const isIncome  = t.type === "income";
+              const isInstall = t.type === "installment-payment";
+              const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
+              const iconBg    = isIncome ? "rgba(52,199,89,0.09)" : isInstall ? "rgba(255,149,0,0.09)" : "rgba(255,59,48,0.07)";
               return (
-                <div
-                  key={`${t.description}-${i}`}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "12px 16px",
-                    borderBottom: i < recent.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
-                  }}
-                >
+                <div key={`${t.description}-${i}`} style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+                  borderBottom: i < recent.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
+                }}>
                   <div style={{
-                    width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    background: isIncome ? "rgba(52,199,89,0.10)" : "rgba(255,59,48,0.07)",
-                    fontSize: 14,
+                    background: iconBg, color: amtColor,
                   }}>
-                    {cat?.icon
-                      ? <span>{cat.icon}</span>
-                      : <div style={{ width: 8, height: 8, borderRadius: "50%", background: amtColor }} />
-                    }
+                    <CategoryIcon name={cat?.name} size={16} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {t.description}
                     </p>
-                    <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>
+                    <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 2 }}>
                       {cat?.name ?? "Sin categoría"} · {t.date}
                     </p>
                   </div>
@@ -174,7 +144,6 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         </section>
       )}
 
-      {/* Chart — synced currency, at the bottom */}
       <div className="enter-up" data-delay="4">
         <SpendingChart data={chartMonths} currencySymbol={sym} />
       </div>

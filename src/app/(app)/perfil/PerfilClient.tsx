@@ -61,7 +61,19 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [savedName, setSavedName]         = useState(false);
   const [savedCurrency, setSavedCurrency] = useState(false);
-  const [theme, setTheme]                 = useState<string>("arctic");
+  const [theme, setTheme] = useState<string>(() =>
+    typeof window !== "undefined" ? (localStorage.getItem("kashify-theme") ?? "arctic") : "arctic"
+  );
+
+  function applyTheme(t: string) {
+    setTheme(t);
+    localStorage.setItem("kashify-theme", t);
+    if (t === "arctic") {
+      document.documentElement.removeAttribute("data-theme");
+    } else {
+      document.documentElement.setAttribute("data-theme", t);
+    }
+  }
 
   const supabase = createClient();
 
@@ -154,7 +166,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           {THEMES.map((t) => {
             const active = theme === t.id;
             return (
-              <button key={t.id} onClick={() => setTheme(t.id)}
+              <button key={t.id} onClick={() => applyTheme(t.id)}
                 style={{
                   padding: "12px 14px", borderRadius: 12, textAlign: "left",
                   background: active ? "var(--accent-soft)" : "var(--raised)",
@@ -173,8 +185,8 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             );
           })}
         </div>
-        <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>
-          Próximamente — por ahora se aplica Arctic automáticamente.
+        <p style={{ fontSize: 10, color: "var(--ink-muted)" }}>
+          El cambio se aplica al instante en toda la app.
         </p>
       </Section>
 

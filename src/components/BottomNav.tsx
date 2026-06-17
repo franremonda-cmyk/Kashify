@@ -10,15 +10,107 @@ interface Category { id: string; name: string; icon: string; }
 
 // Keyword-to-category matcher
 const KEYWORD_MAP: Record<string, string[]> = {
-  "Comida":       ["almuerzo","cena","desayuno","pizza","sushi","resto","restaurant","comida","café","rappi","pedidos","mcdo","burger","empanada","taco","medialunas","facturas"],
-  "Transporte":   ["uber","cabify","taxi","nafta","combustible","subte","sube","colectivo","bus","peaje","remis","gasoil","estacionamiento"],
-  "Ocio":         ["netflix","spotify","cine","disney","hbo","amazon","youtube","steam","juego","teatro","concierto","prime"],
-  "Hogar":        ["alquiler","expensas","luz","gas","agua","internet","wifi","cable","supermercado","limpieza","jumbo","coto","carrefour","dia","ikea"],
-  "Salud":        ["farmacia","médico","doctor","medicamento","hospital","clínica","prepaga","osde","dentista","psicólogo","ginecólogo"],
-  "Educación":    ["curso","libro","udemy","coursera","escuela","facultad","clase","taller","universidad","capacitación"],
-  "Indumentaria": ["ropa","zapatillas","adidas","nike","zara","zapatos","buzo","remera","pantalón","vestido"],
-  "Trabajo":      ["coworking","oficina","dominio","hosting","suscripción","software","papelería","tinta","impresora"],
-  "Suscripción":  ["suscripción","subscripción","membresía","mensualidad","plan","cuota"],
+  "Comida": [
+    "almuerzo","cena","desayuno","pizza","sushi","resto","restaurant","comida","café","cafe",
+    "rappi","pedidos","mcdo","burger","empanada","taco","medialunas","facturas","kiosco","kioskero",
+    "sandwich","ensalada","milanesa","asado","parrilla","bodegon","delivery","mcdonald","burguer king",
+    "wendys","subway","starbucks","cafeteria","panaderia","pasteleria","heladeria","chocolateria",
+    "soda","agua mineral","jugo","cerveza","vino","bar ","boliche","aperitivo","mate","yerba",
+    "mercado","feria","verduleria","carniceria","polleria","pescaderia","super","superm",
+    "nutricion","vegano","vegetariano","sushi","ramen","wok","fideos","pasta","pizza",
+  ],
+  "Transporte": [
+    "uber","cabify","taxi","nafta","combustible","subte","sube","colectivo","bus","peaje",
+    "remis","gasoil","estacionamiento","tren","bicicleta","moto","scooter","patineta",
+    "shell","ypf","axion","petrobras","puma","esso","serviclub","autoexpreso","autopista",
+    "gnc","aeroparque","ezeiza","aeropuerto","vuelo","lkbus","plataforma","omnilineas",
+    "flecha","andesmar","via bariloche","coche","auto","seguro auto","patente","vehiculo",
+    "lyft","didi","bemo","acercapp","turismo","transfer","shuttle",
+  ],
+  "Ocio": [
+    "netflix","spotify","cine","disney","hbo","amazon","youtube","steam","juego","teatro",
+    "concierto","prime","apple tv","paramount","crunchyroll","mubi","flow","directv",
+    "deezer","tidal","apple music","xbox","playstation","ps5","nintendo","switch",
+    "twitch","kick","evento","festival","show","recital","espectaculo","circo","stand up",
+    "bowling","laser","paintball","escape room","karting","go kart","arcade",
+    "museo","exposicion","galeria","zoo","aquarium","parque","parque de diversiones",
+    "tragamonedas","casino","apostas","bet","tennis","golf","paddle","squash",
+  ],
+  "Hogar": [
+    "alquiler","expensas","luz","gas","agua","internet","wifi","cable","supermercado",
+    "limpieza","jumbo","coto","carrefour","dia","ikea","sodimac","easy","homecenter",
+    "pintura","plomero","electricista","gas natural","edesur","edenor","metrogas","aysa",
+    "fibertel","cablevision","claro hogar","telecentro","arnet","personal hogar",
+    "mueble","colchon","sillon","heladera","lavarropas","microondas","electrodomestico",
+    "almohada","sabanas","toalla","detergente","lavandina","limpiador","escoba","trapeador",
+    "portero","vigilancia","condominio","administracion","servicios","mantenimiento",
+    "jardineria","planta","semilla","herramienta","ferreteria","cerrajero",
+  ],
+  "Salud": [
+    "farmacia","médico","medico","medicamento","hospital","clínica","clinica","prepaga",
+    "osde","swiss medical","galeno","medicus","hominis","omint","ioma","pami",
+    "dentista","odontologia","psicologo","psicologa","psiquiatra","kinesiologo","nutricionista",
+    "ginecologia","pediatria","cardiologia","dermatologia","oftalmologia","otorrinolaringologo",
+    "analisis","laboratorio","radiografia","ecografia","resonancia","tomografia",
+    "vacuna","inyeccion","operacion","internacion","urgencias","emergencia",
+    "vitaminas","suplemento","proteina","creatina","omega","colesterol","presion",
+    "gym","gimnasio","yoga","pilates","crossfit","running","actividad fisica","deporte",
+  ],
+  "Educación": [
+    "curso","libro","udemy","coursera","escuela","facultad","clase","taller","universidad",
+    "capacitacion","capacitación","maestria","doctorado","posgrado","grado","secundaria",
+    "primaria","colegio","matricula","arancel","cuota colegio","guarderia","jardin",
+    "educacion online","platzi","domestika","skillshare","linkedin learning","google",
+    "material escolar","carpeta","cuaderno","lapiz","lapicera","regla","mochila",
+    "examen","certificacion","cambridge","toefl","ielts","idiomas","ingles","frances",
+    "piano","guitarra","canto","pintura","dibujo","arte","musica","danza","teatro",
+  ],
+  "Indumentaria": [
+    "ropa","zapatillas","adidas","nike","zara","zapatos","buzo","remera","pantalon",
+    "vestido","camisa","pollera","medias","ropa interior","pijama","traje","saco",
+    "h&m","forever21","pull and bear","bershka","stradivarius","mango","topshop",
+    "puma","reebok","new balance","converse","vans","timberland","dr martens",
+    "bolso","cartera","billetera","cinturon","sombrero","gorra","bufanda","guantes",
+    "joyeria","reloj","anteojos","lentes","bijou","aro","collar","pulsera","anillo",
+    "lenceria","traje de bano","bikini","ropa deportiva","calza","shorts","campera",
+  ],
+  "Trabajo": [
+    "coworking","oficina","dominio","hosting","suscripcion","software","papeleria",
+    "tinta","impresora","computadora","notebook","monitor","teclado","mouse","camara",
+    "microfono","auricular","escritorio","silla","ergonomia","ups","disco rigido","ssd",
+    "aws","google cloud","azure","github","notion","slack","zoom","figma","adobe",
+    "contador","estudio contable","sellado","ingresos brutos","monotributo","afip",
+    "abogado","escribano","tramite","legalizacion","apostilla","traduccion",
+    "marketing","publicidad","instagram ads","facebook ads","google ads","flyer",
+    "hosting","dominio","vps","servidor","email corporativo","gsuite","microsoft 365",
+  ],
+  "Suscripción": [
+    "suscripcion","suscripción","subscripcion","subscripción","membresia","mensualidad",
+    "plan mensual","plan anual","renovacion","auto renovacion","trial","free trial",
+    "antivirus","vpn","nordvpn","expressvpn","dropbox","icloud","google one","onedrive",
+    "canva","figma pro","notion pro","obsidian","todoist","things","bear","craft",
+    "duolingo","babble","rosetta stone","pimsleur",
+  ],
+  "Mascotas": [
+    "veterinario","veterinaria","vet","perro","gato","mascota","hamster","conejo",
+    "comida perro","comida gato","purina","pedigree","whiskas","royal canin","eukanuba",
+    "accesorios mascota","collar","correa","juguete mascota","antiparasitario","vacuna mascota",
+    "peluqueria canina","bano mascota","hotel mascota","guarderia mascota",
+  ],
+  "Viajes": [
+    "hotel","hostel","airbnb","booking","despegar","aerolinea","vuelo","avion",
+    "aerolinas","latam","jetsmart","flybondi","american","united","lufthansa",
+    "turismo","agencia","excursion","tour","crucero","ferry","barco","tren largo",
+    "valija","mochila viaje","adaptador","seguro viaje","visa","pasaporte","tramite migratorio",
+    "cambiaria","casa de cambio","dolar viaje","euro viaje","dolares",
+  ],
+  "Ahorros e Inversiones": [
+    "plazo fijo","fci","fondo comun","bono","accion","cripto","bitcoin","ethereum","usdt",
+    "binance","lemon","belo","buenbit","ripio","bitso","coinbase","kraken",
+    "inversion","ahorro","deposito","retiro","transferencia","envio",
+    "cuenta bancaria","tarjeta","banco","bbva","santander","galicia","macro","nacion",
+    "mercadopago","naranja","uala","brubank","bnext","wise","payoneer","paypal",
+  ],
 };
 
 function guessCategory(description: string, categories: Category[]): string {
@@ -90,8 +182,11 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
         category_id: form.category_id || null,  // never send empty string
       }),
     });
-    if (res.ok) { onSaved(); onClose(); }
-    else { setError("Error al guardar"); setSaving(false); }
+    if (res.ok) {
+      window.dispatchEvent(new Event("transaction-added"));
+      onSaved();
+      onClose();
+    } else { setError("Error al guardar"); setSaving(false); }
   }
 
   const inp: React.CSSProperties = {
