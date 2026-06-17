@@ -23,53 +23,35 @@ export default function NeoBanner() {
   if (phase === "hidden" || phase === "gone") return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 150,
-        padding: "env(safe-area-inset-top, 12px) 16px 12px",
-        transform: phase === "in" ? "translateY(-110%)" : phase === "out" ? "translateY(-110%)" : "translateY(0)",
-        transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)",
-        pointerEvents: "none",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 460,
-          margin: "0 auto",
-          pointerEvents: "auto",
-          borderRadius: 18,
-          background: "rgba(7, 20, 11, 0.94)",
-          backdropFilter: "blur(40px) saturate(240%)",
-          WebkitBackdropFilter: "blur(40px) saturate(240%)",
-          border: "0.5px solid rgba(0,200,83,0.32)",
-          boxShadow: "0 6px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px rgba(0,200,83,0.08)",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: "12px 14px 12px 12px",
-        }}
-      >
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 150,
+      padding: "env(safe-area-inset-top, 12px) 16px 12px",
+      transform: phase === "in" || phase === "out" ? "translateY(-110%)" : "translateY(0)",
+      transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)",
+      pointerEvents: "none",
+    }}>
+      <div style={{
+        maxWidth: 460, margin: "0 auto", pointerEvents: "auto",
+        borderRadius: 18,
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(40px) saturate(200%)",
+        WebkitBackdropFilter: "blur(40px) saturate(200%)",
+        border: "0.5px solid var(--glass-border)",
+        boxShadow: "0 6px 32px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05)",
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "12px 14px 12px 12px",
+      }}>
         {/* Neo avatar */}
         <Link href="/neo" onClick={dismiss} style={{ flexShrink: 0, textDecoration: "none" }}>
           <div style={{
-            width: 38,
-            height: 38,
-            borderRadius: 12,
-            background: "linear-gradient(135deg, #00C853, rgba(0,200,83,0.45))",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 0 16px rgba(0,200,83,0.30)",
+            width: 38, height: 38, borderRadius: 12,
+            background: "var(--accent)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 4px 12px var(--accent-glow)",
           }}>
             <span style={{
               fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
-              fontSize: 17,
-              fontWeight: 700,
-              color: "#060C09",
+              fontSize: 17, fontWeight: 700, color: "#FFFFFF",
             }}>N</span>
           </div>
         </Link>
@@ -85,22 +67,13 @@ export default function NeoBanner() {
         </Link>
 
         {/* Dismiss */}
-        <button
-          onClick={dismiss}
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.06)",
-            border: "0.5px solid rgba(255,255,255,0.10)",
-            color: "var(--ink-dim)",
-            fontSize: 12,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
+        <button onClick={dismiss} style={{
+          width: 26, height: 26, borderRadius: "50%",
+          background: "var(--raised)", border: "0.5px solid var(--glass-border)",
+          color: "var(--ink-dim)", fontSize: 12,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
+        }}>
           ✕
         </button>
       </div>

@@ -105,7 +105,7 @@ export default async function DashboardPage() {
         </div>
         <div
           className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
-          style={{ background: "linear-gradient(135deg, var(--accent), rgba(0,230,118,0.4))", color: "#060C09" }}
+          style={{ background: "var(--accent)", color: "#FFFFFF" }}
         >
           {(firstName?.[0] ?? "K").toUpperCase()}
         </div>

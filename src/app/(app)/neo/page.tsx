@@ -17,24 +17,22 @@ export default async function NeoPage() {
   ]);
 
   const pending = pendingRes.data ?? [];
-  const recent = recentRes.data ?? [];
-  const phones = phonesRes.data ?? [];
+  const recent  = recentRes.data ?? [];
+  const phones  = phonesRes.data ?? [];
   const hasPhone = phones.length > 0;
 
   return (
     <div className="flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center gap-3 enter-up">
-        <div
-          style={{
-            width: 44, height: 44, borderRadius: 14,
-            background: "linear-gradient(135deg, #00C853, rgba(0,200,83,0.40))",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 24px rgba(0,200,83,0.28)",
-            flexShrink: 0,
-          }}
-        >
-          <span className="display" style={{ fontSize: 20, fontWeight: 700, color: "#060C09" }}>N</span>
+        <div style={{
+          width: 44, height: 44, borderRadius: 14,
+          background: "var(--accent)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 16px var(--accent-glow)",
+          flexShrink: 0,
+        }}>
+          <span className="display" style={{ fontSize: 20, fontWeight: 700, color: "#FFFFFF" }}>N</span>
         </div>
         <div>
           <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>
@@ -44,15 +42,12 @@ export default async function NeoPage() {
             Tu asistente financiero por WhatsApp
           </p>
         </div>
-        <div
-          className="ml-auto"
-          style={{
-            display: "flex", alignItems: "center", gap: 5,
-            padding: "4px 10px", borderRadius: 999,
-            background: "rgba(0,200,83,0.10)",
-            border: "0.5px solid rgba(0,200,83,0.25)",
-          }}
-        >
+        <div className="ml-auto" style={{
+          display: "flex", alignItems: "center", gap: 5,
+          padding: "4px 10px", borderRadius: 999,
+          background: "var(--accent-soft)",
+          border: "0.5px solid var(--accent-glow)",
+        }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 6px var(--accent-glow)" }} />
           <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)" }}>Activo</span>
         </div>
@@ -64,7 +59,7 @@ export default async function NeoPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10,
-              background: "rgba(37,211,102,0.15)",
+              background: "rgba(37,211,102,0.12)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "#25d366" }}>
@@ -76,21 +71,18 @@ export default async function NeoPage() {
               <p style={{ fontSize: 11, color: "var(--ink-dim)" }}>Para que Neo reciba tus mensajes</p>
             </div>
           </div>
-          <Link
-            href="/perfil"
-            style={{
-              display: "block", textAlign: "center",
-              padding: "10px", borderRadius: 12,
-              background: "var(--accent)", color: "#060C09",
-              fontSize: 13, fontWeight: 600, textDecoration: "none",
-            }}
-          >
+          <Link href="/perfil" style={{
+            display: "block", textAlign: "center",
+            padding: "10px", borderRadius: 12,
+            background: "var(--accent)", color: "#FFFFFF",
+            fontSize: 13, fontWeight: 600, textDecoration: "none",
+          }}>
             Agregar número →
           </Link>
         </div>
       ) : (
         <div className="glass p-4 flex items-center gap-3 enter-up" data-delay="1" style={{ borderRadius: 16 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 8px var(--accent-glow)" }} />
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--positive)", boxShadow: "0 0 8px rgba(52,199,89,0.35)" }} />
           <div>
             <p style={{ fontSize: 12, color: "var(--ink)" }}>Conectado: {phones[0]?.phone_number}</p>
             <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>
@@ -100,16 +92,16 @@ export default async function NeoPage() {
         </div>
       )}
 
-      {/* Cómo usar Neo */}
+      {/* Cómo hablarle a Neo */}
       <div className="glass p-4 flex flex-col gap-3 enter-up" data-delay="2" style={{ borderRadius: 18 }}>
         <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)" }}>
           Cómo hablarle a Neo
         </p>
         {[
-          { msg: "Almuerzo 1500", desc: "Registra un gasto" },
-          { msg: "Netflix 2990 ocio", desc: "Con categoría" },
-          { msg: "Sueldo 800000 ingreso", desc: "Registra un ingreso" },
-          { msg: "Cuotas heladera 6x20000", desc: "Cuotas en pesos" },
+          { msg: "Almuerzo 1500",             desc: "Registra un gasto" },
+          { msg: "Netflix 2990 ocio",          desc: "Con categoría" },
+          { msg: "Sueldo 800000 ingreso",      desc: "Registra un ingreso" },
+          { msg: "Cuotas heladera 6x20000",    desc: "Cuotas en pesos" },
         ].map(({ msg, desc }) => (
           <div key={msg} style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
@@ -124,7 +116,7 @@ export default async function NeoPage() {
         ))}
       </div>
 
-      {/* Pendientes */}
+      {/* Pendientes de confirmación */}
       {pending.length > 0 && (
         <section className="flex flex-col gap-2 enter-up" data-delay="3">
           <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>
@@ -145,8 +137,8 @@ export default async function NeoPage() {
                 </div>
                 <span style={{
                   fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
-                  background: "rgba(255,179,0,0.12)", color: "var(--warning)",
-                  border: "0.5px solid rgba(255,179,0,0.25)",
+                  background: "rgba(255,149,0,0.10)", color: "var(--warning)",
+                  border: "0.5px solid rgba(255,149,0,0.25)",
                 }}>
                   EN ESPERA
                 </span>
@@ -156,7 +148,7 @@ export default async function NeoPage() {
         </section>
       )}
 
-      {/* Últimos procesados por Neo */}
+      {/* Últimos registros */}
       {recent.length > 0 && (
         <section className="flex flex-col gap-2 enter-up" data-delay="4">
           <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>
@@ -164,7 +156,6 @@ export default async function NeoPage() {
           </p>
           <div className="glass flex flex-col" style={{ borderRadius: 18 }}>
             {recent.slice(0, 8).map((t, i) => {
-              const cat = t.categories as unknown as { name?: string; icon?: string } | null;
               const isIncome = t.type === "income";
               return (
                 <div key={i} style={{
@@ -177,7 +168,11 @@ export default async function NeoPage() {
                     background: isIncome ? "var(--positive)" : "var(--negative)",
                   }} />
                   <p style={{ flex: 1, fontSize: 12, color: "var(--ink)", fontWeight: 500 }}>{t.description}</p>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: isIncome ? "var(--positive)" : "var(--ink)", fontFamily: "var(--font-mono, monospace)" }}>
+                  <p style={{
+                    fontSize: 12, fontWeight: 600,
+                    color: isIncome ? "var(--positive)" : "var(--ink)",
+                    fontFamily: "var(--font-mono, monospace)",
+                  }}>
                     {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                   </p>
                 </div>

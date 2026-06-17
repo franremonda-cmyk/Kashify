@@ -29,11 +29,11 @@ export const metadata: Metadata = {
   title: "Kashify",
   description: "Tus finanzas, por WhatsApp. Con Neo.",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Kashify" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Kashify" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#060C09",
+  themeColor: "#F2F2F7",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

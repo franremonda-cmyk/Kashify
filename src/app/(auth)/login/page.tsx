@@ -21,8 +21,8 @@ export default function LoginPage() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 60% 40% at 50% 0%,   rgba(0,200,83,0.10) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 30% at 80% 100%, rgba(0,80,40,0.08)  0%, transparent 60%)
+            radial-gradient(ellipse 60% 40% at 50% 0%,   rgba(123,97,255,0.07) 0%, transparent 60%),
+            radial-gradient(ellipse 40% 30% at 80% 100%, rgba(123,97,255,0.04) 0%, transparent 60%)
           `,
         }}
       />
@@ -33,9 +33,9 @@ export default function LoginPage() {
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold"
             style={{
-              background: "linear-gradient(135deg, var(--accent), rgba(0,200,83,0.5))",
-              color: "#060C09",
-              boxShadow: "0 0 32px var(--accent-glow)",
+              background: "var(--accent)",
+              color: "#FFFFFF",
+              boxShadow: "0 4px 20px var(--accent-glow)",
             }}
           >
             K
