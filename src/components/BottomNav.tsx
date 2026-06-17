@@ -56,9 +56,11 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     setForm((f) => ({ ...f, description: val }));
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      if (!form.category_id && categories.length > 0) {
+      if (categories.length > 0) {
         const guessed = guessCategory(val, categories);
         if (guessed) {
+          // Auto-apply unless user already manually picked
+          setForm((f) => ({ ...f, category_id: f.category_id || guessed }));
           setSuggestion(guessed);
         } else {
           setSuggestion(null);
@@ -67,14 +69,10 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     }, 400);
   }
 
-  function acceptSuggestion() {
-    if (suggestion) {
-      setForm((f) => ({ ...f, category_id: suggestion }));
-      setSuggestion(null);
-    }
-  }
-
   const suggestedCat = suggestion ? categories.find((c) => c.id === suggestion) : null;
+  const selectedCatName = form.category_id
+    ? categories.find((c) => c.id === form.category_id)?.name
+    : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,7 +84,11 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     const res = await fetch("/api/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
+      body: JSON.stringify({
+        ...form,
+        amount: parseFloat(form.amount),
+        category_id: form.category_id || null,  // never send empty string
+      }),
     });
     if (res.ok) { onSaved(); onClose(); }
     else { setError("Error al guardar"); setSaving(false); }
@@ -169,27 +171,15 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
               autoFocus
               onChange={(e) => handleDescriptionChange(e.target.value)}
             />
-            {/* Sugerencia de Neo */}
-            {suggestedCat && (
-              <div
-                className="flex items-center gap-2 mt-1.5 px-2"
-                style={{ fontSize: 11 }}
-              >
-                <span style={{ color: "var(--ink-dim)" }}>Neo sugiere:</span>
-                <button
-                  type="button"
-                  onClick={acceptSuggestion}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-full"
-                  style={{
-                    background: "rgba(0,200,83,0.12)",
-                    border: "0.5px solid rgba(0,200,83,0.25)",
-                    color: "var(--accent)",
-                    fontSize: 11,
-                    fontWeight: 600,
-                  }}
-                >
-                  {suggestedCat.icon} {suggestedCat.name} →
-                </button>
+            {/* Neo auto-eligió */}
+            {suggestedCat && form.category_id === suggestion && (
+              <div className="flex items-center gap-1.5 mt-1.5 px-1" style={{ fontSize: 11 }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "var(--accent)", flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="9"/><path d="M9 8v8M15 8v8"/>
+                </svg>
+                <span style={{ color: "var(--ink-dim)" }}>Neo eligió</span>
+                <span style={{ color: "var(--accent)", fontWeight: 600 }}>{suggestedCat.name}</span>
+                <span style={{ color: "var(--ink-dim)" }}>· podés cambiarlo</span>
               </div>
             )}
           </div>
@@ -214,7 +204,7 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             </select>
           </div>
 
-          {/* Categoría (manual override) */}
+          {/* Categoría */}
           <select
             style={{
               ...inp,
@@ -226,7 +216,7 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
               setSuggestion(null);
             }}
           >
-            <option value="">Categoría (opcional)</option>
+            <option value="">Sin categoría</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
           </select>
 

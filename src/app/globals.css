@@ -159,6 +159,12 @@ body {
 .enter-up  { animation: enterUp  300ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .fade-in   { animation: fadeIn   200ms ease-out both; }
 .scale-up  { animation: scaleUp  260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.metric-pop { animation: metricPop 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes metricPop {
+  from { opacity: 0.2; transform: translateY(5px) scale(0.96); }
+  to   { opacity: 1;   transform: translateY(0)   scale(1);    }
+}
 
 [data-delay="1"] { animation-delay: 60ms;  }
 [data-delay="2"] { animation-delay: 120ms; }
