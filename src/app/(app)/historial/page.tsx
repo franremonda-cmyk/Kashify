@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback, useId, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import CategoryIcon from "@/components/CategoryIcon";
 import type { Transaction } from "@/types";
 
-interface Category { id: string; name: string; icon: string; }
+interface Category { id: string; name: string; icon: string; color?: string; }
 
 const TX_TYPES = [
   { value: "expense",             label: "Gastos" },
@@ -236,9 +237,270 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
   );
 }
 
+// ─── Transaction action sheet ─────────────────────────────────────────────────
+
 const TYPE_LABELS: Record<string, string> = {
   expense: "Gasto", income: "Ingreso", conversion: "Conversión", "installment-payment": "Cuota",
 };
+
+const CURRENCIES_LIST = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP"];
+
+interface TxSheetProps {
+  tx: Transaction;
+  categories: Category[];
+  onClose: () => void;
+  onDeleted: () => void;
+  onSaved: () => void;
+}
+
+function TransactionSheet({ tx, categories, onClose, onDeleted, onSaved }: TxSheetProps) {
+  const router = useRouter();
+  const [mode, setMode]         = useState<"view" | "edit">("view");
+  const [saving, setSaving]     = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  // Edit fields
+  const [desc, setDesc]           = useState(tx.description);
+  const [amount, setAmount]       = useState(String(tx.amount));
+  const [currency, setCurrency]   = useState(tx.currency_code ?? "ARS");
+  const [date, setDate]           = useState(tx.date ?? "");
+  const [categoryId, setCategoryId] = useState(tx.category_id ?? "");
+  const [txType, setTxType]       = useState(tx.type);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const catData = (tx as any).categories ?? tx.category;
+  const isIncome  = tx.type === "income";
+  const isInstall = tx.type === "installment-payment";
+  const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
+
+  async function handleSave() {
+    setSaving(true);
+    await fetch(`/api/transactions/${tx.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: desc.trim(),
+        amount: parseFloat(amount),
+        currency_code: currency,
+        date,
+        category_id: categoryId || null,
+        type: txType,
+      }),
+    });
+    setSaving(false);
+    onSaved();
+    onClose();
+    window.dispatchEvent(new Event("transaction-added"));
+  }
+
+  async function handleDelete() {
+    setSaving(true);
+    await fetch(`/api/transactions/${tx.id}`, { method: "DELETE" });
+    setSaving(false);
+    onDeleted();
+    onClose();
+    window.dispatchEvent(new Event("transaction-added"));
+  }
+
+  const inpSm: React.CSSProperties = {
+    background: "var(--raised)", border: "0.5px solid var(--glass-border)",
+    borderRadius: 10, padding: "10px 12px", color: "var(--ink)",
+    fontSize: 13, width: "100%", outline: "none",
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: "rgba(0,0,0,0.30)", backdropFilter: "blur(6px)" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full max-w-sm flex flex-col scale-up"
+        style={{
+          borderRadius: "24px 24px 0 0",
+          background: "var(--base)",
+          border: "0.5px solid var(--glass-border)",
+          boxShadow: "0 -8px 40px rgba(0,0,0,0.14)",
+          maxHeight: "90dvh",
+          paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0" }}/>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0" }}>
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
+            {mode === "edit" ? "Editar movimiento" : "Detalle"}
+          </p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {mode === "view" && (
+              <button onClick={() => setMode("edit")}
+                style={{ fontSize: 12, padding: "5px 12px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>
+                Editar
+              </button>
+            )}
+            <button onClick={onClose}
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <div style={{ overflowY: "auto", padding: "16px 18px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+          {mode === "view" ? (
+            <>
+              {/* View mode — transaction summary */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+                  background: isIncome ? "rgba(52,199,89,0.09)" : isInstall ? "rgba(255,149,0,0.09)" : "rgba(255,59,48,0.07)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: amtColor,
+                }}>
+                  <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={22}/>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", wordBreak: "break-word" }}>{tx.description}</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 3 }}>
+                    {catData?.name ?? "Sin categoría"} · {TYPE_LABELS[tx.type] ?? tx.type}
+                  </p>
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
+                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 2 }}>Monto</p>
+                <p style={{ fontSize: 24, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
+                  {isIncome ? "+" : "−"}{tx.currency_code} {Number(tx.amount).toLocaleString("es-AR", { maximumFractionDigits: 2 })}
+                </p>
+                {tx.date && <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 4 }}>{tx.date}</p>}
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {/* Ir a categorías */}
+                <button
+                  onClick={() => { onClose(); router.push("/perfil?section=categories"); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "13px 16px", borderRadius: 14,
+                    background: "var(--raised)", border: "0.5px solid var(--glass-border)",
+                    textAlign: "left",
+                  }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Editar categoría</p>
+                    <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 1 }}>
+                      {catData?.name ? `Ir a "${catData.name}"` : "Ir a Mis categorías"}
+                    </p>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", marginLeft: "auto", flexShrink: 0 }}>
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+
+                {/* Delete */}
+                {confirmDel ? (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={handleDelete} disabled={saving}
+                      style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>
+                      Sí, eliminar
+                    </button>
+                    <button onClick={() => setConfirmDel(false)}
+                      style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDel(true)}
+                    style={{ padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "rgba(255,59,48,0.06)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
+                    Eliminar movimiento
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Edit mode */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+                {/* Tipo */}
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Tipo</p>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {TX_TYPES.map(t => {
+                      const on = txType === t.value;
+                      return (
+                        <button key={t.value} onClick={() => setTxType(t.value as typeof txType)}
+                          style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
+                            background: on ? "var(--accent-soft)" : "var(--raised)",
+                            color: on ? "var(--accent)" : "var(--ink-muted)",
+                            border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)" }}>
+                          {t.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Descripción */}
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Descripción</p>
+                  <input style={inpSm} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripción"/>
+                </div>
+
+                {/* Monto + Moneda */}
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Monto</p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={currency} onChange={e => setCurrency(e.target.value)}>
+                      {CURRENCIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <input style={inpSm} type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0"/>
+                  </div>
+                </div>
+
+                {/* Fecha */}
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Fecha</p>
+                  <input style={inpSm} type="date" value={date} onChange={e => setDate(e.target.value)}/>
+                </div>
+
+                {/* Categoría */}
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Categoría</p>
+                  <select style={inpSm} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+                    <option value="">Sin categoría</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+
+                {/* Buttons */}
+                <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+                  <button onClick={() => setMode("view")}
+                    style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
+                    Cancelar
+                  </button>
+                  <button onClick={handleSave} disabled={saving || !desc.trim() || !amount}
+                    style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: saving ? 0.6 : 1 }}>
+                    {saving ? "Guardando..." : "Guardar"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 function sortTransactions(txs: Transaction[], sort: string): Transaction[] {
   const arr = [...txs];
@@ -262,6 +524,7 @@ export default function ActividadPage() {
   const [loading, setLoading]               = useState(false);
   const [showFilter, setShowFilter]         = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
+  const [selectedTx, setSelectedTx]         = useState<Transaction | null>(null);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
@@ -290,13 +553,11 @@ export default function ActividadPage() {
 
   const sorted = sortTransactions(transactions, filters.sort);
 
-  // All currencies present in the current page (for tabs)
   const availableCurrencies = useMemo(() => {
     const set = new Set(transactions.map(t => t.currency_code ?? "ARS"));
     return Array.from(set).sort();
   }, [transactions]);
 
-  // Currency filter applied after sort
   const filtered = useMemo(() =>
     selectedCurrency
       ? sorted.filter(t => (t.currency_code ?? "ARS") === selectedCurrency)
@@ -332,6 +593,16 @@ export default function ActividadPage() {
           onClose={() => setShowFilter(false)}/>
       )}
 
+      {selectedTx && (
+        <TransactionSheet
+          tx={selectedTx}
+          categories={categories}
+          onClose={() => setSelectedTx(null)}
+          onDeleted={() => { setSelectedTx(null); fetchTransactions(); }}
+          onSaved={() => { setSelectedTx(null); fetchTransactions(); }}
+        />
+      )}
+
       <div className="flex items-center justify-between enter-up">
         <h1 className="display font-semibold" style={{ fontSize: "1.35rem", color: "var(--ink)" }}>Actividad</h1>
         <div className="flex gap-2">
@@ -340,7 +611,6 @@ export default function ActividadPage() {
         </div>
       </div>
 
-      {/* Currency tabs — filter everything: list, totals, chart */}
       {availableCurrencies.length > 1 && (
         <div className="enter-up" data-delay="1" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button
@@ -429,9 +699,19 @@ export default function ActividadPage() {
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
               const iconBg    = isIncome ? "rgba(52,199,89,0.09)" : isInstall ? "rgba(255,149,0,0.09)" : "rgba(255,59,48,0.07)";
               return (
-                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: i < filtered.length-1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTx(t)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+                    borderBottom: i < filtered.length-1 ? "0.5px solid var(--glass-border-dim)" : "none",
+                    width: "100%", textAlign: "left",
+                    background: "transparent",
+                    transition: "background 120ms ease-out",
+                  }}
+                >
                   <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: iconBg, color: amtColor }}>
-                    <CategoryIcon name={catData?.name} size={16}/>
+                    <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={16}/>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
@@ -443,7 +723,7 @@ export default function ActividadPage() {
                     </p>
                     <p style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
