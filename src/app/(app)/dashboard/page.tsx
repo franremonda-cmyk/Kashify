@@ -1,33 +1,51 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import HeroBalanceCard from "@/components/HeroBalanceCard";
-import MetricStrip from "@/components/MetricStrip";
+import DashboardOverview from "@/components/DashboardOverview";
 import DashboardClient from "./DashboardClient";
+import type { ChartMonth } from "@/components/SpendingChart";
+
+const MONTH_LABELS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     .toISOString().split("T")[0];
 
-  const [balancesRes, profileRes, pendingRes, txRes] = await Promise.all([
+  // 12-month window for chart data
+  const yearAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+    .toISOString().split("T")[0];
+
+  const [balancesRes, profileRes, pendingRes, txMonthRes, txHistoryRes] = await Promise.all([
     supabase.from("balances").select("*").eq("user_id", user.id).order("currency_code"),
     supabase.from("profiles").select("*").eq("user_id", user.id).single(),
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
-    supabase.from("transactions").select("category_id, amount, currency_code, type, description, date, categories(name, icon)")
+    // Current month for metrics + recent list
+    supabase.from("transactions")
+      .select("category_id, amount, currency_code, type, description, date, categories(name, icon)")
       .eq("user_id", user.id).is("deleted_at", null)
       .gte("date", monthStart)
       .order("created_at", { ascending: false })
-      .limit(30),
+      .limit(50),
+    // 12 months for chart
+    supabase.from("transactions")
+      .select("amount, currency_code, type, date")
+      .eq("user_id", user.id).is("deleted_at", null)
+      .gte("date", yearAgo)
+      .order("date", { ascending: true }),
   ]);
 
   const balances = balancesRes.data ?? [];
   const profile = profileRes.data;
   const pending = pendingRes.data ?? [];
-  const txAll = txRes.data ?? [];
+  const txAll = txMonthRes.data ?? [];
+  const txHistory = txHistoryRes.data ?? [];
+
+  if (!profile?.display_name) redirect("/onboarding");
 
   const primaryCurrency = profile?.primary_currency ?? "ARS";
   const sortedBalances = [
@@ -35,20 +53,49 @@ export default async function DashboardPage() {
     ...balances.filter((b) => b.currency_code !== primaryCurrency),
   ];
 
-  // Métricas del mes (moneda principal)
-  const monthlyIncome = txAll
-    .filter((t) => t.type === "income" && t.currency_code === primaryCurrency)
-    .reduce((s, t) => s + Number(t.amount), 0);
-  const monthlyExpense = txAll
-    .filter((t) => ["expense", "installment-payment"].includes(t.type) && t.currency_code === primaryCurrency)
-    .reduce((s, t) => s + Number(t.amount), 0);
+  // Per-currency monthly metrics
+  const allCurrencies = [...new Set([
+    ...txAll.map((t) => t.currency_code),
+    ...balances.map((b) => b.currency_code),
+  ])];
 
-  // Recent transactions (last 5)
+  const metrics = allCurrencies.map((currency) => ({
+    currency_code: currency,
+    income: txAll
+      .filter((t) => t.type === "income" && t.currency_code === currency)
+      .reduce((s, t) => s + Number(t.amount), 0),
+    expense: txAll
+      .filter((t) => ["expense", "installment-payment"].includes(t.type) && t.currency_code === currency)
+      .reduce((s, t) => s + Number(t.amount), 0),
+  }));
+
+  // Build chart data: 12 months per currency
+  const chartData: Record<string, ChartMonth[]> = {};
+  for (const currency of allCurrencies) {
+    const months: ChartMonth[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const monthTxs = txHistory.filter((t) => {
+        const td = new Date(t.date);
+        return t.currency_code === currency && td.getFullYear() === y && td.getMonth() === m;
+      });
+      months.push({
+        label: MONTH_LABELS[m],
+        income: monthTxs
+          .filter((t) => t.type === "income")
+          .reduce((s, t) => s + Number(t.amount), 0),
+        expense: monthTxs
+          .filter((t) => ["expense", "installment-payment"].includes(t.type))
+          .reduce((s, t) => s + Number(t.amount), 0),
+      });
+    }
+    chartData[currency] = months;
+  }
+
   const recent = txAll.slice(0, 5);
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
-
-  // Check onboarding
-  if (!profile?.display_name) redirect("/onboarding");
 
   return (
     <div className="flex flex-col gap-5">
@@ -56,7 +103,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between enter-up">
         <div>
           <p className="text-xs font-medium" style={{ color: "var(--ink-muted)" }}>
-            {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+            {now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
           <h1
             className="display font-semibold"
@@ -68,7 +115,7 @@ export default async function DashboardPage() {
         <div
           className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
           style={{
-            background: "linear-gradient(135deg, var(--accent), rgba(0,200,83,0.4))",
+            background: "linear-gradient(135deg, var(--accent), rgba(0,230,118,0.4))",
             color: "#060C09",
           }}
         >
@@ -76,20 +123,18 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Pending banner */}
+      {/* Pending Neo confirmations */}
       <DashboardClient pending={pending} userId={user.id} />
 
-      {/* Hero balance */}
-      <HeroBalanceCard balances={sortedBalances} primaryCurrency={primaryCurrency} />
-
-      {/* Métricas del mes */}
-      <MetricStrip
-        income={monthlyIncome}
-        expense={monthlyExpense}
-        currencyCode={primaryCurrency}
+      {/* Balance + metrics + chart — currency-synced */}
+      <DashboardOverview
+        balances={sortedBalances}
+        primaryCurrency={primaryCurrency}
+        metrics={metrics}
+        chartData={chartData}
       />
 
-      {/* Transacciones recientes */}
+      {/* Recent transactions */}
       {recent.length > 0 && (
         <section className="flex flex-col gap-3 enter-up" data-delay="4">
           <p className="text-xs font-medium" style={{ color: "var(--ink-muted)" }}>
@@ -109,7 +154,7 @@ export default async function DashboardPage() {
                 >
                   <div
                     className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm"
-                    style={{ background: isIncome ? "rgba(105,255,218,0.10)" : "rgba(255,255,255,0.06)" }}
+                    style={{ background: isIncome ? "rgba(48,209,88,0.10)" : "rgba(255,255,255,0.06)" }}
                   >
                     {cat?.icon ? (
                       <span>{cat.icon}</span>

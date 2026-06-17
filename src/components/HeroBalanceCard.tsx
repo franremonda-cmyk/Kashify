@@ -45,10 +45,14 @@ function useCounter(target: number, duration = 650) {
 interface Props {
   balances: Balance[];
   primaryCurrency: string;
+  selectedCurrency?: string;
+  onSelectCurrency?: (c: string) => void;
 }
 
-export default function HeroBalanceCard({ balances, primaryCurrency }: Props) {
-  const [selected, setSelected] = useState(primaryCurrency);
+export default function HeroBalanceCard({ balances, primaryCurrency, selectedCurrency, onSelectCurrency }: Props) {
+  const [internalSelected, setInternalSelected] = useState(primaryCurrency);
+  const selected = selectedCurrency ?? internalSelected;
+  const setSelected = onSelectCurrency ?? setInternalSelected;
 
   const current = balances.find((b) => b.currency_code === selected);
   const amount  = current?.amount ?? 0;
