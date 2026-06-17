@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useId, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import CategoryIcon from "@/components/CategoryIcon";
+import ImportFlow from "@/components/ImportFlow";
 import type { Transaction } from "@/types";
 
 interface Category { id: string; name: string; icon: string; color?: string; }
@@ -525,6 +526,7 @@ export default function ActividadPage() {
   const [showFilter, setShowFilter]         = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
   const [selectedTx, setSelectedTx]         = useState<Transaction | null>(null);
+  const [showImport, setShowImport]         = useState(false);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
@@ -593,6 +595,13 @@ export default function ActividadPage() {
           onClose={() => setShowFilter(false)}/>
       )}
 
+      {showImport && (
+        <ImportFlow
+          onDone={() => { setShowImport(false); fetchTransactions(); }}
+          onCancel={() => setShowImport(false)}
+        />
+      )}
+
       {selectedTx && (
         <TransactionSheet
           tx={selectedTx}
@@ -606,6 +615,7 @@ export default function ActividadPage() {
       <div className="flex items-center justify-between enter-up">
         <h1 className="display font-semibold" style={{ fontSize: "1.35rem", color: "var(--ink)" }}>Actividad</h1>
         <div className="flex gap-2">
+          <button onClick={() => setShowImport(true)} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
           <button onClick={() => window.open("/api/export?format=csv")} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>CSV</button>
           <button onClick={() => window.open("/api/export?format=xlsx")} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>Excel</button>
         </div>

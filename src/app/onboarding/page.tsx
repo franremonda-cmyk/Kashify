@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import ImportFlow from "@/components/ImportFlow";
 
 const CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU", "CLP", "GBP", "CHF"];
-const STEPS = 3;
+const STEPS = 4;
 
 const inp: React.CSSProperties = {
   background: "var(--raised)",
@@ -31,16 +32,18 @@ function ProgressDots({ step }: { step: number }) {
   );
 }
 
-type Step = 0 | 1 | 2;
+type Step = 0 | 1 | 2 | 3;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep]         = useState<Step>(0);
-  const [name, setName]         = useState("");
-  const [currency, setCurrency] = useState("ARS");
-  const [phone, setPhone]       = useState("");
-  const [saving, setSaving]     = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [step, setStep]           = useState<Step>(0);
+  const [name, setName]           = useState("");
+  const [currency, setCurrency]   = useState("ARS");
+  const [phone, setPhone]         = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [checking, setChecking]   = useState(true);
+  const [showImport, setShowImport] = useState(false);
+  const [importedCount, setImportedCount] = useState(0);
 
   const supabase = createClient();
 
@@ -85,7 +88,7 @@ export default function OnboardingPage() {
   const back = () => setStep((s) => Math.max(s - 1, 0) as Step);
 
   const STEP_CONTENT: Record<Step, React.ReactNode> = {
-    /* ── Paso 1: nombre + moneda ────────────── */
+    /* ── Paso 0: nombre + moneda ────────────── */
     0: (
       <div className="flex flex-col gap-6 scale-up">
         <div>
@@ -136,7 +139,7 @@ export default function OnboardingPage() {
       </div>
     ),
 
-    /* ── Paso 2: WhatsApp ────────────────────── */
+    /* ── Paso 1: WhatsApp ────────────────────── */
     1: (
       <div className="flex flex-col gap-6 scale-up">
         <div>
@@ -180,8 +183,91 @@ export default function OnboardingPage() {
       </div>
     ),
 
-    /* ── Paso 3: todo listo ─────────────────── */
+    /* ── Paso 2: Importar o empezar de cero ─── */
     2: (
+      <div className="flex flex-col gap-5 scale-up">
+        {showImport ? (
+          <ImportFlow
+            inline
+            defaultCurrency={currency}
+            onDone={(count) => {
+              setImportedCount(count);
+              setShowImport(false);
+              next();
+            }}
+            onCancel={() => setShowImport(false)}
+          />
+        ) : (
+          <>
+            <div>
+              <div style={{
+                width: 48, height: 48, borderRadius: 14, marginBottom: 16,
+                background: "rgba(123,97,255,0.10)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "var(--accent)",
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+              </div>
+              <h2 className="display font-bold" style={{ fontSize: "1.4rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>
+                ¿Tenés movimientos anteriores?
+              </h2>
+              <p style={{ fontSize: 13, marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
+                Podés importar tu historial desde Excel o CSV, o empezar de cero ahora mismo.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* Import option */}
+              <button
+                onClick={() => setShowImport(true)}
+                style={{
+                  padding: "16px", borderRadius: 16, textAlign: "left",
+                  background: "var(--raised)", border: "0.5px solid var(--glass-border)",
+                  display: "flex", alignItems: "center", gap: 14,
+                  transition: "all 180ms ease-out",
+                }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Importar archivo</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>Excel · CSV · Planilla de banco</p>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", marginLeft: "auto", flexShrink: 0 }}>
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+
+              {/* Start from scratch */}
+              <button
+                onClick={next}
+                style={{
+                  padding: "16px", borderRadius: 16, textAlign: "left",
+                  background: "transparent", border: "0.5px solid var(--glass-border)",
+                  display: "flex", alignItems: "center", gap: 14,
+                }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--raised)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-muted)", flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </div>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Empezar de cero</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>Neo registra todo desde hoy</p>
+                </div>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    ),
+
+    /* ── Paso 3: todo listo ─────────────────── */
+    3: (
       <div className="flex flex-col gap-6 items-center text-center scale-up">
         <div style={{
           width: 72, height: 72, borderRadius: "50%",
@@ -198,27 +284,31 @@ export default function OnboardingPage() {
             Todo listo{name ? `, ${name.split(" ")[0]}` : ""}
           </h2>
           <p style={{ fontSize: 13, marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
-            {phone.trim()
+            {importedCount > 0
+              ? `${importedCount} movimiento${importedCount !== 1 ? "s" : ""} importado${importedCount !== 1 ? "s" : ""}. Kashify ya tiene tu historial.`
+              : phone.trim()
               ? "Neo está esperando tu primer mensaje. Escribile por WhatsApp para empezar."
               : "Podés registrar gastos desde el ✚ o hablarle a Neo desde la app."}
           </p>
         </div>
-        <div style={{
-          width: "100%", padding: "14px 16px", borderRadius: 14,
-          background: "var(--base)", border: "0.5px solid var(--glass-border)",
-          boxShadow: "var(--shadow-sm)", textAlign: "left",
-        }}>
-          <p style={{ fontSize: 10, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Empezá con</p>
-          {["Almuerzo 850", "Netflix 2990 ocio", "Sueldo 500000 ingreso"].map((msg) => (
-            <div key={msg} style={{
-              fontSize: 12, padding: "7px 12px", borderRadius: 10, marginBottom: 5,
-              background: "var(--accent-soft)", color: "var(--accent)",
-              fontFamily: "var(--font-mono, monospace)",
-            }}>
-              {msg}
-            </div>
-          ))}
-        </div>
+        {importedCount === 0 && (
+          <div style={{
+            width: "100%", padding: "14px 16px", borderRadius: 14,
+            background: "var(--base)", border: "0.5px solid var(--glass-border)",
+            boxShadow: "var(--shadow-sm)", textAlign: "left",
+          }}>
+            <p style={{ fontSize: 10, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Empezá con</p>
+            {["Almuerzo 850", "Netflix 2990 ocio", "Sueldo 500000 ingreso"].map((msg) => (
+              <div key={msg} style={{
+                fontSize: 12, padding: "7px 12px", borderRadius: 10, marginBottom: 5,
+                background: "var(--accent-soft)", color: "var(--accent)",
+                fontFamily: "var(--font-mono, monospace)",
+              }}>
+                {msg}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     ),
   };
@@ -237,9 +327,11 @@ export default function OnboardingPage() {
     );
   }
 
+  // In step 2 with import open, hide the outer nav buttons
+  const hideNav = step === 2 && showImport;
+
   return (
     <div className="flex flex-col gap-8">
-      {/* Logo */}
       <div className="flex items-center gap-2">
         <div style={{
           width: 26, height: 26, borderRadius: 8,
@@ -254,54 +346,58 @@ export default function OnboardingPage() {
 
       {STEP_CONTENT[step]}
 
-      {/* Navegación */}
-      <div className="flex gap-3">
-        {step > 0 && (
-          <button onClick={back}
-            style={{
-              flex: 1, padding: "13px", borderRadius: 14, fontSize: 13, fontWeight: 500,
-              background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-              color: "var(--ink-muted)",
-            }}>
-            ← Atrás
-          </button>
-        )}
+      {!hideNav && (
+        <div className="flex gap-3">
+          {step > 0 && (
+            <button onClick={back}
+              style={{
+                flex: 1, padding: "13px", borderRadius: 14, fontSize: 13, fontWeight: 500,
+                background: "var(--raised)", border: "0.5px solid var(--glass-border)",
+                color: "var(--ink-muted)",
+              }}>
+              ← Atrás
+            </button>
+          )}
 
-        {/* Paso 2 (WhatsApp): opción de saltear */}
-        {step === 1 && (
-          <button onClick={next}
-            style={{
-              padding: "13px 16px", borderRadius: 14, fontSize: 13, fontWeight: 500,
-              background: "transparent", color: "var(--ink-dim)",
-            }}>
-            Saltear
-          </button>
-        )}
+          {/* Paso 1 (WhatsApp): opción de saltear */}
+          {step === 1 && (
+            <button onClick={next}
+              style={{
+                padding: "13px 16px", borderRadius: 14, fontSize: 13, fontWeight: 500,
+                background: "transparent", color: "var(--ink-dim)",
+              }}>
+              Saltear
+            </button>
+          )}
 
-        {step < STEPS - 1 ? (
-          <button onClick={next}
-            disabled={step === 0 && !name.trim()}
-            className="lift"
-            style={{
-              flex: 1, padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-              background: "var(--accent)", color: "#FFFFFF",
-              opacity: step === 0 && !name.trim() ? 0.35 : 1,
-            }}>
-            Continuar →
-          </button>
-        ) : (
-          <button onClick={finishOnboarding} disabled={saving}
-            className="lift"
-            style={{
-              flex: 1, padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-              background: "var(--accent)", color: "#FFFFFF",
-              boxShadow: "0 0 28px var(--accent-glow)",
-              opacity: saving ? 0.6 : 1,
-            }}>
-            {saving ? "Entrando..." : "Ir al Dashboard →"}
-          </button>
-        )}
-      </div>
+          {/* Paso 2 (importar): no muestra botón "Continuar" ya que las opciones actúan de nav */}
+          {step !== 2 && (
+            step < STEPS - 1 ? (
+              <button onClick={next}
+                disabled={step === 0 && !name.trim()}
+                className="lift"
+                style={{
+                  flex: 1, padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
+                  background: "var(--accent)", color: "#FFFFFF",
+                  opacity: step === 0 && !name.trim() ? 0.35 : 1,
+                }}>
+                Continuar →
+              </button>
+            ) : (
+              <button onClick={finishOnboarding} disabled={saving}
+                className="lift"
+                style={{
+                  flex: 1, padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
+                  background: "var(--accent)", color: "#FFFFFF",
+                  boxShadow: "0 0 28px var(--accent-glow)",
+                  opacity: saving ? 0.6 : 1,
+                }}>
+                {saving ? "Entrando..." : "Ir al Dashboard →"}
+              </button>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }
