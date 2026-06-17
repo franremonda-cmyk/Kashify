@@ -72,17 +72,10 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
             Enviá tu primer mensaje a Neo para empezar
           </p>
         ) : (
-          /*
-            Shadow fix: scroll container uses overflow-x:auto which creates a
-            new formatting context. Extra padding lets the drop-shadow render
-            outside the container bounds before the parent clips it.
-            The card itself has NO overflow:hidden so filter escapes freely.
-          */
-          <div style={{
+            <div style={{
             display: "flex", gap: 8,
-            overflowX: "auto", overflowY: "visible",
-            scrollbarWidth: "none",
-            paddingBottom: 20, paddingTop: 4, marginBottom: -8,
+            flexWrap: "wrap",
+            paddingBottom: 14,
           }}>
             {balances.map((b) => {
               const isActive = selected === b.currency_code;
@@ -94,7 +87,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: isActive ? "var(--accent)" : "var(--raised)",
                     border: isActive ? "none" : "0.5px solid var(--glass-border)",
-                    filter: isActive ? "drop-shadow(0 6px 14px rgba(123,97,255,0.45))" : "none",
+                    filter: isActive ? "drop-shadow(0 6px 14px var(--shadow-accent))" : "none",
                     transform: isActive ? "translateY(-2px)" : "translateY(0)",
                     transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
                     cursor: "pointer", outline: "none",

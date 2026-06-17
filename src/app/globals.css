@@ -43,6 +43,9 @@
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.09), 0 2px 8px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.11), 0 4px 16px rgba(0, 0, 0, 0.06);
 
+  /* Accent-tinted shadow for interactive elements (currency buttons, etc.) */
+  --shadow-accent: rgba(123, 97, 255, 0.38);
+
   /* No top-edge specular on light theme */
   --spec:    none;
   --spec-sm: none;
@@ -225,10 +228,11 @@ button, a, input, select, textarea {
   --ink:       #F0FFF4;
   --ink-muted: rgba(240, 255, 244, 0.60);
   --ink-dim:   rgba(240, 255, 244, 0.28);
-  --shadow-sm: 0 1px 4px  rgba(0,0,0,0.40);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.50);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.60);
-  --shadow-xl: 0 20px 60px rgba(0,0,0,0.70);
+  --shadow-sm: 0 1px 4px  rgba(0,200,83,0.06), 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-md: 0 4px 16px rgba(0,200,83,0.08), 0 2px 6px rgba(0,0,0,0.45);
+  --shadow-lg: 0 8px 32px rgba(0,200,83,0.10), 0 2px 8px rgba(0,0,0,0.55);
+  --shadow-xl: 0 20px 60px rgba(0,200,83,0.12), 0 4px 16px rgba(0,0,0,0.65);
+  --shadow-accent: rgba(0, 200, 83, 0.45);
 }
 [data-theme="void"] body {
   background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(0,200,83,0.07) 0%, transparent 65%);
@@ -251,10 +255,11 @@ button, a, input, select, textarea {
   --ink:       #F0F6FF;
   --ink-muted: rgba(240, 246, 255, 0.60);
   --ink-dim:   rgba(240, 246, 255, 0.28);
-  --shadow-sm: 0 1px 4px  rgba(0,0,0,0.40);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.50);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.60);
-  --shadow-xl: 0 20px 60px rgba(0,0,0,0.70);
+  --shadow-sm: 0 1px 4px  rgba(10,132,255,0.07), 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-md: 0 4px 16px rgba(10,132,255,0.09), 0 2px 6px rgba(0,0,0,0.45);
+  --shadow-lg: 0 8px 32px rgba(10,132,255,0.12), 0 2px 8px rgba(0,0,0,0.55);
+  --shadow-xl: 0 20px 60px rgba(10,132,255,0.14), 0 4px 16px rgba(0,0,0,0.65);
+  --shadow-accent: rgba(10, 132, 255, 0.45);
 }
 [data-theme="midnight"] body {
   background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(10,132,255,0.08) 0%, transparent 65%);
@@ -271,16 +276,17 @@ button, a, input, select, textarea {
   --glass-border:       rgba(120, 80, 20, 0.12);
   --glass-border-hover: rgba(120, 80, 20, 0.25);
   --glass-border-dim:   rgba(120, 80, 20, 0.06);
-  --accent:       #C8820A;
-  --accent-soft:  rgba(200, 130, 10, 0.10);
-  --accent-glow:  rgba(200, 130, 10, 0.22);
+  --accent:       #7C5400;   /* darkened for 4.9:1 contrast on white */
+  --accent-soft:  rgba(124, 84, 0, 0.10);
+  --accent-glow:  rgba(124, 84, 0, 0.22);
   --ink:       #1A1000;
   --ink-muted: rgba(26, 16, 0, 0.60);
   --ink-dim:   rgba(26, 16, 0, 0.28);
   --shadow-sm: 0 1px 4px  rgba(100,60,0,0.07);
-  --shadow-md: 0 4px 16px rgba(100,60,0,0.08);
-  --shadow-lg: 0 8px 32px rgba(100,60,0,0.09);
-  --shadow-xl: 0 20px 60px rgba(100,60,0,0.11);
+  --shadow-md: 0 4px 16px rgba(100,60,0,0.09);
+  --shadow-lg: 0 8px 32px rgba(100,60,0,0.11);
+  --shadow-xl: 0 20px 60px rgba(100,60,0,0.13);
+  --shadow-accent: rgba(124, 84, 0, 0.40);
 }
 [data-theme="sand"] body {
   background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(200,130,10,0.06) 0%, transparent 65%);

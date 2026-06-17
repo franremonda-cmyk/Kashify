@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useId } from "react";
+import { useState, useEffect, useCallback, useId, useMemo } from "react";
 import CategoryIcon from "@/components/CategoryIcon";
 import type { Transaction } from "@/types";
 
@@ -253,14 +253,15 @@ function sortTransactions(txs: Transaction[], sort: string): Transaction[] {
 }
 
 export default function ActividadPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories]     = useState<Category[]>([]);
-  const [search, setSearch]             = useState("");
-  const [filters, setFilters]           = useState<Filters>({ categories: [], types: [], sort: "date_desc" });
-  const [page, setPage]                 = useState(1);
-  const [total, setTotal]               = useState(0);
-  const [loading, setLoading]           = useState(false);
-  const [showFilter, setShowFilter]     = useState(false);
+  const [transactions, setTransactions]     = useState<Transaction[]>([]);
+  const [categories, setCategories]         = useState<Category[]>([]);
+  const [search, setSearch]                 = useState("");
+  const [filters, setFilters]               = useState<Filters>({ categories: [], types: [], sort: "date_desc" });
+  const [page, setPage]                     = useState(1);
+  const [total, setTotal]                   = useState(0);
+  const [loading, setLoading]               = useState(false);
+  const [showFilter, setShowFilter]         = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
@@ -289,12 +290,25 @@ export default function ActividadPage() {
 
   const sorted = sortTransactions(transactions, filters.sort);
 
-  const incomeTotal  = sorted.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-  const expenseTotal = sorted.filter(t => t.type === "expense" || t.type === "installment-payment").reduce((s, t) => s + Number(t.amount), 0);
+  // All currencies present in the current page (for tabs)
+  const availableCurrencies = useMemo(() => {
+    const set = new Set(transactions.map(t => t.currency_code ?? "ARS"));
+    return Array.from(set).sort();
+  }, [transactions]);
+
+  // Currency filter applied after sort
+  const filtered = useMemo(() =>
+    selectedCurrency
+      ? sorted.filter(t => (t.currency_code ?? "ARS") === selectedCurrency)
+      : sorted,
+  [sorted, selectedCurrency]);
+
+  const incomeTotal  = filtered.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+  const expenseTotal = filtered.filter(t => t.type === "expense" || t.type === "installment-payment").reduce((s, t) => s + Number(t.amount), 0);
   const net          = incomeTotal - expenseTotal;
 
   const expenseByCurrency: Record<string, Record<string, ChartEntry>> = {};
-  sorted.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
+  filtered.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const catName = (t as any).categories?.name ?? t.category?.name ?? "Otros";
     const cur = t.currency_code ?? "ARS";
@@ -326,7 +340,37 @@ export default function ActividadPage() {
         </div>
       </div>
 
-      {sorted.length > 0 && (
+      {/* Currency tabs — filter everything: list, totals, chart */}
+      {availableCurrencies.length > 1 && (
+        <div className="enter-up" data-delay="1" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button
+            onClick={() => setSelectedCurrency(null)}
+            style={{
+              padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+              background: selectedCurrency === null ? "var(--accent)" : "var(--raised)",
+              color: selectedCurrency === null ? "#FFFFFF" : "var(--ink-muted)",
+              border: selectedCurrency === null ? "none" : "0.5px solid var(--glass-border)",
+              transition: "all 180ms ease-out",
+            }}>
+            Todos
+          </button>
+          {availableCurrencies.map(c => (
+            <button key={c}
+              onClick={() => setSelectedCurrency(c === selectedCurrency ? null : c)}
+              style={{
+                padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                background: selectedCurrency === c ? "var(--accent)" : "var(--raised)",
+                color: selectedCurrency === c ? "#FFFFFF" : "var(--ink-muted)",
+                border: selectedCurrency === c ? "none" : "0.5px solid var(--glass-border)",
+                transition: "all 180ms ease-out",
+              }}>
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filtered.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }} className="enter-up" data-delay="1">
           {[
             { label: "Ingresos", value: incomeTotal, color: "var(--positive)" },
@@ -367,7 +411,7 @@ export default function ActividadPage() {
             <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Cargando...</p>
           </div>
         )}
-        {!loading && sorted.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div style={{ padding: 32, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
             <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -375,9 +419,9 @@ export default function ActividadPage() {
             <p style={{ fontSize: 13, color: "var(--ink)" }}>Sin movimientos</p>
           </div>
         )}
-        {!loading && sorted.length > 0 && (
+        {!loading && filtered.length > 0 && (
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
-            {sorted.map((t, i) => {
+            {filtered.map((t, i) => {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const catData   = (t as any).categories ?? t.category;
               const isIncome  = t.type === "income";
@@ -385,7 +429,7 @@ export default function ActividadPage() {
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
               const iconBg    = isIncome ? "rgba(52,199,89,0.09)" : isInstall ? "rgba(255,149,0,0.09)" : "rgba(255,59,48,0.07)";
               return (
-                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: i < sorted.length-1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
+                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: i < filtered.length-1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: iconBg, color: amtColor }}>
                     <CategoryIcon name={catData?.name} size={16}/>
                   </div>

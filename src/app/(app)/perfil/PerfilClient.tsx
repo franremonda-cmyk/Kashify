@@ -17,7 +17,7 @@ const THEMES = [
   { id: "arctic",   label: "Arctic",   desc: "Blanco + violeta",  preview: "#7B61FF" },
   { id: "midnight", label: "Midnight", desc: "Azul noche",        preview: "#0A84FF" },
   { id: "void",     label: "Void",     desc: "Negro total",       preview: "#30D158" },
-  { id: "sand",     label: "Sand",     desc: "Cálido + tierra",   preview: "#FF9500" },
+  { id: "sand",     label: "Sand",     desc: "Cálido + tierra",   preview: "#C8820A" },
 ] as const;
 
 const inp: React.CSSProperties = {
