@@ -13,15 +13,7 @@ const NAMES: Record<string, string> = {
   UYU: "pesos uruguayos", CLP: "pesos chilenos",
 };
 
-function compact(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (abs >= 1_000_000)     return `${(n / 1_000_000).toFixed(1)}M`;
-  if (abs >= 100_000)       return `${Math.round(n / 1_000)}K`;
-  return n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
-}
-
-function useCounter(target: number, duration = 650) {
+function useCounter(target: number, duration = 700) {
   const [value, setValue] = useState(0);
   const raf = useRef<number>(0);
   useEffect(() => {
@@ -48,15 +40,14 @@ interface Props {
 
 export default function HeroBalanceCard({ balances, primaryCurrency, selectedCurrency, onSelectCurrency }: Props) {
   const [internalSelected, setInternalSelected] = useState(primaryCurrency);
-  const selected = selectedCurrency ?? internalSelected;
+  const selected  = selectedCurrency ?? internalSelected;
   const setSelected = onSelectCurrency ?? setInternalSelected;
 
-  const current = balances.find((b) => b.currency_code === selected);
+  const current  = balances.find((b) => b.currency_code === selected);
   const amount   = current?.amount ?? 0;
   const animated = useCounter(Math.abs(amount));
   const isNeg    = amount < 0;
   const symbol   = SYMBOLS[selected] ?? selected;
-
   const formatted = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
@@ -65,91 +56,76 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
       data-delay="1"
       style={{
         borderRadius: 24,
-        background: "linear-gradient(160deg, rgba(0,230,118,0.07) 0%, rgba(255,255,255,0.03) 100%)",
-        backdropFilter: "blur(40px) saturate(220%)",
-        WebkitBackdropFilter: "blur(40px) saturate(220%)",
-        border: "0.5px solid rgba(0,230,118,0.16)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 40px rgba(0,0,0,0.55)",
-        /* no overflow:hidden — shadows on currency buttons must breathe */
+        background: "var(--base)",
+        border: "0.5px solid var(--glass-border)",
+        boxShadow: "var(--shadow-lg)",
+        overflow: "hidden",
       }}
     >
-      {/* Label */}
+      {/* Top strip — violet gradient */}
+      <div style={{
+        height: 3,
+        background: "linear-gradient(90deg, var(--accent), rgba(123,97,255,0.30))",
+        flexShrink: 0,
+      }} />
+
       <div style={{ padding: "18px 20px 0" }}>
         <p style={{
           fontSize: 9.5, fontWeight: 600, textTransform: "uppercase",
-          letterSpacing: "0.10em", color: "var(--ink-dim)", marginBottom: 14,
+          letterSpacing: "0.12em", color: "var(--ink-dim)", marginBottom: 16,
         }}>
           Balance
         </p>
 
-        {/* Currency mini-cards */}
         {balances.length === 0 ? (
           <p style={{ fontSize: 12, color: "var(--ink-dim)", paddingBottom: 18 }}>
             Enviá tu primer mensaje a Neo para empezar
           </p>
         ) : (
-          /* Scroll container — paddingBottom/Top leave room for shadows & elevation */
+          /*
+            Shadow fix: overflow:hidden on the card clips shadows.
+            Use filter:drop-shadow on the active button — filter is applied
+            AFTER compositing and is not clipped by parent overflow.
+          */
           <div style={{
-            display: "flex",
-            gap: 8,
-            overflowX: "auto",
-            scrollbarWidth: "none",
-            paddingLeft: 2,
-            paddingRight: 2,
-            paddingTop: 4,
-            paddingBottom: 14,
+            display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none",
+            paddingBottom: 16, paddingTop: 2,
           }}>
             {balances.map((b) => {
               const isActive = selected === b.currency_code;
-              const sym      = SYMBOLS[b.currency_code] ?? b.currency_code;
-              const isNegB   = b.amount < 0;
               return (
                 <button
                   key={b.currency_code}
                   onClick={() => setSelected(b.currency_code)}
                   style={{
                     flex: "0 0 auto",
-                    minWidth: 84,
-                    padding: "10px 14px 11px",
-                    borderRadius: 16,
+                    minWidth: 60,
+                    padding: "9px 14px",
+                    borderRadius: 12,
                     display: "flex",
-                    flexDirection: "column",
-                    gap: 5,
-                    alignItems: "flex-start",
-                    background: isActive
-                      ? "linear-gradient(145deg, rgba(0,230,118,0.20) 0%, rgba(0,230,118,0.09) 100%)"
-                      : "rgba(255,255,255,0.06)",
-                    border: isActive
-                      ? "0.5px solid rgba(0,230,118,0.42)"
-                      : "0.5px solid rgba(255,255,255,0.10)",
-                    boxShadow: isActive
-                      ? "inset 0 1px 0 rgba(255,255,255,0.20), 0 4px 18px rgba(0,230,118,0.22)"
-                      : "inset 0 1px 0 rgba(255,255,255,0.06)",
-                    transform: isActive ? "translateY(-3px)" : "translateY(0)",
-                    transition: "all 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: isActive ? "var(--accent)" : "var(--raised)",
+                    border: isActive ? "none" : "0.5px solid var(--glass-border)",
+                    /* drop-shadow not clipped by parent overflow */
+                    filter: isActive
+                      ? "drop-shadow(0 4px 12px rgba(123,97,255,0.38))"
+                      : "none",
+                    transform: isActive ? "translateY(-2px)" : "translateY(0)",
+                    transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
                     cursor: "pointer",
                     outline: "none",
                   }}
                 >
                   <span style={{
-                    fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: isActive ? "var(--accent)" : "var(--ink-dim)",
-                    transition: "color 200ms ease-out",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                    color: isActive ? "#FFFFFF" : "var(--ink-muted)",
+                    transition: "color 180ms ease-out",
+                    fontVariantNumeric: "tabular-nums",
                   }}>
                     {b.currency_code}
-                  </span>
-                  <span
-                    className="display"
-                    style={{
-                      fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
-                      color: isActive ? (isNegB ? "var(--negative)" : "var(--ink)") : "var(--ink-dim)",
-                      fontVariantNumeric: "tabular-nums",
-                      lineHeight: 1,
-                      transition: "color 200ms ease-out",
-                    }}
-                  >
-                    {isNegB ? "−" : ""}{sym}{compact(Math.abs(b.amount))}
                   </span>
                 </button>
               );
@@ -158,28 +134,23 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
         )}
       </div>
 
-      {/* Separator */}
+      {/* Divider */}
       {balances.length > 0 && (
-        <div style={{
-          height: "0.5px",
-          background: "linear-gradient(90deg, transparent, rgba(0,230,118,0.14), transparent)",
-          margin: "0 20px",
-        }} />
+        <div style={{ height: "0.5px", background: "var(--glass-border)", margin: "0 20px" }} />
       )}
 
-      {/* Big number */}
+      {/* Big animated number */}
       {balances.length > 0 && (
-        <div style={{ padding: "14px 20px 20px" }}>
+        <div style={{ padding: "16px 20px 22px" }}>
           <div
             className="display"
             style={{
-              fontSize: "clamp(2.2rem, 9vw, 3.2rem)",
+              fontSize: "clamp(2rem, 9vw, 3rem)",
               fontWeight: 700,
               letterSpacing: "-0.03em",
               lineHeight: 1,
               color: isNeg ? "var(--negative)" : "var(--ink)",
               fontVariantNumeric: "tabular-nums",
-              textShadow: isNeg ? "none" : "0 0 80px rgba(0,230,118,0.18)",
               wordBreak: "keep-all",
             }}
           >

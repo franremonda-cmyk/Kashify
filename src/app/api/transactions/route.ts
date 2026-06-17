@@ -16,13 +16,20 @@ export async function GET(request: Request) {
   const search = searchParams.get("search");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const sort_by  = searchParams.get("sort_by")  ?? "date";
+  const sort_dir = searchParams.get("sort_dir") ?? "desc";
+  const ascending = sort_dir === "asc";
+
+  const SORTABLE = ["date", "amount", "type", "created_at"] as const;
+  type SortCol = (typeof SORTABLE)[number];
+  const sortCol: SortCol = SORTABLE.includes(sort_by as SortCol) ? (sort_by as SortCol) : "date";
 
   let query = supabase
     .from("transactions")
     .select("*, categories(name, color, icon)", { count: "exact" })
     .eq("user_id", user.id)
     .is("deleted_at", null)
-    .order("date", { ascending: false })
+    .order(sortCol, { ascending })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 

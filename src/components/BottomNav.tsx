@@ -95,8 +95,8 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   }
 
   const inp: React.CSSProperties = {
-    background: "rgba(255,255,255,0.06)",
-    border: "0.5px solid rgba(0,200,83,0.16)",
+    background: "var(--raised)",
+    border: "0.5px solid var(--glass-border)",
     borderRadius: 12,
     padding: "11px 14px",
     color: "var(--ink)",
@@ -115,9 +115,9 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
         className="w-full max-w-sm p-5 flex flex-col gap-4 mb-16 scale-up"
         style={{
           borderRadius: 24,
-          background: "rgba(10, 20, 13, 0.96)",
+          background: "rgba(255,255,255,0.96)",
           backdropFilter: "blur(48px) saturate(260%)",
-          border: "0.5px solid rgba(0,200,83,0.26)",
+          border: "0.5px solid var(--glass-border)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), 0 24px 80px rgba(0,0,0,0.80)",
         }}
       >
@@ -129,8 +129,8 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             onClick={onClose}
             style={{
               width: 28, height: 28, borderRadius: "50%",
-              background: "rgba(255,255,255,0.07)",
-              border: "0.5px solid rgba(255,255,255,0.10)",
+              background: "var(--raised)",
+              border: "0.5px solid var(--glass-border)",
               color: "var(--ink-muted)", fontSize: 12,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}
@@ -141,7 +141,7 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {/* Tipo */}
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "rgba(255,255,255,0.04)" }}>
+          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--raised)" }}>
             {(["expense", "income"] as const).map((t) => (
               <button
                 key={t}
@@ -150,7 +150,7 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
                 className="flex-1 py-2 rounded-lg text-sm font-medium"
                 style={{
                   background: form.type === t
-                    ? t === "expense" ? "rgba(255,83,112,0.20)" : "rgba(105,255,218,0.15)"
+                    ? t === "expense" ? "rgba(255,59,48,0.10)" : "rgba(52,199,89,0.10)"
                     : "transparent",
                   color: form.type === t
                     ? t === "expense" ? "var(--negative)" : "var(--positive)"
@@ -236,7 +236,7 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             className="w-full py-3.5 rounded-xl font-semibold text-sm disabled:opacity-40"
             style={{
               background: "var(--accent)",
-              color: "#060C09",
+              color: "#FFFFFF",
               boxShadow: "0 0 24px var(--accent-glow)",
               fontSize: 15,
             }}
@@ -298,11 +298,11 @@ export default function BottomNav() {
             maxWidth: 460,
             margin: "0 auto",
             borderRadius: 9999,
-            background: "rgba(7, 14, 9, 0.92)",
-            backdropFilter: "blur(40px) saturate(220%)",
-            WebkitBackdropFilter: "blur(40px) saturate(220%)",
-            border: "0.5px solid rgba(0,200,83,0.18)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10), 0 8px 40px rgba(0,0,0,0.60), 0 2px 8px rgba(0,0,0,0.40)",
+            background: "rgba(255,255,255,0.88)",
+            backdropFilter: "blur(40px) saturate(180%)",
+            WebkitBackdropFilter: "blur(40px) saturate(180%)",
+            border: "0.5px solid var(--glass-border)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)",
             display: "flex",
             alignItems: "center",
             height: 60,
@@ -326,9 +326,9 @@ export default function BottomNav() {
               height: 52,
               borderRadius: "50%",
               background: "var(--accent)",
-              color: "#060C09",
-              border: "3.5px solid rgba(7,14,9,0.92)",
-              boxShadow: "0 0 0 1px rgba(0,200,83,0.30), 0 6px 24px rgba(0,200,83,0.40)",
+              color: "#FFFFFF",
+              border: "3px solid var(--void)",
+              boxShadow: "0 0 0 1px var(--accent-glow), 0 6px 20px var(--accent-glow)",
               fontSize: 26,
               fontWeight: 300,
               display: "flex",
@@ -397,7 +397,7 @@ function NavItem({ href, label, Icon, active, badge = 0 }: {
             height: 15,
             borderRadius: 999,
             background: "var(--negative)",
-            border: "1.5px solid rgba(7,14,9,0.92)",
+            border: "1.5px solid rgba(255,255,255,0.88)",
             fontSize: 8,
             fontWeight: 700,
             color: "white",

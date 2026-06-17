@@ -1,49 +1,51 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────
-   KASHIFY — iOS DARK / EMERALD
+   KASHIFY — ARCTIC / LIGHT
+   Minimal, iOS-inspired, calm + tech.
+   Accent: soft violet — feminine-forward
    ───────────────────────────────────────── */
 
 :root {
-  /* Backgrounds — iOS depth layers */
-  --void:    #000000;
-  --base:    #1C1C1E;
-  --raised:  #2C2C2E;
+  /* Backgrounds — Apple Light hierarchy */
+  --void:    #F2F2F7;   /* iOS system background */
+  --base:    #FFFFFF;   /* card / sidebar surface */
+  --raised:  #F2F2F7;   /* grouped inset bg */
 
-  /* Glass surfaces — iOS vibrancy materials */
-  --glass-1: rgba(28,  28,  30,  0.72);
-  --glass-2: rgba(44,  44,  46,  0.80);
-  --glass-3: rgba(58,  58,  60,  0.90);
+  /* Glass surfaces — frosted white */
+  --glass-1: rgba(255, 255, 255, 0.70);
+  --glass-2: rgba(255, 255, 255, 0.85);
+  --glass-3: rgba(255, 255, 255, 0.96);
 
-  /* Glass borders — iOS separator style */
-  --glass-border:       rgba(84, 84, 88, 0.36);
-  --glass-border-hover: rgba(84, 84, 88, 0.65);
-  --glass-border-dim:   rgba(84, 84, 88, 0.22);
+  /* Borders — iOS light separator */
+  --glass-border:       rgba(60, 60, 67, 0.13);
+  --glass-border-hover: rgba(60, 60, 67, 0.28);
+  --glass-border-dim:   rgba(60, 60, 67, 0.07);
 
-  /* Brand: Electric Emerald */
-  --accent:       #00E676;
-  --accent-soft:  rgba(0, 230, 118, 0.14);
-  --accent-glow:  rgba(0, 230, 118, 0.28);
+  /* Accent — soft violet (calm, feminine-forward, tech) */
+  --accent:       #7B61FF;
+  --accent-soft:  rgba(123, 97, 255, 0.10);
+  --accent-glow:  rgba(123, 97, 255, 0.22);
 
-  /* Semantic */
-  --positive:  #30D158;
-  --negative:  #FF453A;
-  --warning:   #FFD60A;
+  /* Semantic — iOS system colors (light variant) */
+  --positive:  #34C759;
+  --negative:  #FF3B30;
+  --warning:   #FF9500;
 
-  /* Text — iOS label hierarchy */
-  --ink:       #FFFFFF;
-  --ink-muted: rgba(235, 235, 245, 0.60);
-  --ink-dim:   rgba(235, 235, 245, 0.30);
+  /* Text — iOS label system */
+  --ink:       #000000;
+  --ink-muted: rgba(60, 60, 67, 0.60);
+  --ink-dim:   rgba(60, 60, 67, 0.28);
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px  rgba(0, 0, 0, 0.60);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.70), 0 1px 4px rgba(0, 0, 0, 0.40);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.80), 0 2px 8px rgba(0, 0, 0, 0.50);
-  --shadow-xl: 0 20px 80px rgba(0, 0, 0, 0.90), 0 4px 20px rgba(0, 0, 0, 0.60);
+  /* Shadows — airy, soft */
+  --shadow-sm: 0 1px 4px  rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.09), 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.11), 0 4px 16px rgba(0, 0, 0, 0.06);
 
-  /* Specular — top-edge highlight */
-  --spec:    inset 0 0.5px 0 rgba(255, 255, 255, 0.18);
-  --spec-sm: inset 0 0.5px 0 rgba(255, 255, 255, 0.10);
+  /* No top-edge specular on light theme */
+  --spec:    none;
+  --spec-sm: none;
 
   /* Legacy aliases */
   --bg-primary:       var(--void);
@@ -67,10 +69,9 @@ html { scroll-behavior: smooth; }
 
 body {
   background-color: var(--void);
-  /* Subtle emerald ambient — understated, not tinted */
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% 0%,
-      rgba(0, 230, 118, 0.06) 0%, transparent 60%);
+    radial-gradient(ellipse 90% 50% at 50% 0%,
+      rgba(123, 97, 255, 0.05) 0%, transparent 65%);
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans, 'DM Sans'), system-ui, sans-serif;
@@ -79,36 +80,36 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Glass Materials (iOS vibrancy style) ── */
+/* ─── Glass Materials (iOS frosted light) ─── */
 
 .glass {
   background: var(--glass-1);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
   border: 0.5px solid var(--glass-border);
   border-radius: 16px;
-  box-shadow: var(--spec), var(--shadow-md);
+  box-shadow: var(--shadow-md);
 }
 
 .glass-elevated {
   background: var(--glass-2);
-  backdrop-filter: blur(48px) saturate(200%);
-  -webkit-backdrop-filter: blur(48px) saturate(200%);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
   border: 0.5px solid var(--glass-border-hover);
   border-radius: 16px;
-  box-shadow: var(--spec), var(--shadow-lg);
+  box-shadow: var(--shadow-lg);
 }
 
 .glass-strong {
   background: var(--glass-3);
-  backdrop-filter: blur(60px) saturate(220%);
-  -webkit-backdrop-filter: blur(60px) saturate(220%);
-  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(48px) saturate(200%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%);
+  border: 0.5px solid var(--glass-border);
   border-radius: 20px;
-  box-shadow: var(--spec), var(--shadow-xl);
+  box-shadow: var(--shadow-xl);
 }
 
-/* Solid surface — no blur, for sidebars and nav */
+/* Solid surface — sidebar, bottom nav */
 .surface {
   background: var(--base);
   border-right: 0.5px solid var(--glass-border);
@@ -134,13 +135,13 @@ body {
     box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
-.lift:hover  { transform: translateY(-3px) scale(1.005); box-shadow: var(--spec), var(--shadow-lg); }
-.lift:active { transform: translateY(-1px) scale(0.99); transition-duration: 80ms; }
+.lift:hover  { transform: translateY(-2px) scale(1.005); box-shadow: var(--shadow-lg); }
+.lift:active { transform: translateY(0) scale(0.99); transition-duration: 80ms; }
 
 /* ─── Entrance animations ────────────────── */
 
 @keyframes enterUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
 @keyframes fadeIn {
@@ -151,27 +152,27 @@ body {
   from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1);    }
 }
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(0,230,118,0.28); }
-  50%       { box-shadow: 0 0 20px 4px rgba(0,230,118,0.28); }
-}
-
-.enter-up  { animation: enterUp  300ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.fade-in   { animation: fadeIn   200ms ease-out both; }
-.scale-up  { animation: scaleUp  260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.metric-pop { animation: metricPop 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-
 @keyframes metricPop {
   from { opacity: 0.2; transform: translateY(5px) scale(0.96); }
   to   { opacity: 1;   transform: translateY(0)   scale(1);    }
 }
+@keyframes pageFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
 
-[data-delay="1"] { animation-delay: 60ms;  }
-[data-delay="2"] { animation-delay: 120ms; }
-[data-delay="3"] { animation-delay: 180ms; }
-[data-delay="4"] { animation-delay: 240ms; }
-[data-delay="5"] { animation-delay: 300ms; }
-[data-delay="6"] { animation-delay: 360ms; }
+.enter-up   { animation: enterUp   300ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.fade-in    { animation: fadeIn    200ms ease-out both; }
+.scale-up   { animation: scaleUp   260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.metric-pop { animation: metricPop 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.page-fade  { animation: pageFade  240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+[data-delay="1"] { animation-delay: 50ms;  }
+[data-delay="2"] { animation-delay: 100ms; }
+[data-delay="3"] { animation-delay: 150ms; }
+[data-delay="4"] { animation-delay: 200ms; }
+[data-delay="5"] { animation-delay: 250ms; }
+[data-delay="6"] { animation-delay: 300ms; }
 
 /* ─── Focus ──────────────────────────────── */
 
@@ -186,6 +187,7 @@ button, a, input, select, textarea {
     background 140ms ease-out,
     color 140ms ease-out,
     border-color 140ms ease-out,
+    box-shadow 140ms ease-out,
     opacity 140ms ease-out;
 }
 
