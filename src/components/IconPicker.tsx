@@ -1,5 +1,6 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ICON_GROUPS, CATEGORY_COLORS, type IconDef } from "@/lib/iconList";
 import type { IconStyle } from "@/context/IconStyleContext";
 
@@ -28,15 +29,27 @@ function PreviewIcon({ def, style, color, size = 22 }: { def: IconDef; style: Ic
   return <Component size={size} weight="light" />;
 }
 
-export default function IconPicker({ selectedIcon, selectedColor, selectedStyle = "line", existingColors = [], zIndex = 1010, onSelect, onClose }: Props) {
-  const [style, setStyle]         = useState<IconStyle>(selectedStyle);
-  const [search, setSearch]       = useState("");
+export default function IconPicker({ selectedIcon, selectedColor, selectedStyle = "line", existingColors = [], zIndex = 9200, onSelect, onClose }: Props) {
+  const [style, setStyle]       = useState<IconStyle>(selectedStyle);
+  const [search, setSearch]     = useState("");
   const [pickedIcon, setPickedIcon] = useState(selectedIcon ?? "");
   const [pickedColor, setPickedColor] = useState(() => {
     if (selectedColor) return selectedColor;
     const used = new Set(existingColors.map(c => c.toLowerCase()));
     return CATEGORY_COLORS.find(c => !used.has(c.toLowerCase())) ?? CATEGORY_COLORS[0];
   });
+  const [mounted, setMounted] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    const el = overlayRef.current;
+    if (!el) return;
+    const prevent = (e: TouchEvent) => e.preventDefault();
+    el.addEventListener("touchmove", prevent, { passive: false });
+    return () => el.removeEventListener("touchmove", prevent);
+  }, [mounted]);
 
   const query = search.trim().toLowerCase();
   const filteredGroups = useMemo(() => {
@@ -52,14 +65,16 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
     onClose();
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
+      ref={overlayRef}
       style={{
         position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
         zIndex,
         display: "flex", alignItems: "flex-end", justifyContent: "center",
-        background: "rgba(0,0,0,0.40)", backdropFilter: "blur(6px)",
-        WebkitBackdropFilter: "blur(6px)",
+        background: "rgba(0,0,0,0.65)",
         touchAction: "none",
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
@@ -70,22 +85,18 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           borderRadius: "24px 24px 0 0",
           background: "var(--base)",
           border: "0.5px solid var(--glass-border)",
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.14)",
+          boxShadow: "0 -8px 40px rgba(0,0,0,0.20)",
           maxHeight: "90dvh",
           minHeight: 0,
-          touchAction: "auto",
         }}
       >
-        {/* ── Zona fija superior — nunca scrollea ── */}
+        {/* Fixed top area */}
         <div style={{ flexShrink: 0 }}>
-          {/* Handle */}
           <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0" }}/>
 
-          {/* Header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0" }}>
             <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>Elegir ícono</p>
-            <button
-              onClick={onClose}
+            <button onClick={onClose}
               style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
               ✕
             </button>
@@ -94,17 +105,8 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           {/* Style tabs */}
           <div style={{ display: "flex", gap: 6, padding: "12px 18px 0", overflowX: "auto", scrollbarWidth: "none" }}>
             {STYLE_TABS.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setStyle(t.id)}
-                style={{
-                  flexShrink: 0, padding: "6px 14px", borderRadius: 20,
-                  fontSize: 12, fontWeight: 600,
-                  background: style === t.id ? "var(--accent)" : "var(--raised)",
-                  color: style === t.id ? "#FFFFFF" : "var(--ink-muted)",
-                  border: style === t.id ? "none" : "0.5px solid var(--glass-border)",
-                  transition: "all 160ms ease-out",
-                }}>
+              <button key={t.id} onClick={() => setStyle(t.id)}
+                style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: style === t.id ? "var(--accent)" : "var(--raised)", color: style === t.id ? "#FFFFFF" : "var(--ink-muted)", border: style === t.id ? "none" : "0.5px solid var(--glass-border)", transition: "all 160ms ease-out" }}>
                 {t.label}
               </button>
             ))}
@@ -116,15 +118,8 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "var(--ink-dim)" }}>
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar ícono..."
-                style={{
-                  width: "100%", paddingLeft: 32, paddingRight: 12, paddingTop: 9, paddingBottom: 9,
-                  background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-                  borderRadius: 12, fontSize: 13, color: "var(--ink)", outline: "none",
-                }}
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ícono..."
+                style={{ width: "100%", paddingLeft: 32, paddingRight: 12, paddingTop: 9, paddingBottom: 9, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 12, fontSize: 13, color: "var(--ink)", outline: "none" }}
               />
             </div>
           </div>
@@ -134,24 +129,19 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
             <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Color</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {CATEGORY_COLORS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setPickedColor(c)}
-                  style={{
-                    width: 26, height: 26, borderRadius: "50%", background: c, flexShrink: 0,
-                    border: pickedColor === c ? `3px solid var(--ink)` : "2px solid transparent",
-                    outline: pickedColor === c ? `2px solid ${c}` : "none",
-                    outlineOffset: 1,
-                    transition: "all 120ms ease-out",
-                  }}
+                <button key={c} onClick={() => setPickedColor(c)}
+                  style={{ width: 26, height: 26, borderRadius: "50%", background: c, flexShrink: 0, border: pickedColor === c ? `3px solid var(--ink)` : "2px solid transparent", outline: pickedColor === c ? `2px solid ${c}` : "none", outlineOffset: 1, transition: "all 120ms ease-out" }}
                 />
               ))}
             </div>
           </div>
         </div>
 
-        {/* ── Zona scrolleable — grilla de íconos ── */}
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px 0", touchAction: "pan-y" }}>
+        {/* Scrollable icon grid */}
+        <div
+          style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px 0" }}
+          onTouchMove={e => e.stopPropagation()}
+        >
           {filteredGroups.length === 0 && (
             <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Sin resultados</p>
           )}
@@ -162,18 +152,8 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
                 {g.icons.map(icon => {
                   const isSelected = pickedIcon === icon.id;
                   return (
-                    <button
-                      key={icon.id}
-                      onClick={() => setPickedIcon(icon.id)}
-                      title={icon.label}
-                      style={{
-                        aspectRatio: "1", borderRadius: 12, display: "flex", flexDirection: "column",
-                        alignItems: "center", justifyContent: "center", gap: 3,
-                        background: isSelected ? pickedColor + "22" : "var(--raised)",
-                        border: isSelected ? `1.5px solid ${pickedColor}` : "0.5px solid var(--glass-border)",
-                        color: isSelected ? pickedColor : "var(--ink-muted)",
-                        transition: "all 140ms ease-out",
-                      }}>
+                    <button key={icon.id} onClick={() => setPickedIcon(icon.id)} title={icon.label}
+                      style={{ aspectRatio: "1", borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: isSelected ? pickedColor + "22" : "var(--raised)", border: isSelected ? `1.5px solid ${pickedColor}` : "0.5px solid var(--glass-border)", color: isSelected ? pickedColor : "var(--ink-muted)", transition: "all 140ms ease-out" }}>
                       <PreviewIcon def={icon} style={style} color={pickedColor} size={20} />
                     </button>
                   );
@@ -183,21 +163,15 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           ))}
         </div>
 
-        {/* ── Botón confirmar — siempre visible abajo ── */}
-        <div style={{ flexShrink: 0, padding: "10px 18px calc(12px + env(safe-area-inset-bottom, 0px))" }}>
-          <button
-            onClick={confirmSelect}
-            disabled={!pickedIcon}
-            style={{
-              width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-              background: pickedIcon ? "var(--accent)" : "var(--raised)",
-              color: pickedIcon ? "#FFFFFF" : "var(--ink-dim)",
-              transition: "all 160ms ease-out",
-            }}>
+        {/* Confirm button — extra bottom padding clears the floating nav bar */}
+        <div style={{ flexShrink: 0, padding: `10px 18px calc(16px + env(safe-area-inset-bottom, 0px))` }}>
+          <button onClick={confirmSelect} disabled={!pickedIcon}
+            style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: pickedIcon ? "var(--accent)" : "var(--raised)", color: pickedIcon ? "#FFFFFF" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
             {pickedIcon ? "Confirmar ícono" : "Seleccioná un ícono"}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 const IconPicker = dynamic(() => import("@/components/IconPicker"), { ssr: false });
 import CategoryIcon from "@/components/CategoryIcon";
@@ -33,9 +34,6 @@ const inp: React.CSSProperties = {
   outline: "none",
 };
 
-const MODAL_Z  = 1000;
-const PICKER_Z = 1010;
-
 export default function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, onClose }: Props) {
   const isNew = !cat?.id;
   const [name, setName]             = useState(cat?.name ?? "");
@@ -44,6 +42,18 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [mounted, setMounted]       = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    const el = overlayRef.current;
+    if (!el) return;
+    const prevent = (e: TouchEvent) => e.preventDefault();
+    el.addEventListener("touchmove", prevent, { passive: false });
+    return () => el.removeEventListener("touchmove", prevent);
+  }, [mounted]);
 
   async function handleSave() {
     if (!name.trim()) return;
@@ -61,17 +71,18 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
     onClose();
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
-      {/* Overlay — touch-action: none prevents iOS background scroll without body overflow:hidden */}
       <div
+        ref={overlayRef}
         style={{
           position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
-          zIndex: MODAL_Z,
+          zIndex: 9100,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(0,0,0,0.50)", backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
-          padding: "0 16px",
+          background: "rgba(0,0,0,0.72)",
+          padding: "20px 16px calc(88px + env(safe-area-inset-bottom, 0px))",
           touchAction: "none",
         }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
@@ -82,14 +93,12 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
             borderRadius: 20,
             background: "var(--base)",
             border: "0.5px solid var(--glass-border)",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.30)",
-            maxHeight: "80dvh",
+            boxShadow: "0 24px 60px rgba(0,0,0,0.40)",
+            maxHeight: "100%",
             display: "flex",
             flexDirection: "column",
-            touchAction: "auto",
           }}
         >
-          {/* Header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
             <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
               {isNew ? "Nueva categoría" : "Editar categoría"}
@@ -100,22 +109,15 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
             </button>
           </div>
 
-          <div style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", touchAction: "pan-y" }}>
-            {/* Icon preview + pick button */}
+          <div
+            style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}
+            onTouchMove={e => e.stopPropagation()}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button
                 onClick={() => setShowPicker(true)}
-                style={{
-                  width: 56, height: 56, borderRadius: 16, flexShrink: 0,
-                  background: icon ? color + "22" : "var(--raised)",
-                  border: icon ? `1.5px solid ${color}` : "1.5px dashed var(--glass-border-hover)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: icon ? color : "var(--ink-dim)", fontSize: 24,
-                }}>
-                {icon
-                  ? <CategoryIcon icon={icon} color={color} size={28} style={currentStyle} />
-                  : <span style={{ fontSize: 22 }}>＋</span>
-                }
+                style={{ width: 56, height: 56, borderRadius: 16, flexShrink: 0, background: icon ? color + "22" : "var(--raised)", border: icon ? `1.5px solid ${color}` : "1.5px dashed var(--glass-border-hover)", display: "flex", alignItems: "center", justifyContent: "center", color: icon ? color : "var(--ink-dim)", fontSize: 24 }}>
+                {icon ? <CategoryIcon icon={icon} color={color} size={28} style={currentStyle} /> : <span style={{ fontSize: 22 }}>＋</span>}
               </button>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 4 }}>
@@ -123,23 +125,14 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
                 </p>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {CATEGORY_COLORS.map(c => (
-                    <button
-                      key={c}
-                      onClick={() => setColor(c)}
-                      style={{
-                        width: 20, height: 20, borderRadius: "50%", background: c,
-                        border: color === c ? `3px solid var(--ink)` : "2px solid transparent",
-                        outline: color === c ? `2px solid ${c}` : "none",
-                        outlineOffset: 1,
-                        transition: "all 100ms ease-out",
-                      }}
+                    <button key={c} onClick={() => setColor(c)}
+                      style={{ width: 20, height: 20, borderRadius: "50%", background: c, border: color === c ? `3px solid var(--ink)` : "2px solid transparent", outline: color === c ? `2px solid ${c}` : "none", outlineOffset: 1, transition: "all 100ms ease-out" }}
                     />
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Name — no autoFocus to avoid iOS keyboard opening immediately */}
             <input
               style={inp}
               placeholder="Nombre de la categoría"
@@ -148,53 +141,36 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
               onKeyDown={e => e.key === "Enter" && handleSave()}
             />
 
-            <button
-              onClick={handleSave}
-              disabled={!name.trim() || saving}
-              style={{
-                padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-                background: name.trim() ? "var(--accent)" : "var(--raised)",
-                color: name.trim() ? "#FFFFFF" : "var(--ink-dim)",
-                transition: "all 160ms ease-out",
-              }}>
+            <button onClick={handleSave} disabled={!name.trim() || saving}
+              style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "#FFFFFF" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
               {saving ? "Guardando..." : isNew ? "Crear categoría" : "Guardar cambios"}
             </button>
 
             {!isNew && onDelete && (
               confirmDel ? (
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={handleDelete} disabled={saving}
-                    style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>
-                    Sí, eliminar
-                  </button>
-                  <button onClick={() => setConfirmDel(false)}
-                    style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
-                    Cancelar
-                  </button>
+                  <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>Sí, eliminar</button>
+                  <button onClick={() => setConfirmDel(false)} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
                 </div>
               ) : (
-                <button onClick={() => setConfirmDel(true)}
-                  style={{ padding: "10px", borderRadius: 12, fontSize: 12, color: "var(--negative)", background: "transparent", border: "0.5px solid var(--glass-border)" }}>
-                  Eliminar categoría
-                </button>
+                <button onClick={() => setConfirmDel(true)} style={{ padding: "10px", borderRadius: 12, fontSize: 12, color: "var(--negative)", background: "transparent", border: "0.5px solid var(--glass-border)" }}>Eliminar categoría</button>
               )
             )}
           </div>
         </div>
       </div>
 
-      {/* IconPicker — z-index above CategoryModal */}
       {showPicker && (
         <IconPicker
           selectedIcon={icon}
           selectedColor={color}
           selectedStyle={currentStyle}
           existingColors={existingColors}
-          zIndex={PICKER_Z}
           onSelect={(newIcon, newColor) => { setIcon(newIcon); setColor(newColor); }}
           onClose={() => setShowPicker(false)}
         />
       )}
-    </>
+    </>,
+    document.body
   );
 }
