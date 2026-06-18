@@ -32,24 +32,23 @@ const inp: React.CSSProperties = {
   color: "var(--ink)", fontSize: 14, width: "100%", outline: "none",
 };
 
-// Tonal palette: accent base (#C8820A) → lighter/darker steps, plus a neutral
-const CAT_COLORS = [
-  "#C8820A","#8B5E08","#E8A835","#6B4906","#F0C070",
-  "#3D2B03","#D4982A","#A06C0C","#F5D080","#502F00",
+const FALLBACK_COLORS = [
+  "#C8820A","#7B61FF","#34C759","#FF9500","#5AC8FA",
+  "#BF5AF2","#FF6B6B","#30D158","#FFD60A","#64D2FF",
 ];
 
-interface ChartEntry { name: string; amount: number; }
+interface ChartEntry { name: string; amount: number; color?: string; }
 
 function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
   const uid = useId().replace(/:/g,"");
   const R = 42, CX = 56, CY = 56, stroke = 10;
-  const GAP = 0.018; // gap between slices (radians fraction of circ)
+  const GAP = 0.018;
   const circ = 2 * Math.PI * R;
   let offset = 0;
   const slices = data.slice(0, 6).map((d, i) => {
     const pct = d.amount / total;
     const dash = Math.max(0, pct * circ - GAP * circ);
-    const s = { pct, dash, offset: offset + (GAP * circ) / 2, color: CAT_COLORS[i % CAT_COLORS.length], name: d.name };
+    const s = { pct, dash, offset: offset + (GAP * circ) / 2, color: d.color ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length], name: d.name };
     offset += pct * circ;
     return s;
   });
@@ -95,6 +94,7 @@ function BarChart({ data, total }: { data: ChartEntry[]; total: number }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {data.slice(0, 6).map((d, i) => {
         const pct = total > 0 ? (d.amount / total) * 100 : 0;
+        const color = d.color ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length];
         return (
           <div key={i}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
@@ -104,7 +104,7 @@ function BarChart({ data, total }: { data: ChartEntry[]; total: number }) {
               <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.amount)}</span>
             </div>
             <div style={{ height: 5, borderRadius: 3, background: "var(--raised)", overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: 3, background: CAT_COLORS[i % CAT_COLORS.length], width: `${pct}%`, transition: "width 500ms cubic-bezier(0.22,1,0.36,1)" }}/>
+              <div style={{ height: "100%", borderRadius: 3, background: color, width: `${pct}%`, transition: "width 500ms cubic-bezier(0.22,1,0.36,1)" }}/>
             </div>
           </div>
         );
@@ -583,10 +583,12 @@ export default function ActividadPage() {
   const expenseByCurrency: Record<string, Record<string, ChartEntry>> = {};
   filtered.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const catName = (t as any).categories?.name ?? t.category?.name ?? "Otros";
+    const cat = (t as any).categories ?? t.category;
+    const catName = cat?.name ?? "Otros";
+    const catColor = cat?.color ?? undefined;
     const cur = t.currency_code ?? "ARS";
     if (!expenseByCurrency[cur]) expenseByCurrency[cur] = {};
-    if (!expenseByCurrency[cur][catName]) expenseByCurrency[cur][catName] = { name: catName, amount: 0 };
+    if (!expenseByCurrency[cur][catName]) expenseByCurrency[cur][catName] = { name: catName, amount: 0, color: catColor };
     expenseByCurrency[cur][catName].amount += Number(t.amount);
   });
   const chartDataByCurrency: Record<string, ChartEntry[]> = {};
