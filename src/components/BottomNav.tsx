@@ -3,12 +3,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Fuse from "fuse.js";
 
 const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "PYG", "BOB", "COP", "PEN", "GBP"];
 
 interface Category { id: string; name: string; icon: string; }
 
-// Keyword-to-category matcher
+// ─── A: Keyword map ───────────────────────────────────────────────────────────
 const KEYWORD_MAP: Record<string, string[]> = {
   "Comida": [
     "almuerzo","cena","desayuno","pizza","sushi","resto","restaurant","comida","café","cafe",
@@ -113,38 +114,117 @@ const KEYWORD_MAP: Record<string, string[]> = {
   ],
 };
 
-// Aliases de nombre de categoría por concepto — raíces en minúsculas
+// ─── A: Concept→category name aliases ────────────────────────────────────────
 const CONCEPT_NAME_ALIASES: Record<string, string[]> = {
-  "Comida":                  ["comida", "aliment", "comer", "comest", "gastro", "cocin", "restaur", "mercado", "super", "feria"],
-  "Transporte":              ["transport", "movil", "vehicul", "traslad", "viaj corto", "movilidad"],
-  "Ocio":                    ["ocio", "entretenim", "diversi", "recreac", "esparcim", "juego", "deport", "hobby"],
-  "Hogar":                   ["hogar", "casa", "viviend", "domest", "expens", "alquil"],
-  "Salud":                   ["salud", "medic", "sanit", "clinic", "farmac", "bienestar", "cuida"],
-  "Educación":               ["educac", "aprendiz", "estudio", "escuel", "formac", "univers", "capacit"],
-  "Indumentaria":            ["induméntar", "ropa", "vestim", "moda", "calzad", "indum"],
-  "Trabajo":                 ["trabajo", "laboral", "ofic", "profesion", "negoc"],
-  "Suscripción":             ["suscripc", "subscripc", "membres", "servicio"],
-  "Mascotas":                ["mascot", "veterin", "animal", "perro", "gato"],
-  "Viajes":                  ["viaj", "turism", "vacac", "trip"],
-  "Ahorros e Inversiones":   ["ahorro", "inversion", "financ", "banco", "cripto"],
+  "Comida":                ["comida","aliment","comer","comest","gastro","cocin","restaur","mercado","super","feria","compras","viveres","diario","provisiones"],
+  "Transporte":            ["transport","movil","vehicul","traslad","movilidad","auto","moto","combusti"],
+  "Ocio":                  ["ocio","entretenim","diversi","recreac","esparcim","juego","deport","hobby","tiempo libre","placer","cultura","arte"],
+  "Hogar":                 ["hogar","casa","viviend","domest","expens","alquil","renta","propiedad","servicio","mantenimi"],
+  "Salud":                 ["salud","medic","sanit","clinic","farmac","bienestar","cuida","higiene","belleza"],
+  "Educación":             ["educac","aprendiz","estudio","escuel","formac","univers","capacit","curso","colegio"],
+  "Indumentaria":          ["indum","ropa","vestim","moda","calzad","accesorio","textil"],
+  "Trabajo":               ["trabajo","laboral","ofic","profesion","negoc","empresa","freelance"],
+  "Suscripción":           ["suscripc","subscripc","membres","plan","membresia","recurrente","mensual"],
+  "Mascotas":              ["mascot","veterin","animal","perro","gato","mascota"],
+  "Viajes":                ["viaj","turism","vacac","trip","aventura","exterior","excursion"],
+  "Ahorros e Inversiones": ["ahorro","inversion","financ","banco","cripto","capital","fondo","plazo"],
 };
 
+// ─── B: Fuse.js fuzzy index (built once at module level) ─────────────────────
+interface KwEntry { keyword: string; concept: string; }
+const KW_INDEX: KwEntry[] = [];
+for (const [concept, kws] of Object.entries(KEYWORD_MAP)) {
+  for (const kw of kws) KW_INDEX.push({ keyword: kw, concept });
+}
+const fuse = new Fuse(KW_INDEX, {
+  keys: ["keyword"],
+  threshold: 0.25,   // 0 = exact, 1 = anything — 0.25 catches 1-2 char typos
+  includeScore: true,
+  minMatchCharLength: 3,
+});
+
+// ─── C: localStorage learned associations ────────────────────────────────────
+const LEARNED_KEY = "kashify_cat_learned";
+const STOP = new Set(["el","la","los","las","un","una","de","del","en","con","para","por","que","y","o","a","al","lo","se","me","mi","su","tu"]);
+
+function loadLearned(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(LEARNED_KEY) ?? "{}"); } catch { return {}; }
+}
+
+export function saveCorrection(description: string, categoryId: string) {
+  if (!description || !categoryId) return;
+  const learned = loadLearned();
+  // Save full phrase
+  learned[description.toLowerCase().trim()] = categoryId;
+  // Save each significant word
+  description.toLowerCase().split(/[\s,.\-/]+/).forEach(w => {
+    if (w.length >= 3 && !STOP.has(w)) learned[w] = categoryId;
+  });
+  localStorage.setItem(LEARNED_KEY, JSON.stringify(learned));
+}
+
+function guessFromLearned(description: string, validIds: Set<string>): string {
+  const learned = loadLearned();
+  // Full phrase match first
+  const full = learned[description.toLowerCase().trim()];
+  if (full && validIds.has(full)) return full;
+  // Word-by-word scoring
+  const scores: Record<string, number> = {};
+  description.toLowerCase().split(/[\s,.\-/]+/).forEach(w => {
+    if (w.length < 3 || STOP.has(w)) return;
+    const id = learned[w];
+    if (id && validIds.has(id)) scores[id] = (scores[id] ?? 0) + 1;
+  });
+  const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+  return best ? best[0] : "";
+}
+
+// ─── Concept → user category matching ────────────────────────────────────────
+function findCategoryForConcept(concept: string, categories: Category[]): string {
+  const aliases = CONCEPT_NAME_ALIASES[concept] ?? [concept.toLowerCase()];
+  const m = categories.find(c => {
+    const cn = c.name.toLowerCase();
+    return cn === concept.toLowerCase() ||
+      cn.includes(concept.toLowerCase()) ||
+      concept.toLowerCase().includes(cn) ||
+      aliases.some(a => cn.includes(a) || cn.startsWith(a.slice(0, 5)));
+  });
+  return m?.id ?? "";
+}
+
+// ─── Main guesser: C → exact keywords → B fuzzy ──────────────────────────────
 function guessCategory(description: string, categories: Category[]): string {
+  const validIds = new Set(categories.map(c => c.id));
   const lower = description.toLowerCase();
-  for (const [catName, keywords] of Object.entries(KEYWORD_MAP)) {
-    if (!keywords.some((kw) => lower.includes(kw))) continue;
-    const concept = catName.toLowerCase();
-    const aliases = CONCEPT_NAME_ALIASES[catName] ?? [concept];
-    // Find the first user category whose name starts with or contains any alias stem
-    const m = categories.find(c => {
-      const cn = c.name.toLowerCase();
-      return cn === concept ||
-        cn.includes(concept) ||
-        concept.includes(cn) ||
-        aliases.some(alias => cn.includes(alias) || cn.startsWith(alias.slice(0, 5)));
-    });
-    if (m) return m.id;
+
+  // C: learned associations first
+  const learned = guessFromLearned(description, validIds);
+  if (learned) return learned;
+
+  // A: exact substring keyword match
+  for (const [concept, keywords] of Object.entries(KEYWORD_MAP)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      const id = findCategoryForConcept(concept, categories);
+      if (id) return id;
+    }
   }
+
+  // B: fuzzy match word-by-word with Fuse
+  const words = lower.split(/[\s,.\-/]+/).filter(w => w.length >= 3 && !STOP.has(w));
+  const conceptScores: Record<string, number> = {};
+  for (const word of words) {
+    const results = fuse.search(word, { limit: 3 });
+    for (const r of results) {
+      const score = 1 - (r.score ?? 1);
+      conceptScores[r.item.concept] = (conceptScores[r.item.concept] ?? 0) + score;
+    }
+  }
+  const bestConcept = Object.entries(conceptScores).sort((a, b) => b[1] - a[1])[0]?.[0];
+  if (bestConcept) {
+    const id = findCategoryForConcept(bestConcept, categories);
+    if (id) return id;
+  }
+
   return "";
 }
 
@@ -331,8 +411,11 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             }}
             value={form.category_id}
             onChange={(e) => {
-              setForm((f) => ({ ...f, category_id: e.target.value }));
+              const id = e.target.value;
+              setForm((f) => ({ ...f, category_id: id }));
               setSuggestion(null);
+              // C: save manual correction so next time this description auto-selects this category
+              if (id && form.description.trim().length >= 3) saveCorrection(form.description.trim(), id);
             }}
           >
             <option value="">Sin categoría</option>
