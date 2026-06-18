@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useIconStyle } from "@/context/IconStyleContext";
 import type { IconStyle } from "@/context/IconStyleContext";
@@ -183,6 +184,31 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           <p style={{ fontSize: 12, marginTop: 2, color: "var(--ink-dim)" }}>{email}</p>
         </div>
       </div>
+
+      {/* Secciones / accesos rápidos */}
+      <Section label="Secciones">
+        {[
+          { href: "/categorias", label: "Categorías", desc: "Editar y poner límites" },
+          { href: "/cuotas",     label: "Cuotas",     desc: "Compras financiadas" },
+          { href: "/metas",      label: "Metas de ahorro", desc: "Objetivos y progreso" },
+        ].map((s) => (
+          <Link key={s.href} href={s.href}
+            style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "10px 12px", borderRadius: 12,
+              background: "var(--raised)", border: "0.5px solid var(--glass-border)",
+              textDecoration: "none",
+            }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{s.label}</p>
+              <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}>
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </Link>
+        ))}
+      </Section>
 
       {/* Nombre */}
       <Section label="Nombre">

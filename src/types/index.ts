@@ -122,6 +122,22 @@ export interface ParsedTransaction {
   question?: string;
 }
 
+export type SavingsGoalStatus = "active" | "reached" | "archived";
+
+export interface SavingsGoal {
+  id: string;
+  user_id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  currency_code: string;
+  target_date: string | null;
+  color: string;
+  icon: string;
+  status: SavingsGoalStatus;
+  created_at: string;
+}
+
 export interface InstallmentCalculation {
   installment_amount: number;
   total_to_pay: number;

@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import PendingList from "@/components/PendingList";
+import type { PendingTransaction } from "@/types";
 
 export default async function NeoPage() {
   const supabase = await createClient();
@@ -118,34 +120,9 @@ export default async function NeoPage() {
 
       {/* Pendientes de confirmación */}
       {pending.length > 0 && (
-        <section className="flex flex-col gap-2 enter-up" data-delay="3">
-          <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>
-            Pendientes de confirmación — {pending.length}
-          </p>
-          <div className="glass flex flex-col" style={{ borderRadius: 18 }}>
-            {pending.map((t, i) => (
-              <div key={t.id} style={{
-                padding: "12px 16px",
-                borderBottom: i < pending.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-              }}>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{t.raw_text}</p>
-                  <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 2 }}>
-                    Expira {new Date(t.expires_at).toLocaleDateString("es-AR")}
-                  </p>
-                </div>
-                <span style={{
-                  fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
-                  background: "rgba(255,149,0,0.10)", color: "var(--warning)",
-                  border: "0.5px solid rgba(255,149,0,0.25)",
-                }}>
-                  EN ESPERA
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
+        <div className="enter-up" data-delay="3">
+          <PendingList pending={pending as unknown as PendingTransaction[]} />
+        </div>
       )}
 
       {/* Últimos registros */}
