@@ -47,16 +47,17 @@ function catColorOrFallback(color: string | undefined | null, name: string): str
 
 interface ChartEntry { name: string; amount: number; color?: string; }
 
-function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
+function DonutChart({ data, income }: { data: ChartEntry[]; income: number }) {
   const uid = useId().replace(/:/g,"");
   const R = 44, CX = 56, CY = 56, stroke = 6;
-  const GAP = 0.012;
+  const GAP = 0.008;
   const circ = 2 * Math.PI * R;
+  const base = income > 0 ? income : data.reduce((s, d) => s + d.amount, 0);
   let offset = 0;
   const slices = data.slice(0, 6).map((d, i) => {
-    const pct = d.amount / total;
+    const pct = Math.min(d.amount / base, 1);
     const dash = Math.max(0, pct * circ - GAP * circ);
-    const s = { pct, dash, offset: offset + (GAP * circ) / 2, color: d.color ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length], name: d.name };
+    const s = { pct, dash, offset: offset + (GAP * circ) / 2, color: d.color ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length], name: d.name, amount: d.amount };
     offset += pct * circ;
     return s;
   });
@@ -65,10 +66,13 @@ function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
     if (n >= 1_000) return `${Math.round(n/1_000)}K`;
     return String(Math.round(n));
   }
+  const totalExpense = data.reduce((s, d) => s + d.amount, 0);
   return (
     <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
       <svg width="112" height="112" viewBox="0 0 112 112" style={{ flexShrink: 0 }}>
+        {/* Track = ingresos totales */}
         <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--raised)" strokeWidth={stroke}/>
+        {/* Arcos = gastos por categoría sobre base de ingresos */}
         {slices.map((s, i) => (
           <circle key={`${uid}-${i}`} cx={CX} cy={CY} r={R} fill="none"
             stroke={s.color} strokeWidth={stroke}
@@ -76,15 +80,24 @@ function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
             strokeDashoffset={-(s.offset - circ / 4)}
             strokeLinecap="butt"/>
         ))}
-        <text x={CX} y={CY - 4} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink)" fontFamily="monospace">{fmt(total)}</text>
-        <text x={CX} y={CY + 9} textAnchor="middle" fontSize="7" fill="var(--ink-dim)" letterSpacing="0.06em">TOTAL</text>
+        {income > 0 && (
+          <>
+            <text x={CX} y={CY - 5} textAnchor="middle" fontSize="9" fill="var(--ink-dim)" letterSpacing="0.05em">INGRESOS</text>
+            <text x={CX} y={CY + 7} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)" fontFamily="monospace">{fmt(income)}</text>
+          </>
+        )}
+        {income === 0 && (
+          <text x={CX} y={CY + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)" fontFamily="monospace">{fmt(totalExpense)}</text>
+        )}
       </svg>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
         {slices.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 3, height: 14, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
             <span style={{ fontSize: 11, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-            <span style={{ fontSize: 10, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{Math.round(s.pct * 100)}%</span>
+            <span style={{ fontSize: 10, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+              {income > 0 ? `${Math.round(s.pct * 100)}%` : fmt(s.amount)}
+            </span>
           </div>
         ))}
       </div>
@@ -121,7 +134,7 @@ function BarChart({ data, total }: { data: ChartEntry[]; total: number }) {
   );
 }
 
-function ExpenseBreakdown({ data, allCurrencies }: { data: Record<string, ChartEntry[]>; allCurrencies: string[] }) {
+function ExpenseBreakdown({ data, incomeData, allCurrencies }: { data: Record<string, ChartEntry[]>; incomeData: Record<string, number>; allCurrencies: string[] }) {
   const [mode, setMode]         = useState<"donut" | "bar">("donut");
   const [currency, setCurrency] = useState(allCurrencies[0] ?? "ARS");
   const active = data[currency] ?? [];
@@ -154,7 +167,7 @@ function ExpenseBreakdown({ data, allCurrencies }: { data: Record<string, ChartE
           ))}
         </div>
       )}
-      {mode === "donut" ? <DonutChart data={active} total={total}/> : <BarChart data={active} total={total}/>}
+      {mode === "donut" ? <DonutChart data={active} income={incomeData[currency] ?? 0}/> : <BarChart data={active} total={total}/>}
     </div>
   );
 }
@@ -540,19 +553,24 @@ export default function ActividadPage() {
   const [loading, setLoading]               = useState(false);
   const [showFilter, setShowFilter]         = useState(false);
   const [primaryCurrency, setPrimaryCurrency] = useState<string>("ARS");
-  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("ARS");
   const [selectedTx, setSelectedTx]         = useState<Transaction | null>(null);
   const [showImport, setShowImport]         = useState(false);
   const currencyInitialized = useRef(false);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
-    // Fetch primary currency from profile once
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single()
-        .then(({ data }) => { if (data?.primary_currency) setPrimaryCurrency(data.primary_currency); });
+        .then(({ data }) => {
+          if (data?.primary_currency && !currencyInitialized.current) {
+            currencyInitialized.current = true;
+            setPrimaryCurrency(data.primary_currency);
+            setSelectedCurrency(data.primary_currency);
+          }
+        });
     });
   }, []);
 
@@ -585,25 +603,29 @@ export default function ActividadPage() {
   }, [transactions]);
 
   const filtered = useMemo(() =>
-    selectedCurrency
-      ? sorted.filter(t => (t.currency_code ?? "ARS") === selectedCurrency)
-      : sorted,
+    sorted.filter(t => (t.currency_code ?? "ARS") === selectedCurrency),
   [sorted, selectedCurrency]);
 
   const incomeTotal  = filtered.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
   const expenseTotal = filtered.filter(t => t.type === "expense" || t.type === "installment-payment").reduce((s, t) => s + Number(t.amount), 0);
   const net          = incomeTotal - expenseTotal;
 
+  const incomeByCurrency: Record<string, number> = {};
   const expenseByCurrency: Record<string, Record<string, ChartEntry>> = {};
-  filtered.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
+  filtered.forEach(t => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cat = (t as any).categories ?? t.category;
-    const catName = cat?.name ?? "Otros";
-    const catColor = catColorOrFallback(cat?.color, catName);
     const cur = t.currency_code ?? "ARS";
-    if (!expenseByCurrency[cur]) expenseByCurrency[cur] = {};
-    if (!expenseByCurrency[cur][catName]) expenseByCurrency[cur][catName] = { name: catName, amount: 0, color: catColor };
-    expenseByCurrency[cur][catName].amount += Number(t.amount);
+    if (t.type === "income") {
+      incomeByCurrency[cur] = (incomeByCurrency[cur] ?? 0) + Number(t.amount);
+    } else if (t.type === "expense" || t.type === "installment-payment") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cat = (t as any).categories ?? t.category;
+      const catName = cat?.name ?? "Otros";
+      const catColor = catColorOrFallback(cat?.color, catName);
+      if (!expenseByCurrency[cur]) expenseByCurrency[cur] = {};
+      if (!expenseByCurrency[cur][catName]) expenseByCurrency[cur][catName] = { name: catName, amount: 0, color: catColor };
+      expenseByCurrency[cur][catName].amount += Number(t.amount);
+    }
   });
   const chartDataByCurrency: Record<string, ChartEntry[]> = {};
   for (const [cur, byName] of Object.entries(expenseByCurrency)) {
@@ -649,20 +671,9 @@ export default function ActividadPage() {
 
       {availableCurrencies.length > 1 && (
         <div className="enter-up" data-delay="1" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <button
-            onClick={() => setSelectedCurrency(null)}
-            style={{
-              padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-              background: selectedCurrency === null ? "var(--accent)" : "var(--raised)",
-              color: selectedCurrency === null ? "#FFFFFF" : "var(--ink-muted)",
-              border: selectedCurrency === null ? "none" : "0.5px solid var(--glass-border)",
-              transition: "all 180ms ease-out",
-            }}>
-            Todos
-          </button>
           {availableCurrencies.map(c => (
             <button key={c}
-              onClick={() => setSelectedCurrency(c === selectedCurrency ? null : c)}
+              onClick={() => setSelectedCurrency(c)}
               style={{
                 padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
                 background: selectedCurrency === c ? "var(--accent)" : "var(--raised)",
@@ -709,7 +720,7 @@ export default function ActividadPage() {
         </button>
       </div>
 
-      {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} allCurrencies={chartCurrencies}/>}
+      {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies}/>}
 
       <div className="flex flex-col">
         {loading && (
