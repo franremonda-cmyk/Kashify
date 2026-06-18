@@ -139,7 +139,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
 
         {/* Scrollable icon grid */}
         <div
-          style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px 0" }}
+          style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px 0", touchAction: "pan-y" }}
           onTouchMove={e => e.stopPropagation()}
         >
           {filteredGroups.length === 0 && (

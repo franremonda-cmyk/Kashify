@@ -150,7 +150,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
           </div>
 
           <div
-            style={{ overflowY: "auto", padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 12 }}
+            style={{ overflowY: "auto", padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 12, touchAction: "pan-y" }}
             onTouchMove={e => e.stopPropagation()}
           >
             {mode === "view" ? (

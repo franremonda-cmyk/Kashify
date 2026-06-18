@@ -110,7 +110,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
           </div>
 
           <div
-            style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}
+            style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", touchAction: "pan-y" }}
             onTouchMove={e => e.stopPropagation()}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>

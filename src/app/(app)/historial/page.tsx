@@ -228,7 +228,7 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
 
         {/* Scrollable content */}
         <div
-          style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 20px", display: "flex", flexDirection: "column", gap: 20 }}
+          style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 20px", display: "flex", flexDirection: "column", gap: 20, touchAction: "pan-y" }}
           onTouchMove={e => e.stopPropagation()}
         >
           <div>
