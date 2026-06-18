@@ -40,13 +40,18 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
   });
   const [mounted, setMounted] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const scrollRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const el = overlayRef.current;
     if (!el) return;
-    const prevent = (e: TouchEvent) => e.preventDefault();
+    const prevent = (e: TouchEvent) => {
+      // Allow native scroll inside the icon grid
+      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
+      e.preventDefault();
+    };
     el.addEventListener("touchmove", prevent, { passive: false });
     return () => el.removeEventListener("touchmove", prevent);
   }, [mounted]);
@@ -139,8 +144,8 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
 
         {/* Scrollable icon grid */}
         <div
+          ref={scrollRef}
           style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px 0", touchAction: "pan-y" }}
-          onTouchMove={e => e.stopPropagation()}
         >
           {filteredGroups.length === 0 && (
             <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Sin resultados</p>

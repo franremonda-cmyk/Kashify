@@ -179,13 +179,17 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
   const [local, setLocal] = useState<Filters>({ ...filters });
   const [mounted, setMounted] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const scrollRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const el = overlayRef.current;
     if (!el) return;
-    const prevent = (e: TouchEvent) => e.preventDefault();
+    const prevent = (e: TouchEvent) => {
+      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
+      e.preventDefault();
+    };
     el.addEventListener("touchmove", prevent, { passive: false });
     return () => el.removeEventListener("touchmove", prevent);
   }, [mounted]);
@@ -228,8 +232,8 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
 
         {/* Scrollable content */}
         <div
+          ref={scrollRef}
           style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 20px", display: "flex", flexDirection: "column", gap: 20, touchAction: "pan-y" }}
-          onTouchMove={e => e.stopPropagation()}
         >
           <div>
             <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Ordenar por</p>

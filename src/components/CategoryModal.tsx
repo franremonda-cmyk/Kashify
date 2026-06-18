@@ -44,13 +44,17 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
   const [confirmDel, setConfirmDel] = useState(false);
   const [mounted, setMounted]       = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const scrollRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const el = overlayRef.current;
     if (!el) return;
-    const prevent = (e: TouchEvent) => e.preventDefault();
+    const prevent = (e: TouchEvent) => {
+      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
+      e.preventDefault();
+    };
     el.addEventListener("touchmove", prevent, { passive: false });
     return () => el.removeEventListener("touchmove", prevent);
   }, [mounted]);
@@ -110,8 +114,8 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
           </div>
 
           <div
+            ref={scrollRef}
             style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", touchAction: "pan-y" }}
-            onTouchMove={e => e.stopPropagation()}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button

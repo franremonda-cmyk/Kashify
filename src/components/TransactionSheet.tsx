@@ -38,14 +38,17 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   const [showCatModal, setShowCatModal] = useState(false);
   const [mounted, setMounted]       = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const scrollRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Prevent page scroll behind modal on iOS
   useEffect(() => {
     const el = overlayRef.current;
     if (!el) return;
-    const prevent = (e: TouchEvent) => e.preventDefault();
+    const prevent = (e: TouchEvent) => {
+      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
+      e.preventDefault();
+    };
     el.addEventListener("touchmove", prevent, { passive: false });
     return () => el.removeEventListener("touchmove", prevent);
   }, [mounted]);
@@ -150,8 +153,8 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
           </div>
 
           <div
+            ref={scrollRef}
             style={{ overflowY: "auto", padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 12, touchAction: "pan-y" }}
-            onTouchMove={e => e.stopPropagation()}
           >
             {mode === "view" ? (
               <>

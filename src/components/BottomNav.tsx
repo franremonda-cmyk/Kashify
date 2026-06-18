@@ -312,7 +312,7 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             }}
           >
             <option value="">Sin categoría</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
 
           {/* Fecha */}
