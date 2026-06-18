@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import HeroBalanceCard from "./HeroBalanceCard";
 import CategoryIcon from "./CategoryIcon";
 import SpendingChart, { type ChartMonth } from "./SpendingChart";
@@ -7,6 +8,7 @@ import type { Balance } from "@/types";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; }
 interface RecentTx {
+  id: string;
   description: string; amount: number; currency_code: string;
   type: string; date: string;
   categories?: { name?: string; icon?: string; color?: string } | null;
@@ -85,6 +87,7 @@ function MetricCard({ label, value, sym, isIncome }: {
 
 export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent }: Props) {
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
+  const router = useRouter();
 
   const m = metrics.find((x) => x.currency_code === selectedCurrency)
     ?? { currency_code: selectedCurrency, income: 0, expense: 0 };
@@ -124,9 +127,11 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
               const iconBg    = `${catColor}22`;
               const iconColor = catColor;
               return (
-                <div key={`${t.description}-${i}`} style={{
+                <button key={`${t.id}-${i}`} onClick={() => router.push(`/actividad?open=${t.id}`)} style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
                   borderBottom: i < recent.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
+                  width: "100%", textAlign: "left", background: "transparent",
+                  transition: "background 120ms ease-out",
                 }}>
                   <div style={{
                     width: 36, height: 36, borderRadius: 10, flexShrink: 0,
@@ -150,7 +155,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
                   }}>
                     {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>

@@ -49,8 +49,8 @@ interface ChartEntry { name: string; amount: number; color?: string; }
 
 function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
   const uid = useId().replace(/:/g,"");
-  const R = 42, CX = 56, CY = 56, stroke = 10;
-  const GAP = 0.018;
+  const R = 44, CX = 56, CY = 56, stroke = 6;
+  const GAP = 0.012;
   const circ = 2 * Math.PI * R;
   let offset = 0;
   const slices = data.slice(0, 6).map((d, i) => {
@@ -74,7 +74,7 @@ function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
             stroke={s.color} strokeWidth={stroke}
             strokeDasharray={`${s.dash} ${circ - s.dash}`}
             strokeDashoffset={-(s.offset - circ / 4)}
-            strokeLinecap="round"/>
+            strokeLinecap="butt"/>
         ))}
         <text x={CX} y={CY - 4} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink)" fontFamily="monospace">{fmt(total)}</text>
         <text x={CX} y={CY + 9} textAnchor="middle" fontSize="7" fill="var(--ink-dim)" letterSpacing="0.06em">TOTAL</text>
@@ -266,6 +266,12 @@ interface TxSheetProps {
 function TransactionSheet({ tx, categories, onClose, onDeleted, onSaved }: TxSheetProps) {
   const router = useRouter();
   const [mode, setMode]         = useState<"view" | "edit">("view");
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; document.documentElement.style.overflow = ""; };
+  }, []);
   const [saving, setSaving]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
 

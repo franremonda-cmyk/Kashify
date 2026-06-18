@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
     supabase.from("transactions")
-      .select("category_id, amount, currency_code, type, description, date, categories(name, icon, color)")
+      .select("id, category_id, amount, currency_code, type, description, date, categories(name, icon, color)")
       .eq("user_id", user.id).is("deleted_at", null)
       .gte("date", monthStart)
       .order("created_at", { ascending: false })
@@ -81,6 +81,7 @@ export default async function DashboardPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recent = (txAll as any[]).slice(0, 5).map((t) => ({
+    id:           t.id,
     description:  t.description,
     amount:       t.amount,
     currency_code: t.currency_code,
