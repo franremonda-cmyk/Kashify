@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useIconStyle } from "@/context/IconStyleContext";
 import type { IconStyle } from "@/context/IconStyleContext";
@@ -79,19 +79,13 @@ interface EditModalProps {
 }
 
 function useScrollLock() {
-  const scrollY = useRef(0);
   useEffect(() => {
-    scrollY.current = window.scrollY;
+    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY.current}px`;
-    document.body.style.width = "100%";
+    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      window.scrollTo(0, scrollY.current);
+      document.body.style.overflow = prev;
+      document.documentElement.style.overflow = "";
     };
   }, []);
 }
