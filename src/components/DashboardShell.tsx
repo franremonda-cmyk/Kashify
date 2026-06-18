@@ -105,11 +105,13 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
             background: "var(--base)", boxShadow: "var(--shadow-sm)",
           }}>
             {recent.map((t, i) => {
-              const cat = t.categories as { name?: string; icon?: string } | null;
+              const cat = t.categories as { name?: string; icon?: string; color?: string } | null;
               const isIncome  = t.type === "income";
               const isInstall = t.type === "installment-payment";
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
-              const iconBg    = isIncome ? "rgba(52,199,89,0.09)" : isInstall ? "rgba(255,149,0,0.09)" : "rgba(255,59,48,0.07)";
+              const catColor  = cat?.color;
+              const iconBg    = catColor ? `${catColor}22` : "var(--raised)";
+              const iconColor = catColor ?? "var(--ink-muted)";
               return (
                 <div key={`${t.description}-${i}`} style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
@@ -118,9 +120,9 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
                   <div style={{
                     width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    background: iconBg, color: amtColor,
+                    background: iconBg, color: iconColor,
                   }}>
-                    <CategoryIcon name={cat?.name} size={16} />
+                    <CategoryIcon name={cat?.name} icon={cat?.icon} color={cat?.color} size={16} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

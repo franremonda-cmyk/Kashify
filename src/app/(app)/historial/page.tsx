@@ -356,9 +356,9 @@ function TransactionSheet({ tx, categories, onClose, onDeleted, onSaved }: TxShe
               <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                  background: isIncome ? "rgba(52,199,89,0.09)" : isInstall ? "rgba(255,149,0,0.09)" : "rgba(255,59,48,0.07)",
+                  background: catData?.color ? `${catData.color}22` : "var(--raised)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  color: amtColor,
+                  color: catData?.color ?? "var(--ink-muted)",
                 }}>
                   <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={22}/>
                 </div>
@@ -719,7 +719,9 @@ export default function ActividadPage() {
               const isIncome  = t.type === "income";
               const isInstall = t.type === "installment-payment";
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
-              const iconBg    = isIncome ? "rgba(52,199,89,0.09)" : isInstall ? "rgba(255,149,0,0.09)" : "rgba(255,59,48,0.07)";
+              const catColor  = catData?.color;
+              const iconBg    = catColor ? `${catColor}22` : "var(--raised)";
+              const iconColor = catColor ?? "var(--ink-muted)";
               return (
                 <button
                   key={t.id}
@@ -732,7 +734,7 @@ export default function ActividadPage() {
                     transition: "background 120ms ease-out",
                   }}
                 >
-                  <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: iconBg, color: amtColor }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: iconBg, color: iconColor }}>
                     <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={16}/>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
