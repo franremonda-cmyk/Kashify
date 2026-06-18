@@ -1,9 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import HeroBalanceCard from "./HeroBalanceCard";
 import CategoryIcon from "./CategoryIcon";
 import SpendingChart, { type ChartMonth } from "./SpendingChart";
+import TransactionSheet from "./TransactionSheet";
 import type { Balance } from "@/types";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; }
@@ -13,6 +13,7 @@ interface RecentTx {
   type: string; date: string;
   categories?: { name?: string; icon?: string; color?: string } | null;
 }
+interface Category { id: string; name: string; icon?: string; color?: string; }
 
 const FALLBACK_COLORS = [
   "#C8820A","#7B61FF","#34C759","#FF9500","#5AC8FA",
@@ -87,7 +88,12 @@ function MetricCard({ label, value, sym, isIncome }: {
 
 export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent }: Props) {
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
-  const router = useRouter();
+  const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
+  }, []);
 
   const m = metrics.find((x) => x.currency_code === selectedCurrency)
     ?? { currency_code: selectedCurrency, income: 0, expense: 0 };
@@ -127,7 +133,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
               const iconBg    = `${catColor}22`;
               const iconColor = catColor;
               return (
-                <button key={`${t.id}-${i}`} onClick={() => router.push(`/historial?open=${t.id}`)} style={{
+                <button key={`${t.id}-${i}`} onClick={() => setSelectedTx(t)} style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
                   borderBottom: i < recent.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
                   width: "100%", textAlign: "left", background: "transparent",
@@ -165,6 +171,17 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
       <div className="enter-up" data-delay="4">
         <SpendingChart data={chartMonths} currencySymbol={sym} />
       </div>
+
+      {selectedTx && (
+        <TransactionSheet
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          tx={selectedTx as any}
+          categories={categories}
+          onClose={() => setSelectedTx(null)}
+          onDeleted={() => setSelectedTx(null)}
+          onSaved={() => setSelectedTx(null)}
+        />
+      )}
     </div>
   );
 }

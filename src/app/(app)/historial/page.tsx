@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback, useId, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
 import dynamic from "next/dynamic";
 const ImportFlow = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
+import TransactionSheet from "@/components/TransactionSheet";
 import type { Transaction } from "@/types";
 
 interface Category { id: string; name: string; icon: string; color?: string; }
@@ -15,6 +15,10 @@ const TX_TYPES = [
   { value: "installment-payment", label: "Cuotas" },
   { value: "conversion",          label: "Conversiones" },
 ];
+
+const TYPE_LABELS: Record<string, string> = {
+  expense: "Gasto", income: "Ingreso", conversion: "Conversión", "installment-payment": "Cuota",
+};
 
 const SORT_OPTIONS = [
   { value: "date_desc",    label: "Más reciente" },
@@ -253,271 +257,6 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
   );
 }
 
-// ─── Transaction action sheet ─────────────────────────────────────────────────
-
-const TYPE_LABELS: Record<string, string> = {
-  expense: "Gasto", income: "Ingreso", conversion: "Conversión", "installment-payment": "Cuota",
-};
-
-const CURRENCIES_LIST = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP"];
-
-interface TxSheetProps {
-  tx: Transaction;
-  categories: Category[];
-  onClose: () => void;
-  onDeleted: () => void;
-  onSaved: () => void;
-}
-
-function TransactionSheet({ tx, categories, onClose, onDeleted, onSaved }: TxSheetProps) {
-  const router = useRouter();
-  const [mode, setMode]         = useState<"view" | "edit">("view");
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; document.documentElement.style.overflow = ""; };
-  }, []);
-  const [saving, setSaving]     = useState(false);
-  const [confirmDel, setConfirmDel] = useState(false);
-
-  // Edit fields
-  const [desc, setDesc]           = useState(tx.description);
-  const [amount, setAmount]       = useState(String(tx.amount));
-  const [currency, setCurrency]   = useState(tx.currency_code ?? "ARS");
-  const [date, setDate]           = useState(tx.date ?? "");
-  const [categoryId, setCategoryId] = useState(tx.category_id ?? "");
-  const [txType, setTxType]       = useState(tx.type);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const catData = (tx as any).categories ?? tx.category;
-  const isIncome  = tx.type === "income";
-  const isInstall = tx.type === "installment-payment";
-  const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
-
-  async function handleSave() {
-    setSaving(true);
-    await fetch(`/api/transactions/${tx.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        description: desc.trim(),
-        amount: parseFloat(amount),
-        currency_code: currency,
-        date,
-        category_id: categoryId || null,
-        type: txType,
-      }),
-    });
-    setSaving(false);
-    onSaved();
-    onClose();
-    window.dispatchEvent(new Event("transaction-added"));
-  }
-
-  async function handleDelete() {
-    setSaving(true);
-    await fetch(`/api/transactions/${tx.id}`, { method: "DELETE" });
-    setSaving(false);
-    onDeleted();
-    onClose();
-    window.dispatchEvent(new Event("transaction-added"));
-  }
-
-  const inpSm: React.CSSProperties = {
-    background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-    borderRadius: 10, padding: "10px 12px", color: "var(--ink)",
-    fontSize: 13, width: "100%", outline: "none",
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.40)", backdropFilter: "blur(8px)", padding: "0 16px" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        className="w-full max-w-sm flex flex-col scale-up"
-        style={{
-          borderRadius: 20,
-          background: "var(--base)",
-          border: "0.5px solid var(--glass-border)",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.30)",
-          maxHeight: "88dvh",
-        }}
-      >
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
-          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
-            {mode === "edit" ? "Editar movimiento" : "Detalle"}
-          </p>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {mode === "view" && (
-              <button onClick={() => setMode("edit")}
-                style={{ fontSize: 12, padding: "5px 12px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>
-                Editar
-              </button>
-            )}
-            <button onClick={onClose}
-              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <div style={{ overflowY: "auto", padding: "16px 18px 0", display: "flex", flexDirection: "column", gap: 12 }}>
-          {mode === "view" ? (
-            <>
-              {/* View mode — transaction summary */}
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                  background: catData?.color ? `${catData.color}22` : "var(--raised)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: catData?.color ?? "var(--ink-muted)",
-                }}>
-                  <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={22}/>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", wordBreak: "break-word" }}>{tx.description}</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 3 }}>
-                    {catData?.name ?? "Sin categoría"} · {TYPE_LABELS[tx.type] ?? tx.type}
-                  </p>
-                </div>
-              </div>
-
-              {/* Amount */}
-              <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
-                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 2 }}>Monto</p>
-                <p style={{ fontSize: 24, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
-                  {isIncome ? "+" : "−"}{tx.currency_code} {Number(tx.amount).toLocaleString("es-AR", { maximumFractionDigits: 2 })}
-                </p>
-                {tx.date && <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 4 }}>{tx.date}</p>}
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {/* Ir a categorías */}
-                <button
-                  onClick={() => { onClose(); router.push("/perfil?section=categories"); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "13px 16px", borderRadius: 14,
-                    background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-                    textAlign: "left",
-                  }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", flexShrink: 0 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Editar categoría</p>
-                    <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 1 }}>
-                      {catData?.name ? `Ir a "${catData.name}"` : "Ir a Mis categorías"}
-                    </p>
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", marginLeft: "auto", flexShrink: 0 }}>
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </button>
-
-                {/* Delete */}
-                {confirmDel ? (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={handleDelete} disabled={saving}
-                      style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>
-                      Sí, eliminar
-                    </button>
-                    <button onClick={() => setConfirmDel(false)}
-                      style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
-                      Cancelar
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setConfirmDel(true)}
-                    style={{ padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "rgba(255,59,48,0.06)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
-                    Eliminar movimiento
-                  </button>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Edit mode */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-
-                {/* Tipo */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Tipo</p>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {TX_TYPES.map(t => {
-                      const on = txType === t.value;
-                      return (
-                        <button key={t.value} onClick={() => setTxType(t.value as typeof txType)}
-                          style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
-                            background: on ? "var(--accent-soft)" : "var(--raised)",
-                            color: on ? "var(--accent)" : "var(--ink-muted)",
-                            border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)" }}>
-                          {t.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Descripción */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Descripción</p>
-                  <input style={inpSm} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripción"/>
-                </div>
-
-                {/* Monto + Moneda */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Monto</p>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={currency} onChange={e => setCurrency(e.target.value)}>
-                      {CURRENCIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <input style={inpSm} type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0"/>
-                  </div>
-                </div>
-
-                {/* Fecha */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Fecha</p>
-                  <input style={inpSm} type="date" value={date} onChange={e => setDate(e.target.value)}/>
-                </div>
-
-                {/* Categoría */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Categoría</p>
-                  <select style={inpSm} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
-                    <option value="">Sin categoría</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-
-                {/* Buttons */}
-                <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
-                  <button onClick={() => setMode("view")}
-                    style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
-                    Cancelar
-                  </button>
-                  <button onClick={handleSave} disabled={saving || !desc.trim() || !amount}
-                    style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: saving ? 0.6 : 1 }}>
-                    {saving ? "Guardando..." : "Guardar"}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 function sortTransactions(txs: Transaction[], sort: string): Transaction[] {
@@ -545,6 +284,7 @@ export default function ActividadPage() {
   const [selectedCurrency, setSelectedCurrency] = useState<string>("ARS");
   const [selectedTx, setSelectedTx]         = useState<Transaction | null>(null);
   const [showImport, setShowImport]         = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const currencyInitialized = useRef(false);
 
   useEffect(() => {
@@ -651,10 +391,39 @@ export default function ActividadPage() {
 
       <div className="flex items-center justify-between enter-up">
         <h1 className="display font-semibold" style={{ fontSize: "1.35rem", color: "var(--ink)" }}>Actividad</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2" style={{ position: "relative" }}>
           <button onClick={() => setShowImport(true)} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
-          <button onClick={() => window.open("/api/export?format=csv")} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>CSV</button>
-          <button onClick={() => window.open("/api/export?format=xlsx")} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>Excel</button>
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setShowExportMenu(v => !v)}
+              style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+              ↓ Exportar
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ opacity: 0.6 }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            {showExportMenu && (
+              <>
+                <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setShowExportMenu(false)} />
+                <div style={{
+                  position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 20,
+                  background: "var(--base)", border: "0.5px solid var(--glass-border)",
+                  borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
+                  minWidth: 130, overflow: "hidden",
+                }}>
+                  <button onClick={() => { window.open("/api/export?format=csv"); setShowExportMenu(false); }}
+                    style={{ display: "block", width: "100%", padding: "10px 14px", textAlign: "left", fontSize: 12, color: "var(--ink)", background: "transparent" }}>
+                    CSV
+                  </button>
+                  <div style={{ height: "0.5px", background: "var(--glass-border)" }} />
+                  <button onClick={() => { window.open("/api/export?format=xlsx"); setShowExportMenu(false); }}
+                    style={{ display: "block", width: "100%", padding: "10px 14px", textAlign: "left", fontSize: 12, color: "var(--ink)", background: "transparent" }}>
+                    Excel (.xlsx)
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

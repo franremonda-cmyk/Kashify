@@ -4,9 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useIconStyle } from "@/context/IconStyleContext";
 import type { IconStyle } from "@/context/IconStyleContext";
 import CategoryIcon from "@/components/CategoryIcon";
-import dynamic from "next/dynamic";
-const IconPicker = dynamic(() => import("@/components/IconPicker"), { ssr: false });
-import { suggestColor, CATEGORY_COLORS } from "@/lib/iconList";
+import CategoryModal from "@/components/CategoryModal";
 import type { Profile } from "@/types";
 
 interface UserPhone { id: string; phone_number: string; verified: boolean }
@@ -67,192 +65,6 @@ function SaveButton({ onClick, saving, label = "Guardar" }: { onClick: () => voi
   );
 }
 
-// ─── Category edit modal ──────────────────────────────────────────────────────
-
-interface EditModalProps {
-  cat?: Category;                // undefined = create new
-  existingColors: string[];
-  currentStyle: IconStyle;
-  onSave: (cat: Partial<Category>) => Promise<void>;
-  onDelete?: () => Promise<void>;
-  onClose: () => void;
-}
-
-function useScrollLock() {
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-      document.documentElement.style.overflow = "";
-    };
-  }, []);
-}
-
-function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, onClose }: EditModalProps) {
-  const isNew = !cat;
-  const [name, setName]         = useState(cat?.name ?? "");
-  const [icon, setIcon]         = useState(cat?.icon ?? "");
-  const [color, setColor]       = useState(cat?.color ?? suggestColor(existingColors));
-  const [showPicker, setShowPicker] = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const [confirmDel, setConfirmDel] = useState(false);
-  useScrollLock();
-
-  async function handleSave() {
-    if (!name.trim()) return;
-    setSaving(true);
-    await onSave({ name: name.trim(), icon: icon || undefined, color: color || undefined });
-    setSaving(false);
-    onClose();
-  }
-
-  async function handleDelete() {
-    if (!onDelete) return;
-    setSaving(true);
-    await onDelete();
-    setSaving(false);
-    onClose();
-  }
-
-  return (
-    <>
-      <div
-        className="fixed inset-0 z-40 flex items-center justify-center"
-        style={{ background: "rgba(0,0,0,0.40)", backdropFilter: "blur(8px)", padding: "0 16px" }}
-        onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      >
-        <div
-          className="w-full max-w-sm flex flex-col"
-          style={{
-            borderRadius: 20,
-            background: "var(--base)",
-            border: "0.5px solid var(--glass-border)",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.30)",
-            maxHeight: "88dvh",
-          }}
-        >
-          {/* Header */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
-              {isNew ? "Nueva categoría" : "Editar categoría"}
-            </p>
-            <button onClick={onClose}
-              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              ✕
-            </button>
-          </div>
-
-          <div style={{ padding: "16px 18px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
-            {/* Icon preview + pick button */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <button
-                onClick={() => setShowPicker(true)}
-                style={{
-                  width: 56, height: 56, borderRadius: 16, flexShrink: 0,
-                  background: icon ? color + "22" : "var(--raised)",
-                  border: icon ? `1.5px solid ${color}` : "1.5px dashed var(--glass-border-hover)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: icon ? color : "var(--ink-dim)", fontSize: 24,
-                }}>
-                {icon
-                  ? <CategoryIcon icon={icon} color={color} size={28} style={currentStyle} />
-                  : <span style={{ fontSize: 22 }}>＋</span>
-                }
-              </button>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 4 }}>
-                  {icon ? "Toca para cambiar el ícono" : "Toca para elegir un ícono"}
-                </p>
-                {/* Color swatches inline */}
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {CATEGORY_COLORS.map(c => (
-                    <button
-                      key={c}
-                      onClick={() => setColor(c)}
-                      style={{
-                        width: 20, height: 20, borderRadius: "50%", background: c,
-                        border: color === c ? `3px solid var(--ink)` : "2px solid transparent",
-                        outline: color === c ? `2px solid ${c}` : "none",
-                        outlineOffset: 1,
-                        transition: "all 100ms ease-out",
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Name input */}
-            <input
-              style={inp}
-              placeholder="Nombre de la categoría"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleSave()}
-              autoFocus
-            />
-
-            {/* Save */}
-            <button
-              onClick={handleSave}
-              disabled={!name.trim() || saving}
-              style={{
-                padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-                background: name.trim() ? "var(--accent)" : "var(--raised)",
-                color: name.trim() ? "#FFFFFF" : "var(--ink-dim)",
-                transition: "all 160ms ease-out",
-              }}>
-              {saving ? "Guardando..." : isNew ? "Crear categoría" : "Guardar cambios"}
-            </button>
-
-            {/* Delete */}
-            {!isNew && onDelete && (
-              confirmDel ? (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={handleDelete}
-                    disabled={saving}
-                    style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>
-                    Sí, eliminar
-                  </button>
-                  <button
-                    onClick={() => setConfirmDel(false)}
-                    style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setConfirmDel(true)}
-                  style={{ padding: "10px", borderRadius: 12, fontSize: 12, color: "var(--negative)", background: "transparent", border: "0.5px solid var(--glass-border)" }}>
-                  Eliminar categoría
-                </button>
-              )
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Icon picker renders on top (z-50) */}
-      {showPicker && (
-        <IconPicker
-          selectedIcon={icon}
-          selectedColor={color}
-          selectedStyle={currentStyle}
-          existingColors={existingColors}
-          onSelect={(newIcon, newColor, _style) => {
-            setIcon(newIcon);
-            setColor(newColor);
-          }}
-          onClose={() => setShowPicker(false)}
-        />
-      )}
-    </>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PerfilClient({ profile, phones, email }: Props) {
@@ -269,7 +81,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
   const { iconStyle, setIconStyle } = useIconStyle();
 
-  // Categories state
   const [categories, setCategories] = useState<Category[]>([]);
   const [catLoading, setCatLoading] = useState(true);
   const [editingCat, setEditingCat] = useState<Category | null | "new">(null);
@@ -477,7 +288,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                   background: "var(--raised)", border: "0.5px solid var(--glass-border)",
                   textAlign: "left", width: "100%",
                 }}>
-                {/* Icon dot */}
                 <div style={{
                   width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                   background: (cat.color ?? "var(--accent)") + "22",
@@ -488,9 +298,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                   <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={18} />
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", flex: 1 }}>{cat.name}</span>
-                {/* Color badge */}
                 {cat.color && <div style={{ width: 10, height: 10, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />}
-                {/* Edit caret */}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}>
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
@@ -498,7 +306,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             ))}
           </div>
         )}
-        {/* Add new category */}
         <button
           onClick={() => setEditingCat("new")}
           style={{
@@ -580,10 +387,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           currentStyle={iconStyle}
           onSave={async (patch) => {
             const catId = editingCat === "new" ? null : editingCat.id;
-            await saveCategory(catId, patch);
+            await saveCategory(catId, patch as Partial<Category>);
           }}
           onDelete={editingCat !== "new" ? async () => {
-            await deleteCategory(editingCat.id);
+            await deleteCategory(editingCat.id!);
           } : undefined}
           onClose={() => setEditingCat(null)}
         />
