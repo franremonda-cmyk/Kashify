@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
     supabase.from("transactions")
-      .select("category_id, amount, currency_code, type, description, date, categories(name, icon)")
+      .select("category_id, amount, currency_code, type, description, date, categories(name, icon, color)")
       .eq("user_id", user.id).is("deleted_at", null)
       .gte("date", monthStart)
       .order("created_at", { ascending: false })

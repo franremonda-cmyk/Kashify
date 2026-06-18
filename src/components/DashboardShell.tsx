@@ -9,7 +9,18 @@ interface CurrencyMetrics { currency_code: string; income: number; expense: numb
 interface RecentTx {
   description: string; amount: number; currency_code: string;
   type: string; date: string;
-  categories?: { name?: string; icon?: string } | null;
+  categories?: { name?: string; icon?: string; color?: string } | null;
+}
+
+const FALLBACK_COLORS = [
+  "#C8820A","#7B61FF","#34C759","#FF9500","#5AC8FA",
+  "#BF5AF2","#FF6B6B","#30D158","#FFD60A","#64D2FF",
+];
+function catColorOrFallback(color: string | undefined | null, name: string): string {
+  if (color) return color;
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return FALLBACK_COLORS[h % FALLBACK_COLORS.length];
 }
 
 interface Props {
@@ -109,9 +120,9 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
               const isIncome  = t.type === "income";
               const isInstall = t.type === "installment-payment";
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
-              const catColor  = cat?.color;
-              const iconBg    = catColor ? `${catColor}22` : "var(--raised)";
-              const iconColor = catColor ?? "var(--ink-muted)";
+              const catColor  = catColorOrFallback(cat?.color, cat?.name ?? "");
+              const iconBg    = `${catColor}22`;
+              const iconColor = catColor;
               return (
                 <div key={`${t.description}-${i}`} style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",

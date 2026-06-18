@@ -37,6 +37,14 @@ const FALLBACK_COLORS = [
   "#BF5AF2","#FF6B6B","#30D158","#FFD60A","#64D2FF",
 ];
 
+function catColorOrFallback(color: string | undefined | null, name: string): string {
+  if (color) return color;
+  // hash del nombre → color consistente por categoría
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return FALLBACK_COLORS[h % FALLBACK_COLORS.length];
+}
+
 interface ChartEntry { name: string; amount: number; color?: string; }
 
 function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
@@ -585,7 +593,7 @@ export default function ActividadPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cat = (t as any).categories ?? t.category;
     const catName = cat?.name ?? "Otros";
-    const catColor = cat?.color ?? undefined;
+    const catColor = catColorOrFallback(cat?.color, catName);
     const cur = t.currency_code ?? "ARS";
     if (!expenseByCurrency[cur]) expenseByCurrency[cur] = {};
     if (!expenseByCurrency[cur][catName]) expenseByCurrency[cur][catName] = { name: catName, amount: 0, color: catColor };
@@ -719,9 +727,9 @@ export default function ActividadPage() {
               const isIncome  = t.type === "income";
               const isInstall = t.type === "installment-payment";
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
-              const catColor  = catData?.color;
-              const iconBg    = catColor ? `${catColor}22` : "var(--raised)";
-              const iconColor = catColor ?? "var(--ink-muted)";
+              const catColor  = catColorOrFallback(catData?.color, catData?.name ?? "");
+              const iconBg    = `${catColor}22`;
+              const iconColor = catColor;
               return (
                 <button
                   key={t.id}
