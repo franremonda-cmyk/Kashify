@@ -127,7 +127,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
               const iconBg    = `${catColor}22`;
               const iconColor = catColor;
               return (
-                <button key={`${t.id}-${i}`} onClick={() => router.push(`/actividad?open=${t.id}`)} style={{
+                <button key={`${t.id}-${i}`} onClick={() => router.push(`/historial?open=${t.id}`)} style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
                   borderBottom: i < recent.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
                   width: "100%", textAlign: "left", background: "transparent",

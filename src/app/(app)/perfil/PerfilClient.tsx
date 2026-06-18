@@ -119,25 +119,22 @@ function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, on
   return (
     <>
       <div
-        className="fixed inset-0 z-40 flex items-end justify-center"
-        style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
+        className="fixed inset-0 z-40 flex items-center justify-center"
+        style={{ background: "rgba(0,0,0,0.40)", backdropFilter: "blur(8px)", padding: "0 16px" }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
           className="w-full max-w-sm flex flex-col"
           style={{
-            borderRadius: "24px 24px 0 0",
+            borderRadius: 20,
             background: "var(--base)",
             border: "0.5px solid var(--glass-border)",
-            boxShadow: "0 -8px 40px rgba(0,0,0,0.14)",
-            maxHeight: "85dvh",
+            boxShadow: "0 24px 60px rgba(0,0,0,0.30)",
+            maxHeight: "88dvh",
           }}
         >
-          {/* Handle */}
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0", flexShrink: 0 }} />
-
           {/* Header */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
             <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
               {isNew ? "Nueva categoría" : "Editar categoría"}
             </p>
