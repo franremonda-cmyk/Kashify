@@ -80,15 +80,8 @@ function DonutChart({ data, income }: { data: ChartEntry[]; income: number }) {
             strokeDashoffset={-(s.offset - circ / 4)}
             strokeLinecap="butt"/>
         ))}
-        {income > 0 && (
-          <>
-            <text x={CX} y={CY - 5} textAnchor="middle" fontSize="9" fill="var(--ink-dim)" letterSpacing="0.05em">INGRESOS</text>
-            <text x={CX} y={CY + 7} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)" fontFamily="monospace">{fmt(income)}</text>
-          </>
-        )}
-        {income === 0 && (
-          <text x={CX} y={CY + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)" fontFamily="monospace">{fmt(totalExpense)}</text>
-        )}
+        <text x={CX} y={CY - 6} textAnchor="middle" fontSize="11" fontWeight="700" fill="#34C759" fontFamily="monospace">{fmt(income)}</text>
+        <text x={CX} y={CY + 8} textAnchor="middle" fontSize="11" fontWeight="700" fill="#FF453A" fontFamily="monospace">{fmt(totalExpense)}</text>
       </svg>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
         {slices.map((s, i) => (
