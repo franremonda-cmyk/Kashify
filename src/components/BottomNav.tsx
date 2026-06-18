@@ -113,13 +113,37 @@ const KEYWORD_MAP: Record<string, string[]> = {
   ],
 };
 
+// Aliases de nombre de categoría por concepto — raíces en minúsculas
+const CONCEPT_NAME_ALIASES: Record<string, string[]> = {
+  "Comida":                  ["comida", "aliment", "comer", "comest", "gastro", "cocin", "restaur", "mercado", "super", "feria"],
+  "Transporte":              ["transport", "movil", "vehicul", "traslad", "viaj corto", "movilidad"],
+  "Ocio":                    ["ocio", "entretenim", "diversi", "recreac", "esparcim", "juego", "deport", "hobby"],
+  "Hogar":                   ["hogar", "casa", "viviend", "domest", "expens", "alquil"],
+  "Salud":                   ["salud", "medic", "sanit", "clinic", "farmac", "bienestar", "cuida"],
+  "Educación":               ["educac", "aprendiz", "estudio", "escuel", "formac", "univers", "capacit"],
+  "Indumentaria":            ["induméntar", "ropa", "vestim", "moda", "calzad", "indum"],
+  "Trabajo":                 ["trabajo", "laboral", "ofic", "profesion", "negoc"],
+  "Suscripción":             ["suscripc", "subscripc", "membres", "servicio"],
+  "Mascotas":                ["mascot", "veterin", "animal", "perro", "gato"],
+  "Viajes":                  ["viaj", "turism", "vacac", "trip"],
+  "Ahorros e Inversiones":   ["ahorro", "inversion", "financ", "banco", "cripto"],
+};
+
 function guessCategory(description: string, categories: Category[]): string {
   const lower = description.toLowerCase();
   for (const [catName, keywords] of Object.entries(KEYWORD_MAP)) {
-    if (keywords.some((kw) => lower.includes(kw))) {
-      const match = categories.find((c) => c.name.toLowerCase().includes(catName.toLowerCase()));
-      if (match) return match.id;
-    }
+    if (!keywords.some((kw) => lower.includes(kw))) continue;
+    const concept = catName.toLowerCase();
+    const aliases = CONCEPT_NAME_ALIASES[catName] ?? [concept];
+    // Find the first user category whose name starts with or contains any alias stem
+    const m = categories.find(c => {
+      const cn = c.name.toLowerCase();
+      return cn === concept ||
+        cn.includes(concept) ||
+        concept.includes(cn) ||
+        aliases.some(alias => cn.includes(alias) || cn.startsWith(alias.slice(0, 5)));
+    });
+    if (m) return m.id;
   }
   return "";
 }

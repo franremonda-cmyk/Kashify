@@ -168,8 +168,8 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           ))}
         </div>
 
-        {/* Confirm button — extra bottom padding clears the floating nav bar */}
-        <div style={{ flexShrink: 0, padding: `10px 18px calc(16px + env(safe-area-inset-bottom, 0px))` }}>
+        {/* Confirm button */}
+        <div style={{ flexShrink: 0, padding: `10px 18px calc(28px + env(safe-area-inset-bottom, 0px))` }}>
           <button onClick={confirmSelect} disabled={!pickedIcon}
             style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: pickedIcon ? "var(--accent)" : "var(--raised)", color: pickedIcon ? "#FFFFFF" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
             {pickedIcon ? "Confirmar ícono" : "Seleccioná un ícono"}
