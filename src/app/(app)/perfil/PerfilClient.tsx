@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useIconStyle } from "@/context/IconStyleContext";
 import type { IconStyle } from "@/context/IconStyleContext";
@@ -78,6 +78,24 @@ interface EditModalProps {
   onClose: () => void;
 }
 
+function useScrollLock() {
+  const scrollY = useRef(0);
+  useEffect(() => {
+    scrollY.current = window.scrollY;
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY.current}px`;
+    document.body.style.width = "100%";
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollY.current);
+    };
+  }, []);
+}
+
 function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, onClose }: EditModalProps) {
   const isNew = !cat;
   const [name, setName]         = useState(cat?.name ?? "");
@@ -86,6 +104,7 @@ function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, on
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  useScrollLock();
 
   async function handleSave() {
     if (!name.trim()) return;
