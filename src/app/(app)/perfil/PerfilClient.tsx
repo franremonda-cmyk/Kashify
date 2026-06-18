@@ -117,14 +117,14 @@ function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, on
             background: "var(--base)",
             border: "0.5px solid var(--glass-border)",
             boxShadow: "0 -8px 40px rgba(0,0,0,0.14)",
-            padding: "0 0 calc(16px + env(safe-area-inset-bottom, 0px))",
+            maxHeight: "85dvh",
           }}
         >
           {/* Handle */}
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0" }} />
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0", flexShrink: 0 }} />
 
           {/* Header */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0", flexShrink: 0 }}>
             <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
               {isNew ? "Nueva categoría" : "Editar categoría"}
             </p>
@@ -134,7 +134,7 @@ function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, on
             </button>
           </div>
 
-          <div style={{ padding: "16px 18px 0", display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ padding: "16px 18px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
             {/* Icon preview + pick button */}
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button

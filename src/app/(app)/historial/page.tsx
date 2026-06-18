@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback, useId, useMemo } from "react";
+import { useState, useEffect, useCallback, useId, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
 import dynamic from "next/dynamic";
 const ImportFlow = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
@@ -31,23 +32,25 @@ const inp: React.CSSProperties = {
   color: "var(--ink)", fontSize: 14, width: "100%", outline: "none",
 };
 
+// Tonal palette: accent base (#C8820A) → lighter/darker steps, plus a neutral
 const CAT_COLORS = [
-  "#7B61FF","#34C759","#FF3B30","#FF9500","#5AC8FA",
-  "#BF5AF2","#FF6B6B","#30D158","#FFD60A","#64D2FF",
+  "#C8820A","#8B5E08","#E8A835","#6B4906","#F0C070",
+  "#3D2B03","#D4982A","#A06C0C","#F5D080","#502F00",
 ];
 
 interface ChartEntry { name: string; amount: number; }
 
 function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
   const uid = useId().replace(/:/g,"");
-  const R = 44, CX = 58, CY = 58, stroke = 15;
+  const R = 42, CX = 56, CY = 56, stroke = 10;
+  const GAP = 0.018; // gap between slices (radians fraction of circ)
   const circ = 2 * Math.PI * R;
   let offset = 0;
-  const slices = data.slice(0, 8).map((d, i) => {
+  const slices = data.slice(0, 6).map((d, i) => {
     const pct = d.amount / total;
-    const dash = pct * circ;
-    const s = { pct, dash, offset, color: CAT_COLORS[i % CAT_COLORS.length], name: d.name };
-    offset += dash;
+    const dash = Math.max(0, pct * circ - GAP * circ);
+    const s = { pct, dash, offset: offset + (GAP * circ) / 2, color: CAT_COLORS[i % CAT_COLORS.length], name: d.name };
+    offset += pct * circ;
     return s;
   });
   function fmt(n: number) {
@@ -55,29 +58,26 @@ function DonutChart({ data, total }: { data: ChartEntry[]; total: number }) {
     if (n >= 1_000) return `${Math.round(n/1_000)}K`;
     return String(Math.round(n));
   }
-  function fmtPct(pct: number) {
-    return pct > 0 && pct < 0.005 ? "<1%" : `${Math.round(pct * 100)}%`;
-  }
   return (
-    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-      <svg width="116" height="116" viewBox="0 0 116 116" style={{ flexShrink: 0 }}>
-        <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--glass-border)" strokeWidth={stroke}/>
+    <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+      <svg width="112" height="112" viewBox="0 0 112 112" style={{ flexShrink: 0 }}>
+        <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--raised)" strokeWidth={stroke}/>
         {slices.map((s, i) => (
           <circle key={`${uid}-${i}`} cx={CX} cy={CY} r={R} fill="none"
             stroke={s.color} strokeWidth={stroke}
             strokeDasharray={`${s.dash} ${circ - s.dash}`}
             strokeDashoffset={-(s.offset - circ / 4)}
-            strokeLinecap="butt"/>
+            strokeLinecap="round"/>
         ))}
-        <text x={CX} y={CY - 5} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)">{fmt(total)}</text>
-        <text x={CX} y={CY + 10} textAnchor="middle" fontSize="8" fill="var(--ink-muted)">total</text>
+        <text x={CX} y={CY - 4} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink)" fontFamily="monospace">{fmt(total)}</text>
+        <text x={CX} y={CY + 9} textAnchor="middle" fontSize="7" fill="var(--ink-dim)" letterSpacing="0.06em">TOTAL</text>
       </svg>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
         {slices.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 3, height: 14, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
             <span style={{ fontSize: 11, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{fmtPct(s.pct)}</span>
+            <span style={{ fontSize: 10, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{Math.round(s.pct * 100)}%</span>
           </div>
         ))}
       </div>
@@ -525,12 +525,21 @@ export default function ActividadPage() {
   const [total, setTotal]                   = useState(0);
   const [loading, setLoading]               = useState(false);
   const [showFilter, setShowFilter]         = useState(false);
+  const [primaryCurrency, setPrimaryCurrency] = useState<string>("ARS");
   const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
   const [selectedTx, setSelectedTx]         = useState<Transaction | null>(null);
   const [showImport, setShowImport]         = useState(false);
+  const currencyInitialized = useRef(false);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
+    // Fetch primary currency from profile once
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single()
+        .then(({ data }) => { if (data?.primary_currency) setPrimaryCurrency(data.primary_currency); });
+    });
   }, []);
 
   const fetchTransactions = useCallback(async () => {
