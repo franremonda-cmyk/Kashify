@@ -13,20 +13,21 @@ interface Category { id: string; name: string; icon: string; }
 const KEYWORD_MAP: Record<string, string[]> = {
   "Comida": [
     "almuerzo","cena","desayuno","pizza","sushi","resto","restaurant","comida","café","cafe",
-    "rappi","pedidos","mcdo","burger","empanada","taco","medialunas","facturas","kiosco","kioskero",
+    "rappi","pedidos","mcdo","burger","empanada","taco","medialunas","facturas","kiosco","kiosko","kioskero",
     "sandwich","ensalada","milanesa","asado","parrilla","bodegon","delivery","mcdonald","burguer king",
     "wendys","subway","starbucks","cafeteria","panaderia","pasteleria","heladeria","chocolateria",
     "soda","agua mineral","jugo","cerveza","vino","bar ","boliche","aperitivo","mate","yerba",
     "mercado","feria","verduleria","carniceria","polleria","pescaderia","super","superm",
-    "nutricion","vegano","vegetariano","sushi","ramen","wok","fideos","pasta","pizza",
+    "nutricion","vegano","vegetariano","ramen","wok","fideos","pasta","lomito","hamburguer","tenedor",
   ],
   "Transporte": [
     "uber","cabify","taxi","nafta","combustible","subte","sube","colectivo","bus","peaje",
-    "remis","gasoil","estacionamiento","tren","bicicleta","moto","scooter","patineta",
+    "remis","gasoil","estacionamiento","tren","bicicleta","bici","moto","scooter","patineta",
     "shell","ypf","axion","petrobras","puma","esso","serviclub","autoexpreso","autopista",
     "gnc","aeroparque","ezeiza","aeropuerto","vuelo","lkbus","plataforma","omnilineas",
     "flecha","andesmar","via bariloche","coche","auto","seguro auto","patente","vehiculo",
     "lyft","didi","bemo","acercapp","turismo","transfer","shuttle",
+    "rent a car","alquiler auto","alquiler de auto","metrobus","metrobús",
   ],
   "Ocio": [
     "netflix","spotify","cine","disney","hbo","amazon","youtube","steam","juego","teatro",
@@ -46,6 +47,7 @@ const KEYWORD_MAP: Record<string, string[]> = {
     "almohada","sabanas","toalla","detergente","lavandina","limpiador","escoba","trapeador",
     "portero","vigilancia","condominio","administracion","servicios","mantenimiento",
     "jardineria","planta","semilla","herramienta","ferreteria","cerrajero",
+    "cochera","garaje","telefono","linea telefonica","streaming",
   ],
   "Salud": [
     "farmacia","médico","medico","medicamento","hospital","clínica","clinica","prepaga",
@@ -84,6 +86,7 @@ const KEYWORD_MAP: Record<string, string[]> = {
     "abogado","escribano","tramite","legalizacion","apostilla","traduccion",
     "marketing","publicidad","instagram ads","facebook ads","google ads","flyer",
     "hosting","dominio","vps","servidor","email corporativo","gsuite","microsoft 365",
+    "factura","impuesto","sello","timbrado","impuestos","arca","rentas","municipalidad",
   ],
   "Suscripción": [
     "suscripcion","suscripción","subscripcion","subscripción","membresia","mensualidad",
@@ -91,12 +94,13 @@ const KEYWORD_MAP: Record<string, string[]> = {
     "antivirus","vpn","nordvpn","expressvpn","dropbox","icloud","google one","onedrive",
     "canva","figma pro","notion pro","obsidian","todoist","things","bear","craft",
     "duolingo","babble","rosetta stone","pimsleur",
+    "chatgpt","openai","claude","anthropic","apple one","apple storage","microsoft 365 personal",
   ],
   "Mascotas": [
     "veterinario","veterinaria","vet","perro","gato","mascota","hamster","conejo",
     "comida perro","comida gato","purina","pedigree","whiskas","royal canin","eukanuba",
     "accesorios mascota","collar","correa","juguete mascota","antiparasitario","vacuna mascota",
-    "peluqueria canina","bano mascota","hotel mascota","guarderia mascota",
+    "peluqueria canina","bano mascota","hotel mascota","guarderia mascota","petshop","pet shop",
   ],
   "Viajes": [
     "hotel","hostel","airbnb","booking","despegar","aerolinea","vuelo","avion",
@@ -104,6 +108,7 @@ const KEYWORD_MAP: Record<string, string[]> = {
     "turismo","agencia","excursion","tour","crucero","ferry","barco","tren largo",
     "valija","mochila viaje","adaptador","seguro viaje","visa","pasaporte","tramite migratorio",
     "cambiaria","casa de cambio","dolar viaje","euro viaje","dolares",
+    "pasaje","maleta","bolso viaje","equipaje","check in","embarque",
   ],
   "Ahorros e Inversiones": [
     "plazo fijo","fci","fondo comun","bono","accion","cripto","bitcoin","ethereum","usdt",

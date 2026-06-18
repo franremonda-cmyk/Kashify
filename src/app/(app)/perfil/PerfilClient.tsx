@@ -9,7 +9,16 @@ import CategoryModal from "@/components/CategoryModal";
 import type { Profile } from "@/types";
 
 interface UserPhone { id: string; phone_number: string; verified: boolean }
-interface Category { id: string; name: string; icon?: string; color?: string }
+interface Category  { id: string; name: string; icon?: string; color?: string }
+interface Budget    {
+  id: string;
+  category_id: string;
+  amount_limit: number;
+  currency_code: string;
+  period_type?: "always" | "specific_months";
+  applies_months?: number[] | null;
+  categories?: { name: string; color: string; icon: string } | null;
+}
 
 interface Props {
   profile: Profile | null;
@@ -17,15 +26,14 @@ interface Props {
   email: string;
 }
 
-const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP", "PYG", "PEN", "COP"];
-
+const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const CURRENCIES = ["ARS","USD","EUR","CHF","BRL","UYU","CLP","GBP","PYG","PEN","COP"];
 const THEMES = [
   { id: "arctic",   label: "Arctic",   desc: "Blanco + violeta",  preview: "#7B61FF" },
   { id: "midnight", label: "Midnight", desc: "Azul noche",        preview: "#0A84FF" },
   { id: "void",     label: "Void",     desc: "Negro total",       preview: "#30D158" },
   { id: "sand",     label: "Sand",     desc: "Cálido + tierra",   preview: "#C8820A" },
 ] as const;
-
 const ICON_STYLES: { id: IconStyle; label: string; desc: string }[] = [
   { id: "line",    label: "Línea",   desc: "Trazo fino" },
   { id: "solid",   label: "Sólido",  desc: "Relleno" },
@@ -44,7 +52,6 @@ const inp: React.CSSProperties = {
   outline: "none",
 };
 
-// Acordeón reutilizable
 function Accordion({ label, defaultOpen = false, children }: { label: string; defaultOpen?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -71,30 +78,38 @@ function Accordion({ label, defaultOpen = false, children }: { label: string; de
 function SaveButton({ onClick, saving, label = "Guardar" }: { onClick: () => void; saving: boolean; label?: string }) {
   return (
     <button onClick={onClick} disabled={saving}
-      className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
-      style={{ background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}>
+      style={{ padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0, opacity: saving ? 0.5 : 1 }}>
       {saving ? "..." : label}
     </button>
   );
 }
 
+function Divider() {
+  return <div style={{ height: "0.5px", background: "var(--glass-border-dim)", margin: "0 -4px" }} />;
+}
+
 export default function PerfilClient({ profile, phones, email }: Props) {
-  const [displayName, setDisplayName]         = useState(profile?.display_name ?? "");
+  const [displayName, setDisplayName]       = useState(profile?.display_name ?? "");
   const [primaryCurrency, setPrimaryCurrency] = useState(profile?.primary_currency ?? "ARS");
-  const [newPhone, setNewPhone]               = useState("");
-  const [savingName, setSavingName]           = useState(false);
-  const [savingCurrency, setSavingCurrency]   = useState(false);
-  const [savedName, setSavedName]             = useState(false);
-  const [savedCurrency, setSavedCurrency]     = useState(false);
+  const [newPhone, setNewPhone]             = useState("");
+  const [savingName, setSavingName]         = useState(false);
+  const [savingCurrency, setSavingCurrency] = useState(false);
+  const [savedName, setSavedName]           = useState(false);
+  const [savedCurrency, setSavedCurrency]   = useState(false);
   const [theme, setTheme] = useState<string>(() =>
     typeof window !== "undefined" ? (localStorage.getItem("kashify-theme") ?? "arctic") : "arctic"
   );
-
   const { iconStyle, setIconStyle } = useIconStyle();
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [catLoading, setCatLoading] = useState(true);
-  const [editingCat, setEditingCat] = useState<Category | null | "new">(null);
+  // Categorías
+  const [categories, setCategories]     = useState<Category[]>([]);
+  const [catLoading, setCatLoading]     = useState(true);
+  const [editingCat, setEditingCat]     = useState<Category | null | "new">(null);
+
+  // Límites
+  const [budgets, setBudgets]           = useState<Budget[]>([]);
+  const [budgetEdits, setBudgetEdits]   = useState<Record<string, { period_type: "always" | "specific_months"; applies_months: number[] }>>({});
+  const [savingBudget, setSavingBudget] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -105,7 +120,20 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     setCatLoading(false);
   }, []);
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  const fetchBudgets = useCallback(async () => {
+    const res = await fetch("/api/budgets");
+    if (res.ok) {
+      const data: Budget[] = await res.json();
+      setBudgets(data);
+      const edits: Record<string, { period_type: "always" | "specific_months"; applies_months: number[] }> = {};
+      for (const b of data) {
+        edits[b.id] = { period_type: b.period_type ?? "always", applies_months: b.applies_months ?? [] };
+      }
+      setBudgetEdits(edits);
+    }
+  }, []);
+
+  useEffect(() => { fetchCategories(); fetchBudgets(); }, [fetchCategories, fetchBudgets]);
 
   function applyTheme(t: string) {
     setTheme(t);
@@ -157,12 +185,41 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     await fetchCategories();
   }
 
+  async function saveBudgetPeriod(budget: Budget) {
+    const edit = budgetEdits[budget.id];
+    if (!edit) return;
+    setSavingBudget(budget.id);
+    await fetch("/api/budgets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        category_id: budget.category_id,
+        amount_limit: budget.amount_limit,
+        currency_code: budget.currency_code,
+        period_type: edit.period_type,
+        applies_months: edit.period_type === "specific_months" ? edit.applies_months : null,
+      }),
+    });
+    setSavingBudget(null);
+    fetchBudgets();
+  }
+
+  function toggleMonth(budgetId: string, month: number) {
+    setBudgetEdits((prev) => {
+      const curr = prev[budgetId] ?? { period_type: "specific_months", applies_months: [] };
+      const months = curr.applies_months.includes(month)
+        ? curr.applies_months.filter((m) => m !== month)
+        : [...curr.applies_months, month];
+      return { ...prev, [budgetId]: { ...curr, applies_months: months } };
+    });
+  }
+
   const initials = (displayName || email || "K").slice(0, 1).toUpperCase();
   const existingColors = categories.map(c => c.color).filter(Boolean) as string[];
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Avatar + header */}
+      {/* Avatar header */}
       <div className="flex items-center gap-4 enter-up">
         <div style={{ width: 56, height: 56, borderRadius: 18, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#FFFFFF", boxShadow: "0 4px 20px var(--accent-glow)", flexShrink: 0 }}>
           {initials}
@@ -175,39 +232,20 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         </div>
       </div>
 
-      {/* Accesos rápidos */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {[
-          { href: "/categorias", label: "Categorías", desc: "Editar y poner límites" },
-          { href: "/cuotas",     label: "Cuotas",     desc: "Compras financiadas" },
-          { href: "/metas",      label: "Metas de ahorro", desc: "Objetivos y progreso" },
-        ].map((s) => (
-          <Link key={s.href} href={s.href}
-            style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 14, background: "var(--base)", border: "0.5px solid var(--glass-border)", textDecoration: "none", boxShadow: "var(--shadow-sm)" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{s.label}</p>
-              <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
-            </div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}>
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </Link>
-        ))}
-      </div>
-
-      {/* Datos personales */}
+      {/* ① Datos personales + Cuenta */}
       <Accordion label="Datos personales" defaultOpen>
+        {/* Nombre */}
         <div className="flex gap-2">
-          <input style={{ ...inp, flex: 1 }} placeholder="Tu nombre" value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveName()} />
+          <input style={{ ...inp, flex: 1 }} placeholder="Tu nombre"
+            value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && saveName()} />
           <SaveButton onClick={saveName} saving={savingName} label={savedName ? "✓" : "Guardar"} />
         </div>
-        <div style={{ borderTop: "0.5px solid var(--glass-border-dim)", paddingTop: 10 }}>
-          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 4 }}>Email</p>
-          <p style={{ fontSize: 13, color: "var(--ink)" }}>{email}</p>
-        </div>
+
+        <Divider />
+
         {/* Moneda */}
-        <div style={{ borderTop: "0.5px solid var(--glass-border-dim)", paddingTop: 10 }}>
+        <div>
           <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
           <div className="flex gap-2">
             <select style={{ ...inp, flex: 1 }} value={primaryCurrency} onChange={(e) => setPrimaryCurrency(e.target.value)}>
@@ -216,8 +254,11 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             <SaveButton onClick={saveCurrency} saving={savingCurrency} label={savedCurrency ? "✓" : "Guardar"} />
           </div>
         </div>
+
+        <Divider />
+
         {/* WhatsApp */}
-        <div style={{ borderTop: "0.5px solid var(--glass-border-dim)", paddingTop: 10 }}>
+        <div>
           <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 8 }}>WhatsApp vinculado</p>
           {phones.length > 0 ? phones.map((p) => (
             <div key={p.id} className="flex items-center justify-between" style={{ marginBottom: 8 }}>
@@ -231,20 +272,38 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             </div>
           )) : <p style={{ fontSize: 13, color: "var(--ink-dim)", marginBottom: 8 }}>Ningún número vinculado</p>}
           <div className="flex gap-2">
-            <input style={{ ...inp, flex: 1 }} placeholder="+54 9 11 0000-0000" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} type="tel" />
-            <button onClick={addPhone} style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", flexShrink: 0 }}>Agregar</button>
+            <input style={{ ...inp, flex: 1 }} placeholder="+54 9 11 0000-0000" value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)} type="tel" />
+            <button onClick={addPhone}
+              style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", flexShrink: 0 }}>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <Divider />
+
+        {/* Cuenta (email + badge) */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>Cuenta</p>
+            <p style={{ fontSize: 13, marginTop: 2, color: "var(--ink)" }}>{email}</p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--positive)", boxShadow: "0 0 6px rgba(52,199,89,0.35)" }} />
+            <span style={{ fontSize: 10, color: "var(--positive)", fontWeight: 600 }}>activa</span>
           </div>
         </div>
       </Accordion>
 
-      {/* Apariencia */}
+      {/* ② Apariencia */}
       <Accordion label="Apariencia">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {THEMES.map((t) => {
             const active = theme === t.id;
             return (
               <button key={t.id} onClick={() => applyTheme(t.id)}
-                style={{ padding: "12px 14px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? `0.5px solid var(--accent-glow)` : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 10 }}>
+                style={{ padding: "12px 14px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 12, height: 12, borderRadius: "50%", background: t.preview, flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{t.label}</p>
@@ -255,14 +314,14 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             );
           })}
         </div>
-        <div style={{ height: "0.5px", background: "var(--glass-border)" }} />
+        <Divider />
         <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)" }}>Estilo de íconos</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {ICON_STYLES.map((s) => {
             const active = iconStyle === s.id;
             return (
               <button key={s.id} onClick={() => setIconStyle(s.id)}
-                style={{ padding: "10px 12px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? `0.5px solid var(--accent-glow)` : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 8 }}>
+                style={{ padding: "10px 12px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{s.label}</p>
                   <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
@@ -274,8 +333,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         </div>
       </Accordion>
 
-      {/* Mis categorías */}
-      <Accordion label="Mis categorías">
+      {/* ③ Categorías + Límites */}
+      <Accordion label="Categorías">
+        {/* Mis categorías */}
+        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Mis categorías</p>
         {catLoading ? (
           <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "8px 0" }}>Cargando...</p>
         ) : categories.length === 0 ? (
@@ -289,7 +350,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                   <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={17} />
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", flex: 1 }}>{cat.name}</span>
-                {cat.color && <div style={{ width: 10, height: 10, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}>
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
@@ -301,24 +361,118 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)" }}>
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
         </button>
-      </Accordion>
 
-      {/* Cuenta */}
-      <Accordion label="Cuenta">
-        <div className="flex items-center justify-between">
-          <div>
-            <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>Email</p>
-            <p style={{ fontSize: 13, marginTop: 2, color: "var(--ink)" }}>{email}</p>
+        <Divider />
+
+        {/* Configurar límites */}
+        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Configurar límites</p>
+
+        {budgets.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "8px 0" }}>
+            <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>No hay límites configurados</p>
+            <Link href="/categorias" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none", fontWeight: 600, display: "inline-block", marginTop: 6 }}>
+              + Agregar límite →
+            </Link>
           </div>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--positive)", boxShadow: "0 0 6px rgba(52,199,89,0.35)" }} />
-        </div>
-        <button onClick={signOut}
-          style={{ padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.07)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
-          Cerrar sesión
-        </button>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {budgets.map((b) => {
+              const edit = budgetEdits[b.id] ?? { period_type: "always", applies_months: [] };
+              return (
+                <div key={b.id} style={{ borderRadius: 12, border: "0.5px solid var(--glass-border)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, background: "var(--raised)" }}>
+                  <div className="flex items-center gap-3">
+                    <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (b.categories?.color ?? "var(--accent)") + "22", border: `1px solid ${b.categories?.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.categories?.color ?? "var(--accent)" }}>
+                      <CategoryIcon icon={b.categories?.icon} name={b.categories?.name ?? ""} color={b.categories?.color} size={15} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{b.categories?.name ?? "—"}</p>
+                      <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>{b.currency_code} {b.amount_limit.toLocaleString("es-AR")}</p>
+                    </div>
+                  </div>
+
+                  {/* Period type toggle */}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {(["always", "specific_months"] as const).map((pt) => (
+                      <button key={pt}
+                        onClick={() => setBudgetEdits((prev) => ({ ...prev, [b.id]: { ...edit, period_type: pt } }))}
+                        style={{ flex: 1, padding: "7px 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: edit.period_type === pt ? "var(--accent-soft)" : "var(--base)", border: edit.period_type === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: edit.period_type === pt ? "var(--accent)" : "var(--ink-muted)" }}>
+                        {pt === "always" ? "Siempre" : "Meses específicos"}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Month picker */}
+                  {edit.period_type === "specific_months" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+                      {MONTHS.map((m, i) => {
+                        const month = i + 1;
+                        const selected = edit.applies_months.includes(month);
+                        return (
+                          <button key={m} onClick={() => toggleMonth(b.id, month)}
+                            style={{ padding: "6px 0", borderRadius: 8, fontSize: 11, fontWeight: 600, background: selected ? "var(--accent-soft)" : "var(--base)", border: selected ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: selected ? "var(--accent)" : "var(--ink-dim)" }}>
+                            {m}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <button onClick={() => saveBudgetPeriod(b)}
+                    disabled={savingBudget === b.id}
+                    style={{ padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: savingBudget === b.id ? 0.6 : 1 }}>
+                    {savingBudget === b.id ? "Guardando..." : "Guardar"}
+                  </button>
+                </div>
+              );
+            })}
+            <Link href="/categorias"
+              style={{ display: "block", textAlign: "center", padding: "10px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", textDecoration: "none" }}>
+              + Agregar límite
+            </Link>
+          </div>
+        )}
       </Accordion>
 
-      {/* Category edit / create modal */}
+      {/* ④ Metas de ahorro */}
+      <Accordion label="Metas de ahorro">
+        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Seguí el progreso de tus objetivos de ahorro.</p>
+        <Link href="/metas"
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Ver mis metas</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)" }}>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </Link>
+        <Link href="/metas?new=1"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva meta
+        </Link>
+      </Accordion>
+
+      {/* ⑤ Cuotas */}
+      <Accordion label="Cuotas">
+        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Administrá tus compras en cuotas.</p>
+        <Link href="/cuotas"
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Ver mis cuotas</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)" }}>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </Link>
+        <Link href="/cuotas?new=1"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva cuota
+        </Link>
+      </Accordion>
+
+      {/* Botón cerrar sesión — fuera de acordeones */}
+      <button
+        onClick={signOut}
+        style={{ padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "rgba(255,59,48,0.07)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)", marginTop: 4 }}>
+        Cerrar sesión
+      </button>
+
+      {/* Category modal */}
       {editingCat !== null && (
         <CategoryModal
           cat={editingCat === "new" ? undefined : editingCat}
@@ -329,7 +483,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             await saveCategory(catId, patch as Partial<Category>);
           }}
           onDelete={editingCat !== "new" ? async () => {
-            await deleteCategory(editingCat.id!);
+            await deleteCategory((editingCat as Category).id!);
           } : undefined}
           onClose={() => setEditingCat(null)}
         />

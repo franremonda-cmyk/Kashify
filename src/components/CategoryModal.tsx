@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 const IconPicker = dynamic(() => import("@/components/IconPicker"), { ssr: false });
 import CategoryIcon from "@/components/CategoryIcon";
 import { suggestColor, CATEGORY_COLORS } from "@/lib/iconList";
+import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import type { IconStyle } from "@/context/IconStyleContext";
 
 export interface CategoryData {
@@ -42,22 +43,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
-  const [mounted, setMounted]       = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const scrollRef  = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    const el = overlayRef.current;
-    if (!el) return;
-    const prevent = (e: TouchEvent) => {
-      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
-      e.preventDefault();
-    };
-    el.addEventListener("touchmove", prevent, { passive: false });
-    return () => el.removeEventListener("touchmove", prevent);
-  }, [mounted]);
+  const { mounted, overlayRef, scrollRef } = useModalTouchLock();
 
   async function handleSave() {
     if (!name.trim()) return;
@@ -86,7 +72,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
           zIndex: 9100,
           display: "flex", alignItems: "center", justifyContent: "center",
           background: "rgba(0,0,0,0.72)",
-          padding: "20px 16px calc(88px + env(safe-area-inset-bottom, 0px))",
+          padding: "20px 16px",
           touchAction: "none",
         }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}

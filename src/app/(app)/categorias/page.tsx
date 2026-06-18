@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
 import { useIconStyle } from "@/context/IconStyleContext";
+import { BackButton } from "@/components/ui/BackButton";
 
 interface Budget { monthly_limit: number; currency_code: string }
 interface Category {
@@ -77,9 +78,12 @@ export default function CategoriasPage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between enter-up">
-        <div>
-          <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>Categorías</h1>
-          <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Organizá y controlá tus gastos</p>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>Categorías</h1>
+            <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Organizá y controlá tus gastos</p>
+          </div>
         </div>
         <button onClick={() => setEditingCat("new")}
           style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}>

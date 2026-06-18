@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const yearAgo    = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().split("T")[0];
 
-  const [balancesRes, profileRes, pendingRes, txMonthRes, txHistoryRes, goalsRes] = await Promise.all([
+  const [balancesRes, profileRes, pendingRes, txMonthRes, txHistoryRes, goalsRes, budgetsRes] = await Promise.all([
     supabase.from("balances").select("*").eq("user_id", user.id).order("currency_code"),
     supabase.from("profiles").select("*").eq("user_id", user.id).single(),
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
@@ -32,6 +32,7 @@ export default async function DashboardPage() {
       .gte("date", yearAgo)
       .order("date", { ascending: true }),
     supabase.from("savings_goals").select("*").eq("user_id", user.id).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
+    supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id),
   ]);
 
   const balances   = balancesRes.data ?? [];
@@ -40,6 +41,7 @@ export default async function DashboardPage() {
   const txAll      = txMonthRes.data ?? [];
   const txHistory  = txHistoryRes.data ?? [];
   const goals      = goalsRes.data ?? [];
+  const budgetsRaw = budgetsRes.data ?? [];
 
   if (!profile?.display_name) redirect("/onboarding");
 
@@ -80,6 +82,25 @@ export default async function DashboardPage() {
     }
     chartData[currency] = months;
   }
+
+  // Budget strip: join budgets with this-month spending
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const spentByCategory: Record<string, number> = {};
+  for (const t of txAll) {
+    if ((t.type === "expense" || t.type === "installment-payment") && t.category_id) {
+      spentByCategory[t.category_id] = (spentByCategory[t.category_id] ?? 0) + Number(t.amount);
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const budgets = (budgetsRaw as any[]).map((b) => ({
+    id: b.id,
+    name: b.categories?.name ?? "Sin nombre",
+    color: b.categories?.color,
+    icon: b.categories?.icon,
+    monthly_limit: b.monthly_limit,
+    currency_code: b.currency_code,
+    spent: spentByCategory[b.category_id] ?? 0,
+  }));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recent = (txAll as any[]).slice(0, 5).map((t) => ({
@@ -125,6 +146,7 @@ export default async function DashboardPage() {
         chartData={chartData}
         recent={recent}
         goals={goals}
+        budgets={budgets}
       />
 
       {/* Empty state */}

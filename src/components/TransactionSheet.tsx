@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
 import { useIconStyle } from "@/context/IconStyleContext";
+import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import type { Transaction } from "@/types";
 
 interface Category { id: string; name: string; icon?: string; color?: string; }
@@ -36,22 +37,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   const [saving, setSaving]         = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [showCatModal, setShowCatModal] = useState(false);
-  const [mounted, setMounted]       = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const scrollRef  = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    const el = overlayRef.current;
-    if (!el) return;
-    const prevent = (e: TouchEvent) => {
-      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
-      e.preventDefault();
-    };
-    el.addEventListener("touchmove", prevent, { passive: false });
-    return () => el.removeEventListener("touchmove", prevent);
-  }, [mounted]);
+  const { mounted, overlayRef, scrollRef } = useModalTouchLock();
 
   const [desc, setDesc]           = useState(tx.description);
   const [amount, setAmount]       = useState(String(tx.amount));
@@ -115,10 +101,8 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
           position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
           zIndex: 9000,
           display: "flex", alignItems: "center", justifyContent: "center",
-          // solid dark bg — no backdrop-filter (causes iOS clipping rectangle)
           background: "rgba(0,0,0,0.72)",
-          // vertical padding: 20px top, bottom accounts for floating nav bar (~80px)
-          padding: "20px 16px calc(88px + env(safe-area-inset-bottom, 0px))",
+          padding: "20px 16px",
           touchAction: "none",
         }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}

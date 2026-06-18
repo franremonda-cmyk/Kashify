@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import PendingList from "@/components/PendingList";
+import { BackButton } from "@/components/ui/BackButton";
 import type { PendingTransaction } from "@/types";
 
 export default async function NeoPage() {
@@ -27,6 +28,7 @@ export default async function NeoPage() {
     <div className="flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center gap-3 enter-up">
+        <BackButton />
         <div style={{
           width: 44, height: 44, borderRadius: 14,
           background: "var(--accent)",

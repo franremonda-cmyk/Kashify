@@ -6,13 +6,7 @@ import {
   calculateImpliedTNA,
 } from "@/lib/installments/calculator";
 
-interface Props {
-  onSubmit: (data: FormData) => void;
-  onCancel: () => void;
-  initialData?: { name?: string; total_amount?: number };
-}
-
-interface FormData {
+export interface InstallmentFormData {
   name: string;
   total_amount: number;
   currency_code: string;
@@ -25,27 +19,70 @@ interface FormData {
   first_payment_date: string;
 }
 
-const INSTALLMENT_OPTIONS = [1, 2, 3, 6, 9, 12, 18, 24, 36];
+interface Props {
+  onSubmit: (data: InstallmentFormData) => void;
+  onCancel: () => void;
+  initialData?: Partial<InstallmentFormData>;
+  editMode?: boolean;
+}
 
-export default function InstallmentForm({ onSubmit, onCancel, initialData }: Props) {
-  const [form, setForm] = useState<FormData>({
+const INSTALLMENT_OPTIONS = [1, 2, 3, 6, 9, 12, 18, 24, 36];
+const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU"];
+
+const inp: React.CSSProperties = {
+  background: "var(--raised)",
+  border: "0.5px solid var(--glass-border)",
+  borderRadius: 10,
+  padding: "11px 13px",
+  color: "var(--ink)",
+  fontSize: 14,
+  width: "100%",
+  outline: "none",
+};
+
+const section: React.CSSProperties = {
+  border: "0.5px solid var(--glass-border)",
+  borderRadius: 14,
+  padding: "12px 14px",
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  background: "var(--base)",
+};
+
+const label: React.CSSProperties = {
+  fontSize: 10,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.07em",
+  color: "var(--ink-muted)",
+};
+
+const required: React.CSSProperties = {
+  color: "var(--accent)",
+  marginLeft: 2,
+};
+
+export default function InstallmentForm({ onSubmit, onCancel, initialData, editMode = false }: Props) {
+  const [form, setForm] = useState<InstallmentFormData>({
     name: initialData?.name ?? "",
     total_amount: initialData?.total_amount ?? 0,
-    currency_code: "ARS",
-    category_id: "",
-    card_name: "",
-    n_installments: 12,
-    interest_type: "none",
-    tna: null,
+    currency_code: initialData?.currency_code ?? "ARS",
+    category_id: initialData?.category_id ?? "",
+    card_name: initialData?.card_name ?? "",
+    n_installments: initialData?.n_installments ?? 12,
+    interest_type: initialData?.interest_type ?? "none",
+    tna: initialData?.tna ?? null,
     known_installment: null,
-    first_payment_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      .toISOString().split("T")[0],
+    first_payment_date: initialData?.first_payment_date ??
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
   });
 
   const [calc, setCalc] = useState({ installment_amount: 0, total_to_pay: 0, financing_cost: 0 });
+  const [attempted, setAttempted] = useState(false);
 
   useEffect(() => {
-    if (!form.total_amount || !form.n_installments) return;
+    if (!form.total_amount || form.total_amount <= 0 || !form.n_installments) return;
 
     if (form.known_installment && form.known_installment > 0) {
       const implied_tna = calculateImpliedTNA(form.total_amount, form.known_installment, form.n_installments);
@@ -65,114 +102,150 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData }: Pro
     setCalc(result);
   }, [form.total_amount, form.n_installments, form.interest_type, form.tna, form.known_installment]);
 
-  const set = (key: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const val = e.target.type === "number" ? parseFloat(e.target.value) || null : e.target.value;
-    setForm((f) => ({ ...f, [key]: val }));
-  };
+  function setStr(key: keyof InstallmentFormData) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setForm((f) => ({ ...f, [key]: e.target.value }));
+    };
+  }
+
+  function setNum(key: keyof InstallmentFormData) {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = parseFloat(e.target.value);
+      setForm((f) => ({ ...f, [key]: isNaN(v) ? null : v }));
+    };
+  }
+
+  const isValid = form.name.trim() !== "" && form.total_amount > 0 && form.first_payment_date !== "";
+
+  function handleSubmit() {
+    setAttempted(true);
+    if (!isValid) return;
+    onSubmit({ ...form, tna: form.tna ?? null, known_installment: null });
+  }
+
+  function fieldBorder(valid: boolean): React.CSSProperties {
+    return attempted && !valid
+      ? { ...inp, border: "0.5px solid rgba(255,59,48,0.6)", background: "rgba(255,59,48,0.04)" }
+      : inp;
+  }
 
   const fmt = (n: number) =>
     n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const inputStyle = {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: 10,
-    padding: "10px 12px",
-    color: "var(--text-primary)",
-    width: "100%",
-    fontSize: 14,
-  };
-
   return (
-    <div className="glass-strong p-5 flex flex-col gap-4">
-      <h2 className="text-base font-semibold">Nueva compra en cuotas</h2>
+    <div style={{ borderRadius: 18, border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)", padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
+        {editMode ? "Editar cuota" : "Nueva compra en cuotas"}
+      </h2>
 
-      <div className="flex flex-col gap-3">
-        <input style={inputStyle} placeholder="¿Qué compraste?" value={form.name}
-          onChange={set("name")} />
+      {/* ① Descripción */}
+      <div style={section}>
+        <p style={label}>¿Qué compraste? <span style={required}>*</span></p>
+        <input
+          style={fieldBorder(form.name.trim() !== "")}
+          placeholder="Ej. TV Samsung, viaje a México..."
+          value={form.name}
+          onChange={setStr("name")}
+        />
+      </div>
 
-        <div className="flex gap-2">
-          <input style={{ ...inputStyle, flex: 2 }} type="number" placeholder="Precio total"
-            value={form.total_amount || ""} onChange={set("total_amount")} />
-          <select style={{ ...inputStyle, flex: 1 }} value={form.currency_code} onChange={set("currency_code")}>
-            {["ARS", "USD", "EUR", "CHF", "BRL", "UYU"].map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
+      {/* ② Precio total */}
+      <div style={section}>
+        <p style={label}>Precio total <span style={required}>*</span></p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <select style={{ ...inp, width: 88, flexShrink: 0 }} value={form.currency_code} onChange={setStr("currency_code")}>
+            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+          <input
+            style={fieldBorder(form.total_amount > 0)}
+            type="number"
+            inputMode="decimal"
+            placeholder="0"
+            value={form.total_amount || ""}
+            onChange={(e) => setForm((f) => ({ ...f, total_amount: parseFloat(e.target.value) || 0 }))}
+          />
         </div>
+      </div>
 
-        <input style={inputStyle} placeholder="Tarjeta / banco (ej: Galicia Visa)"
-          value={form.card_name} onChange={set("card_name")} />
+      {/* ③ Tarjeta / banco */}
+      <div style={section}>
+        <p style={label}>Tarjeta / banco <span style={{ ...required, color: "var(--ink-dim)", fontSize: 9 }}>(opcional)</span></p>
+        <input
+          style={inp}
+          placeholder="Ej. Galicia Visa, Mercado Pago..."
+          value={form.card_name}
+          onChange={setStr("card_name")}
+        />
+      </div>
 
-        <div className="flex gap-2">
-          <select style={{ ...inputStyle, flex: 1 }} value={form.n_installments}
+      {/* ④ Cuotas e interés */}
+      <div style={section}>
+        <p style={label}>Cuotas e interés <span style={required}>*</span></p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <select style={{ ...inp, flex: 1 }} value={form.n_installments}
             onChange={(e) => setForm((f) => ({ ...f, n_installments: parseInt(e.target.value) }))}>
             {INSTALLMENT_OPTIONS.map((n) => (
               <option key={n} value={n}>{n} cuota{n > 1 ? "s" : ""}</option>
             ))}
           </select>
-
-          <select style={{ ...inputStyle, flex: 1 }} value={form.interest_type}
+          <select style={{ ...inp, flex: 1 }} value={form.interest_type}
             onChange={(e) => setForm((f) => ({ ...f, interest_type: e.target.value as "none" | "french" }))}>
             <option value="none">Sin interés</option>
             <option value="french">Con interés</option>
           </select>
         </div>
-
         {form.interest_type === "french" && (
-          <div className="flex flex-col gap-2">
-            <input style={inputStyle} type="number" placeholder="TNA % (ej: 94.9)"
-              value={form.tna ?? ""} onChange={set("tna")} />
-            <div className="text-xs text-center" style={{ color: "var(--text-secondary)" }}>
-              — o si sabés el monto de cuota —
-            </div>
-            <input style={inputStyle} type="number" placeholder="Monto de cuota"
-              value={form.known_installment ?? ""} onChange={set("known_installment")} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
+            <input style={inp} type="number" inputMode="decimal" placeholder="TNA % (ej: 94.9)"
+              value={form.tna ?? ""} onChange={setNum("tna")} />
+            <p style={{ fontSize: 10, color: "var(--ink-dim)", textAlign: "center" }}>— o si sabés el monto de cuota —</p>
+            <input style={inp} type="number" inputMode="decimal" placeholder="Monto de cuota conocido"
+              value={form.known_installment ?? ""} onChange={setNum("known_installment")} />
           </div>
         )}
-
-        <input style={inputStyle} type="date" value={form.first_payment_date}
-          onChange={set("first_payment_date")} />
       </div>
 
+      {/* ⑤ Fecha primer vencimiento */}
+      <div style={section}>
+        <p style={label}>Primer vencimiento <span style={required}>*</span></p>
+        <input style={fieldBorder(form.first_payment_date !== "")} type="date"
+          value={form.first_payment_date} onChange={setStr("first_payment_date")} />
+      </div>
+
+      {/* Resumen de cálculo */}
       {calc.installment_amount > 0 && (
-        <div
-          className="rounded-xl p-3 flex flex-col gap-1.5"
-          style={{ background: "rgba(99, 102, 241, 0.1)", border: "1px solid rgba(99,102,241,0.2)" }}
-        >
+        <div style={{ borderRadius: 12, padding: "12px 14px", background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", display: "flex", flexDirection: "column", gap: 6 }}>
           <Row label="Cuota mensual" value={`${form.currency_code} ${fmt(calc.installment_amount)}`} bold />
           <Row label="Total a pagar" value={`${form.currency_code} ${fmt(calc.total_to_pay)}`} />
           <Row label="Costo financiero" value={`${form.currency_code} ${fmt(calc.financing_cost)}`}
-            color={calc.financing_cost > 0 ? "var(--accent-yellow)" : "var(--accent-green)"} />
-          {form.tna && <Row label="TNA" value={`${form.tna.toFixed(1)}%`} />}
+            color={calc.financing_cost > 0 ? "var(--warning)" : "var(--positive)"} />
+          {form.tna != null && form.tna > 0 && <Row label="TNA" value={`${form.tna.toFixed(1)}%`} />}
         </div>
       )}
 
-      <div className="flex gap-2">
-        <button onClick={onCancel}
-          className="flex-1 py-3 rounded-xl text-sm font-medium"
-          style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-secondary)" }}>
+      {attempted && !isValid && (
+        <p style={{ fontSize: 11, color: "var(--negative)", textAlign: "center" }}>
+          Completá los campos obligatorios (marcados con *)
+        </p>
+      )}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={onCancel} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
           Cancelar
         </button>
-        <button onClick={() => onSubmit({ ...form, tna: form.tna ?? null, known_installment: null })}
-          className="flex-1 py-3 rounded-xl text-sm font-medium"
-          style={{ background: "var(--accent)", color: "#fff" }}>
-          Registrar ✓
+        <button onClick={handleSubmit} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: attempted && !isValid ? 0.7 : 1 }}>
+          {editMode ? "Guardar cambios" : "Registrar ✓"}
         </button>
       </div>
     </div>
   );
 }
 
-function Row({ label, value, bold, color }: {
-  label: string; value: string; bold?: boolean; color?: string;
-}) {
+function Row({ label: l, value, bold, color }: { label: string; value: string; bold?: boolean; color?: string }) {
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{label}</span>
-      <span className="text-sm" style={{ fontWeight: bold ? 700 : 400, color: color ?? "var(--text-primary)" }}>
-        {value}
-      </span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>{l}</span>
+      <span style={{ fontSize: 13, fontWeight: bold ? 700 : 400, color: color ?? "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{value}</span>
     </div>
   );
 }

@@ -1,10 +1,12 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import CategoryIcon from "@/components/CategoryIcon";
 import { CATEGORY_COLORS } from "@/lib/iconList";
 import { useIconStyle } from "@/context/IconStyleContext";
+import { useModalTouchLock } from "@/hooks/useModalTouchLock";
+import { BackButton } from "@/components/ui/BackButton";
 import type { SavingsGoal } from "@/types";
 
 const IconPicker = dynamic(() => import("@/components/IconPicker"), { ssr: false });
@@ -30,6 +32,7 @@ export default function MetasPage() {
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const [contributing, setContributing] = useState<string | null>(null);
   const [addAmount, setAddAmount] = useState("");
 
@@ -64,9 +67,12 @@ export default function MetasPage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between enter-up">
-        <div>
-          <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>Metas de ahorro</h1>
-          <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Objetivos y tu progreso hacia ellos</p>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>Metas de ahorro</h1>
+            <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Objetivos y tu progreso hacia ellos</p>
+          </div>
         </div>
         <button
           onClick={() => setShowNew(true)}
@@ -116,14 +122,20 @@ export default function MetasPage() {
                       {g.target_date && ` · para ${new Date(g.target_date).toLocaleDateString("es-AR", { month: "short", year: "numeric" })}`}
                     </p>
                   </div>
-                  <button onClick={() => remove(g.id)}
-                    aria-label="Eliminar meta"
-                    style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-dim)", fontSize: 14 }}>
-                    <span aria-hidden="true">🗑</span>
-                  </button>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => setEditingGoal(g)}
+                      aria-label="Editar meta"
+                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-dim)", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      ✏️
+                    </button>
+                    <button onClick={() => remove(g.id)}
+                      aria-label="Eliminar meta"
+                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-dim)", fontSize: 14 }}>
+                      <span aria-hidden="true">🗑</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Progreso */}
                 <div>
                   <div style={{ width: "100%", height: 8, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
                     <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "width 300ms ease-out" }} />
@@ -136,7 +148,6 @@ export default function MetasPage() {
                   </div>
                 </div>
 
-                {/* Aportar */}
                 {isContributing ? (
                   <div className="flex gap-2">
                     <input
@@ -168,58 +179,80 @@ export default function MetasPage() {
         </div>
       )}
 
-      {showNew && <GoalModal onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); load(); }} />}
+      {showNew && (
+        <GoalModal
+          onClose={() => setShowNew(false)}
+          onSaved={() => { setShowNew(false); load(); }}
+        />
+      )}
+      {editingGoal && (
+        <GoalModal
+          goal={editingGoal}
+          onClose={() => setEditingGoal(null)}
+          onSaved={() => { setEditingGoal(null); load(); }}
+        />
+      )}
     </div>
   );
 }
 
-// ─── Modal de creación ────────────────────────────────────────────────────────
+// ─── Modal crear/editar meta ────────────────────────────────────────────────
 
-function GoalModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function GoalModal({
+  goal,
+  onClose,
+  onSaved,
+}: {
+  goal?: SavingsGoal;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const { iconStyle } = useIconStyle();
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState("");
-  const [current, setCurrent] = useState("");
-  const [currency, setCurrency] = useState("ARS");
-  const [date, setDate] = useState("");
-  const [color, setColor] = useState(CATEGORY_COLORS[0]);
-  const [icon, setIcon] = useState("piggy-bank");
+  const isEdit = !!goal;
+  const [name, setName]     = useState(goal?.name ?? "");
+  const [target, setTarget] = useState(goal ? String(goal.target_amount) : "");
+  const [current, setCurrent] = useState(goal ? String(goal.current_amount) : "");
+  const [currency, setCurrency] = useState(goal?.currency_code ?? "ARS");
+  const [date, setDate]     = useState(goal?.target_date ? goal.target_date.split("T")[0] : "");
+  const [color, setColor]   = useState(goal?.color ?? CATEGORY_COLORS[0]);
+  const [icon, setIcon]     = useState(goal?.icon ?? "piggy-bank");
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => {
-    const el = overlayRef.current;
-    if (!el) return;
-    const prevent = (e: TouchEvent) => {
-      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
-      e.preventDefault();
-    };
-    el.addEventListener("touchmove", prevent, { passive: false });
-    return () => el.removeEventListener("touchmove", prevent);
-  }, [mounted]);
+  const { mounted, overlayRef, scrollRef } = useModalTouchLock();
 
   async function save() {
     if (!name.trim() || !target || parseFloat(target) <= 0) return;
     setSaving(true);
-    await fetch("/api/goals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: name.trim(),
-        target_amount: parseFloat(target),
-        current_amount: current ? parseFloat(current) : 0,
-        currency_code: currency,
-        target_date: date || null,
-        color,
-        icon,
-      }),
-    });
+    if (isEdit) {
+      await fetch(`/api/goals/${goal.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          target_amount: parseFloat(target),
+          currency_code: currency,
+          target_date: date || null,
+          color,
+          icon,
+        }),
+      });
+    } else {
+      await fetch("/api/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          target_amount: parseFloat(target),
+          current_amount: current ? parseFloat(current) : 0,
+          currency_code: currency,
+          target_date: date || null,
+          color,
+          icon,
+        }),
+      });
+    }
     setSaving(false);
-    onCreated();
+    onSaved();
   }
 
   if (!mounted) return null;
@@ -233,19 +266,19 @@ function GoalModal({ onClose, onCreated }: { onClose: () => void; onCreated: () 
           position: "fixed", inset: 0, zIndex: 9100,
           display: "flex", alignItems: "center", justifyContent: "center",
           background: "rgba(0,0,0,0.72)",
-          padding: "20px 16px calc(88px + env(safe-area-inset-bottom, 0px))",
+          padding: "20px 16px",
           touchAction: "none",
         }}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
-          role="dialog" aria-modal="true" aria-label="Nueva meta de ahorro"
-          style={{ width: "100%", maxWidth: 400, borderRadius: 20, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "0 24px 60px rgba(0,0,0,0.40)", maxHeight: "100%", display: "flex", flexDirection: "column" }}
+          role="dialog" aria-modal="true" aria-label={isEdit ? "Editar meta de ahorro" : "Nueva meta de ahorro"}
+          style={{ width: "100%", maxWidth: 400, borderRadius: 20, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "0 24px 60px rgba(0,0,0,0.40)", maxHeight: "90dvh", display: "flex", flexDirection: "column" }}
         >
           <div className="flex items-center justify-between" style={{ padding: "16px 18px 0", flexShrink: 0 }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>Nueva meta</p>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{isEdit ? "Editar meta" : "Nueva meta"}</p>
             <button onClick={onClose} aria-label="Cerrar"
-              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12 }}>
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span aria-hidden="true">✕</span>
             </button>
           </div>
@@ -276,7 +309,9 @@ function GoalModal({ onClose, onCreated }: { onClose: () => void; onCreated: () 
               <input style={{ ...inp, flex: 1 }} type="number" inputMode="decimal" placeholder="Monto objetivo" value={target} onChange={(e) => setTarget(e.target.value)} />
             </div>
 
-            <input style={inp} type="number" inputMode="decimal" placeholder="Ya ahorrado (opcional)" value={current} onChange={(e) => setCurrent(e.target.value)} />
+            {!isEdit && (
+              <input style={inp} type="number" inputMode="decimal" placeholder="Ya ahorrado (opcional)" value={current} onChange={(e) => setCurrent(e.target.value)} />
+            )}
 
             <div>
               <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6 }}>Fecha objetivo (opcional)</p>
@@ -285,7 +320,7 @@ function GoalModal({ onClose, onCreated }: { onClose: () => void; onCreated: () 
 
             <button onClick={save} disabled={!name.trim() || !target || saving}
               style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() && target ? "var(--accent)" : "var(--raised)", color: name.trim() && target ? "#FFFFFF" : "var(--ink-dim)" }}>
-              {saving ? "Guardando..." : "Crear meta"}
+              {saving ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear meta"}
             </button>
           </div>
         </div>

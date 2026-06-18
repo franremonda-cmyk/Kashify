@@ -1,8 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback, useId, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
+import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import dynamic from "next/dynamic";
 const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 import TransactionSheet from "@/components/TransactionSheet";
@@ -232,54 +234,40 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
   onApply: (f: Filters) => void; onClose: () => void;
 }) {
   const [local, setLocal] = useState<Filters>({ ...filters });
-  const [mounted, setMounted] = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const scrollRef  = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    const el = overlayRef.current;
-    if (!el) return;
-    const prevent = (e: TouchEvent) => {
-      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
-      e.preventDefault();
-    };
-    el.addEventListener("touchmove", prevent, { passive: false });
-    return () => el.removeEventListener("touchmove", prevent);
-  }, [mounted]);
+  const { mounted, overlayRef, scrollRef } = useModalTouchLock();
 
   if (!mounted) return null;
 
   return createPortal(
     <div
       ref={overlayRef}
+      role="presentation"
       style={{
-        position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
-        zIndex: 9000,
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        position: "fixed", inset: 0, zIndex: 9000,
+        display: "flex", alignItems: "center", justifyContent: "center",
         background: "rgba(0,0,0,0.65)",
+        padding: "20px 16px",
         touchAction: "none",
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
+        role="dialog" aria-modal="true" aria-label="Filtrar y ordenar"
         className="w-full max-w-sm flex flex-col"
         style={{
-          borderRadius: "20px 20px 0 0", background: "var(--base)",
-          borderTop: "0.5px solid var(--glass-border)",
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.12)",
+          borderRadius: 20, background: "var(--base)",
+          border: "0.5px solid var(--glass-border)",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.30)",
           maxHeight: "85dvh", minHeight: 0,
         }}
       >
         {/* Fixed header */}
-        <div style={{ flexShrink: 0, padding: "12px 20px 0" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border)", margin: "0 auto 14px" }}/>
+        <div style={{ flexShrink: 0, padding: "16px 20px 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>Filtrar y ordenar</h2>
-            <button onClick={onClose} style={{
-              width: 32, height: 32, borderRadius: "50%",
+            <button onClick={onClose} aria-label="Cerrar" style={{
+              width: 28, height: 28, borderRadius: "50%",
               background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-              color: "var(--ink)", fontSize: 14, fontWeight: 700,
+              color: "var(--ink-muted)", fontSize: 12,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>✕</button>
           </div>
@@ -323,7 +311,7 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
             </div>
           </div>
           {categories.length > 0 && (
-            <div>
+            <div style={{ paddingBottom: 4 }}>
               <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Categoría</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {categories.map(cat => {
@@ -343,8 +331,8 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
           )}
         </div>
 
-        {/* Fixed footer — extra bottom padding clears the floating nav bar */}
-        <div style={{ flexShrink: 0, display: "flex", gap: 8, padding: `16px 20px calc(16px + env(safe-area-inset-bottom, 0px))` }}>
+        {/* Fixed footer */}
+        <div style={{ flexShrink: 0, display: "flex", gap: 8, padding: "16px 20px" }}>
           <button onClick={() => setLocal({ categories: [], types: [], sort: "date_desc" })} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Limpiar</button>
           <button onClick={() => { onApply(local); onClose(); }} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF" }}>Aplicar</button>
         </div>
@@ -591,7 +579,10 @@ export default function ActividadPage() {
 
       {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies}/>}
 
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-2">
+        <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ink-muted)", paddingLeft: 2 }}>
+          Transacciones
+        </p>
         {loading && (
           <div style={{ padding: 24, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)" }}>
             <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Cargando...</p>
@@ -652,7 +643,7 @@ export default function ActividadPage() {
                   color: "var(--accent)", background: "var(--raised)",
                   borderTop: "0.5px solid var(--glass-border-dim)", textAlign: "center",
                 }}>
-                  {showAllTx ? "Ver menos ↑" : `Ver las ${filtered.length - 5} restantes ↓`}
+                  {showAllTx ? "Ver menos ↑" : "Ver todas"}
                 </button>
               )}
             </div>
@@ -675,7 +666,7 @@ export default function ActividadPage() {
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Metas de ahorro</p>
-            <a href="/metas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todas →</a>
+            <Link href="/metas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar meta</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
             {goals.map((g, i) => {
@@ -739,8 +730,8 @@ export default function ActividadPage() {
         </section>
       )}
 
-      {/* Límites de categorías */}
-      {catsWithBudget.length > 0 && (() => {
+      {/* Límites de categorías — cards rectangulares */}
+      {(() => {
         const spendByCat: Record<string, number> = {};
         filtered.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
           const catId = t.category_id ?? "";
@@ -748,37 +739,55 @@ export default function ActividadPage() {
         });
         return (
           <section className="flex flex-col gap-2">
-            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Límites de categorías — este mes</p>
-            <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
-              {catsWithBudget.map((cat, i) => {
-                const spent = spendByCat[cat.id] ?? 0;
-                const pct = Math.min(100, (spent / cat.monthly_limit) * 100);
-                const over = pct >= 100;
-                const warn = pct >= 80 && pct < 100;
-                const barColor = over ? "var(--negative)" : warn ? "var(--warning)" : (cat.color ?? "var(--accent)");
-                return (
-                  <div key={cat.id} style={{ padding: "12px 16px", borderBottom: i < catsWithBudget.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                        <div style={{ width: 26, height: 26, borderRadius: 7, background: (cat.color ?? "#7B61FF") + "22", display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
-                          <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={13} />
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{cat.name}</span>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: over ? "var(--negative)" : "var(--ink-muted)", fontVariantNumeric: "tabular-nums" }}>
-                          {cat.currency_code} {Number(spent).toLocaleString("es-AR", { maximumFractionDigits: 0 })} / {Number(cat.monthly_limit).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-                        </span>
-                        {over && <span style={{ fontSize: 9, marginLeft: 5, color: "var(--negative)", fontWeight: 700 }}>⚠ límite superado</span>}
-                      </div>
-                    </div>
-                    <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: barColor, transition: "width 500ms ease-out" }} />
-                    </div>
-                  </div>
-                );
-              })}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Límites este mes</p>
+              <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar límite</Link>
             </div>
+            {catsWithBudget.length === 0 ? (
+              <div style={{ padding: "16px", borderRadius: 14, border: "0.5px dashed var(--glass-border-hover)", background: "var(--base)", textAlign: "center" }}>
+                <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Sin límites configurados</p>
+                <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Agregar uno →</Link>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
+                {catsWithBudget.slice(0, 5).map((cat) => {
+                  const spent = spendByCat[cat.id] ?? 0;
+                  const pct = Math.min(100, cat.monthly_limit > 0 ? (spent / cat.monthly_limit) * 100 : 0);
+                  const over = pct >= 100;
+                  const warn = pct >= 80;
+                  const barColor = over ? "#FF453A" : warn ? "#FF9500" : "#34C759";
+                  const labelColor = over ? "var(--negative)" : warn ? "var(--warning)" : "var(--positive)";
+                  return (
+                    <div key={cat.id} style={{
+                      flexShrink: 0, width: 80, padding: "10px 8px 8px",
+                      borderRadius: 14, background: "var(--base)",
+                      border: `0.5px solid ${over ? "rgba(255,69,58,0.3)" : "var(--glass-border)"}`,
+                      boxShadow: "var(--shadow-sm)",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                    }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 9, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
+                        <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={15} />
+                      </div>
+                      <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
+                      <div style={{ width: "100%", height: 3, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: barColor, transition: "width 400ms ease-out" }} />
+                      </div>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: labelColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
+                    </div>
+                  );
+                })}
+                <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
+                  <div style={{
+                    width: 80, borderRadius: 14, background: "var(--raised)",
+                    border: "0.5px dashed var(--glass-border-hover)",
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 100,
+                  }}>
+                    <span style={{ fontSize: 20, color: "var(--accent)", fontWeight: 300 }}>+</span>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Agregar límite</p>
+                  </div>
+                </Link>
+              </div>
+            )}
           </section>
         );
       })()}
