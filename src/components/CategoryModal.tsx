@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 const IconPicker = dynamic(() => import("@/components/IconPicker"), { ssr: false });
 import CategoryIcon from "@/components/CategoryIcon";
@@ -22,18 +22,6 @@ interface Props {
   onClose: () => void;
 }
 
-export function useScrollLock() {
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-      document.documentElement.style.overflow = "";
-    };
-  }, []);
-}
-
 const inp: React.CSSProperties = {
   background: "var(--raised)",
   border: "0.5px solid var(--glass-border)",
@@ -45,6 +33,9 @@ const inp: React.CSSProperties = {
   outline: "none",
 };
 
+const MODAL_Z  = 1000;
+const PICKER_Z = 1010;
+
 export default function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, onClose }: Props) {
   const isNew = !cat?.id;
   const [name, setName]             = useState(cat?.name ?? "");
@@ -53,7 +44,6 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
-  useScrollLock();
 
   async function handleSave() {
     if (!name.trim()) return;
@@ -73,12 +63,16 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
 
   return (
     <>
+      {/* Overlay — touch-action: none prevents iOS background scroll without body overflow:hidden */}
       <div
         style={{
-          position: "fixed", inset: 0, zIndex: 60,
+          position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
+          zIndex: MODAL_Z,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(0,0,0,0.40)", backdropFilter: "blur(8px)",
+          background: "rgba(0,0,0,0.50)", backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
           padding: "0 16px",
+          touchAction: "none",
         }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
@@ -89,9 +83,10 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
             background: "var(--base)",
             border: "0.5px solid var(--glass-border)",
             boxShadow: "0 24px 60px rgba(0,0,0,0.30)",
-            maxHeight: "88dvh",
+            maxHeight: "80dvh",
             display: "flex",
             flexDirection: "column",
+            touchAction: "auto",
           }}
         >
           {/* Header */}
@@ -105,7 +100,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
             </button>
           </div>
 
-          <div style={{ padding: "16px 18px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
+          <div style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", touchAction: "pan-y" }}>
             {/* Icon preview + pick button */}
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button
@@ -144,13 +139,13 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
               </div>
             </div>
 
+            {/* Name — no autoFocus to avoid iOS keyboard opening immediately */}
             <input
               style={inp}
               placeholder="Nombre de la categoría"
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSave()}
-              autoFocus
             />
 
             <button
@@ -188,12 +183,14 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
         </div>
       </div>
 
+      {/* IconPicker — z-index above CategoryModal */}
       {showPicker && (
         <IconPicker
           selectedIcon={icon}
           selectedColor={color}
           selectedStyle={currentStyle}
           existingColors={existingColors}
+          zIndex={PICKER_Z}
           onSelect={(newIcon, newColor) => { setIcon(newIcon); setColor(newColor); }}
           onClose={() => setShowPicker(false)}
         />

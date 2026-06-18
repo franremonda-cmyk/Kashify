@@ -1,9 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
-import { useScrollLock } from "@/components/CategoryModal";
 import { useIconStyle } from "@/context/IconStyleContext";
 import type { Transaction } from "@/types";
 
@@ -22,6 +21,8 @@ const TX_TYPES = [
 
 const CURRENCIES_LIST = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP"];
 
+const SHEET_Z = 1000;
+
 interface Props {
   tx: Transaction & { categories?: { name?: string; icon?: string; color?: string } | null };
   categories: Category[];
@@ -32,11 +33,10 @@ interface Props {
 
 export default function TransactionSheet({ tx, categories, onClose, onDeleted, onSaved }: Props) {
   const { iconStyle } = useIconStyle();
-  const [mode, setMode]           = useState<"view" | "edit">("view");
-  const [saving, setSaving]       = useState(false);
+  const [mode, setMode]             = useState<"view" | "edit">("view");
+  const [saving, setSaving]         = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [showCatModal, setShowCatModal] = useState(false);
-  useScrollLock();
 
   // Edit fields
   const [desc, setDesc]           = useState(tx.description);
@@ -48,7 +48,8 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const catData = (tx as any).categories ?? tx.category;
-  const currentCat = categories.find(c => c.id === categoryId) ?? (catData ? { id: tx.category_id ?? "", name: catData.name ?? "", icon: catData.icon, color: catData.color } : undefined);
+  const currentCat = categories.find(c => c.id === categoryId)
+    ?? (catData ? { id: tx.category_id ?? "", name: catData.name ?? "", icon: catData.icon, color: catData.color } : undefined);
 
   const isIncome  = tx.type === "income";
   const isInstall = tx.type === "installment-payment";
@@ -99,23 +100,28 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
 
   return (
     <>
+      {/* Overlay — touch-action:none prevents iOS page scroll behind modal */}
       <div
         style={{
-          position: "fixed", inset: 0, zIndex: 50,
+          position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
+          zIndex: SHEET_Z,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(0,0,0,0.40)", backdropFilter: "blur(8px)",
+          background: "rgba(0,0,0,0.50)", backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
           padding: "0 16px",
+          touchAction: "none",
         }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
-          className="w-full max-w-sm flex flex-col scale-up"
+          className="w-full max-w-sm flex flex-col"
           style={{
             borderRadius: 20,
             background: "var(--base)",
             border: "0.5px solid var(--glass-border)",
             boxShadow: "0 24px 60px rgba(0,0,0,0.30)",
             maxHeight: "88dvh",
+            touchAction: "auto",
           }}
         >
           {/* Header */}
@@ -137,7 +143,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
             </div>
           </div>
 
-          <div style={{ overflowY: "auto", padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ overflowY: "auto", padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 12, touchAction: "pan-y" }}>
             {mode === "view" ? (
               <>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>

@@ -177,15 +177,22 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
 }) {
   const [local, setLocal] = useState<Filters>({ ...filters });
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(4px)" }}
+    <div
+      style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
+        zIndex: 1000,
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+        touchAction: "none",
+      }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full max-w-sm p-5 flex flex-col gap-5 scale-up" style={{
+      <div className="w-full max-w-sm p-5 flex flex-col gap-5" style={{
         borderRadius: "20px 20px 0 0", background: "var(--base)",
         borderTop: "0.5px solid var(--glass-border)",
         boxShadow: "0 -8px 40px rgba(0,0,0,0.10)",
         paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
-        maxHeight: "85dvh", overflowY: "auto",
+        maxHeight: "85dvh", overflowY: "auto", touchAction: "pan-y",
       }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border)", margin: "0 auto -8px" }}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -389,7 +396,7 @@ export default function ActividadPage() {
         />
       )}
 
-      <div className="flex items-center justify-between enter-up">
+      <div className="flex items-center justify-between enter-up" style={{ position: "relative", zIndex: 10 }}>
         <h1 className="display font-semibold" style={{ fontSize: "1.35rem", color: "var(--ink)" }}>Actividad</h1>
         <div className="flex gap-2" style={{ position: "relative" }}>
           <button onClick={() => setShowImport(true)} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { ICON_GROUPS, CATEGORY_COLORS, type IconDef } from "@/lib/iconList";
 import type { IconStyle } from "@/context/IconStyleContext";
 
@@ -14,7 +14,8 @@ interface Props {
   selectedIcon?: string;
   selectedColor?: string;
   selectedStyle?: IconStyle;
-  existingColors?: string[];     // to auto-suggest a different color
+  existingColors?: string[];
+  zIndex?: number;
   onSelect: (icon: string, color: string, style: IconStyle) => void;
   onClose: () => void;
 }
@@ -27,7 +28,7 @@ function PreviewIcon({ def, style, color, size = 22 }: { def: IconDef; style: Ic
   return <Component size={size} weight="light" />;
 }
 
-export default function IconPicker({ selectedIcon, selectedColor, selectedStyle = "line", existingColors = [], onSelect, onClose }: Props) {
+export default function IconPicker({ selectedIcon, selectedColor, selectedStyle = "line", existingColors = [], zIndex = 1010, onSelect, onClose }: Props) {
   const [style, setStyle]         = useState<IconStyle>(selectedStyle);
   const [search, setSearch]       = useState("");
   const [pickedIcon, setPickedIcon] = useState(selectedIcon ?? "");
@@ -36,16 +37,6 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
     const used = new Set(existingColors.map(c => c.toLowerCase()));
     return CATEGORY_COLORS.find(c => !used.has(c.toLowerCase())) ?? CATEGORY_COLORS[0];
   });
-
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-      document.documentElement.style.overflow = "";
-    };
-  }, []);
 
   const query = search.trim().toLowerCase();
   const filteredGroups = useMemo(() => {
@@ -63,12 +54,18 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
+      style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
+        zIndex,
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        background: "rgba(0,0,0,0.40)", backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
+        touchAction: "none",
+      }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-sm flex flex-col scale-up"
+        className="w-full max-w-sm flex flex-col"
         style={{
           borderRadius: "24px 24px 0 0",
           background: "var(--base)",
@@ -76,6 +73,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           boxShadow: "0 -8px 40px rgba(0,0,0,0.14)",
           maxHeight: "90dvh",
           minHeight: 0,
+          touchAction: "auto",
         }}
       >
         {/* ── Zona fija superior — nunca scrollea ── */}
@@ -153,7 +151,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
         </div>
 
         {/* ── Zona scrolleable — grilla de íconos ── */}
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px 0" }}>
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px 0", touchAction: "pan-y" }}>
           {filteredGroups.length === 0 && (
             <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Sin resultados</p>
           )}
