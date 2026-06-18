@@ -75,29 +75,32 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
   return createPortal(
     <div
       ref={overlayRef}
+      role="presentation"
       style={{
         position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
         zIndex,
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        display: "flex", alignItems: "center", justifyContent: "center",
         background: "rgba(0,0,0,0.65)",
+        padding: "20px 16px calc(88px + env(safe-area-inset-bottom, 0px))",
         touchAction: "none",
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        role="dialog" aria-modal="true" aria-label="Elegir ícono"
         className="w-full max-w-sm flex flex-col"
         style={{
-          borderRadius: "24px 24px 0 0",
+          borderRadius: 20,
           background: "var(--base)",
           border: "0.5px solid var(--glass-border)",
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.20)",
-          maxHeight: "90dvh",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.40)",
+          maxHeight: "100%",
           minHeight: 0,
         }}
       >
         {/* Fixed top area */}
         <div style={{ flexShrink: 0 }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0" }}/>
+          <div style={{ height: 4 }} />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0" }}>
             <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>Elegir ícono</p>
@@ -169,7 +172,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
         </div>
 
         {/* Confirm button */}
-        <div style={{ flexShrink: 0, padding: `10px 18px calc(28px + env(safe-area-inset-bottom, 0px))` }}>
+        <div style={{ flexShrink: 0, padding: "10px 18px 16px" }}>
           <button onClick={confirmSelect} disabled={!pickedIcon}
             style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: pickedIcon ? "var(--accent)" : "var(--raised)", color: pickedIcon ? "#FFFFFF" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
             {pickedIcon ? "Confirmar ícono" : "Seleccioná un ícono"}

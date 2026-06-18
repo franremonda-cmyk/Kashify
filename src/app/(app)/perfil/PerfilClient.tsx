@@ -44,29 +44,39 @@ const inp: React.CSSProperties = {
   outline: "none",
 };
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+// Acordeón reutilizable
+function Accordion({ label, defaultOpen = false, children }: { label: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="flex flex-col gap-2">
-      <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>{label}</p>
-      <div className="glass p-4 flex flex-col gap-3" style={{ borderRadius: 16 }}>{children}</div>
+    <div style={{ borderRadius: 16, border: "0.5px solid var(--glass-border)", background: "var(--base)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "transparent", textAlign: "left" }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{label}</p>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          style={{ color: "var(--ink-dim)", transition: "transform 200ms ease-out", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 12, borderTop: "0.5px solid var(--glass-border-dim)" }}>
+          <div style={{ height: 4 }} />
+          {children}
+        </div>
+      )}
     </div>
   );
 }
 
 function SaveButton({ onClick, saving, label = "Guardar" }: { onClick: () => void; saving: boolean; label?: string }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={saving}
+    <button onClick={onClick} disabled={saving}
       className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
-      style={{ background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}
-    >
+      style={{ background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}>
       {saving ? "..." : label}
     </button>
   );
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PerfilClient({ profile, phones, email }: Props) {
   const [displayName, setDisplayName]         = useState(profile?.display_name ?? "");
@@ -100,18 +110,14 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   function applyTheme(t: string) {
     setTheme(t);
     localStorage.setItem("kashify-theme", t);
-    if (t === "arctic") {
-      document.documentElement.removeAttribute("data-theme");
-    } else {
-      document.documentElement.setAttribute("data-theme", t);
-    }
+    if (t === "arctic") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", t);
   }
 
   async function saveName() {
     if (!displayName.trim()) return;
     setSavingName(true);
-    await supabase.from("profiles").update({ display_name: displayName.trim() })
-      .eq("user_id", profile?.user_id ?? "");
+    await supabase.from("profiles").update({ display_name: displayName.trim() }).eq("user_id", profile?.user_id ?? "");
     setSavingName(false);
     setSavedName(true);
     setTimeout(() => setSavedName(false), 2000);
@@ -119,8 +125,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
   async function saveCurrency() {
     setSavingCurrency(true);
-    await supabase.from("profiles").update({ primary_currency: primaryCurrency })
-      .eq("user_id", profile?.user_id ?? "");
+    await supabase.from("profiles").update({ primary_currency: primaryCurrency }).eq("user_id", profile?.user_id ?? "");
     setSavingCurrency(false);
     setSavedCurrency(true);
     setTimeout(() => setSavedCurrency(false), 2000);
@@ -140,17 +145,9 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
   async function saveCategory(catId: string | null, patch: Partial<Category>) {
     if (catId) {
-      await fetch(`/api/categories/${catId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
-      });
+      await fetch(`/api/categories/${catId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
     } else {
-      await fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
-      });
+      await fetch("/api/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
     }
     await fetchCategories();
   }
@@ -164,17 +161,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const existingColors = categories.map(c => c.color).filter(Boolean) as string[];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Avatar + header */}
       <div className="flex items-center gap-4 enter-up">
-        <div style={{
-          width: 56, height: 56, borderRadius: 18,
-          background: "var(--accent)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 22, fontWeight: 700, color: "#FFFFFF",
-          boxShadow: "0 4px 20px var(--accent-glow)",
-          flexShrink: 0,
-        }}>
+        <div style={{ width: 56, height: 56, borderRadius: 18, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#FFFFFF", boxShadow: "0 4px 20px var(--accent-glow)", flexShrink: 0 }}>
           {initials}
         </div>
         <div>
@@ -185,20 +175,15 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         </div>
       </div>
 
-      {/* Secciones / accesos rápidos */}
-      <Section label="Secciones">
+      {/* Accesos rápidos */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {[
           { href: "/categorias", label: "Categorías", desc: "Editar y poner límites" },
           { href: "/cuotas",     label: "Cuotas",     desc: "Compras financiadas" },
           { href: "/metas",      label: "Metas de ahorro", desc: "Objetivos y progreso" },
         ].map((s) => (
           <Link key={s.href} href={s.href}
-            style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "10px 12px", borderRadius: 12,
-              background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-              textDecoration: "none",
-            }}>
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 14, background: "var(--base)", border: "0.5px solid var(--glass-border)", textDecoration: "none", boxShadow: "var(--shadow-sm)" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{s.label}</p>
               <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
@@ -208,50 +193,58 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             </svg>
           </Link>
         ))}
-      </Section>
+      </div>
 
-      {/* Nombre */}
-      <Section label="Nombre">
+      {/* Datos personales */}
+      <Accordion label="Datos personales" defaultOpen>
         <div className="flex gap-2">
-          <input
-            style={{ ...inp, flex: 1 }}
-            placeholder="Tu nombre"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveName()}
-          />
-          <SaveButton onClick={saveName} saving={savingName} label={savedName ? "Listo ✓" : "Guardar"} />
+          <input style={{ ...inp, flex: 1 }} placeholder="Tu nombre" value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveName()} />
+          <SaveButton onClick={saveName} saving={savingName} label={savedName ? "✓" : "Guardar"} />
         </div>
-      </Section>
-
-      {/* Moneda principal */}
-      <Section label="Moneda principal">
-        <div className="flex gap-2">
-          <select
-            style={{ ...inp, flex: 1 }}
-            value={primaryCurrency}
-            onChange={(e) => setPrimaryCurrency(e.target.value)}
-          >
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <SaveButton onClick={saveCurrency} saving={savingCurrency} label={savedCurrency ? "Listo ✓" : "Guardar"} />
+        <div style={{ borderTop: "0.5px solid var(--glass-border-dim)", paddingTop: 10 }}>
+          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 4 }}>Email</p>
+          <p style={{ fontSize: 13, color: "var(--ink)" }}>{email}</p>
         </div>
-      </Section>
+        {/* Moneda */}
+        <div style={{ borderTop: "0.5px solid var(--glass-border-dim)", paddingTop: 10 }}>
+          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
+          <div className="flex gap-2">
+            <select style={{ ...inp, flex: 1 }} value={primaryCurrency} onChange={(e) => setPrimaryCurrency(e.target.value)}>
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <SaveButton onClick={saveCurrency} saving={savingCurrency} label={savedCurrency ? "✓" : "Guardar"} />
+          </div>
+        </div>
+        {/* WhatsApp */}
+        <div style={{ borderTop: "0.5px solid var(--glass-border-dim)", paddingTop: 10 }}>
+          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 8 }}>WhatsApp vinculado</p>
+          {phones.length > 0 ? phones.map((p) => (
+            <div key={p.id} className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+              <div className="flex items-center gap-2">
+                <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: p.verified ? "var(--positive)" : "var(--warning)" }} />
+                <span style={{ fontSize: 13, color: "var(--ink)" }}>{p.phone_number}</span>
+              </div>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, fontWeight: 600, background: p.verified ? "rgba(52,199,89,0.10)" : "rgba(255,149,0,0.10)", color: p.verified ? "var(--positive)" : "var(--warning)", border: `0.5px solid ${p.verified ? "rgba(52,199,89,0.25)" : "rgba(255,149,0,0.25)"}` }}>
+                {p.verified ? "verificado" : "pendiente"}
+              </span>
+            </div>
+          )) : <p style={{ fontSize: 13, color: "var(--ink-dim)", marginBottom: 8 }}>Ningún número vinculado</p>}
+          <div className="flex gap-2">
+            <input style={{ ...inp, flex: 1 }} placeholder="+54 9 11 0000-0000" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} type="tel" />
+            <button onClick={addPhone} style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", flexShrink: 0 }}>Agregar</button>
+          </div>
+        </div>
+      </Accordion>
 
-      {/* Apariencia — tema + estilo de íconos */}
-      <Section label="Apariencia">
-        {/* Tema */}
+      {/* Apariencia */}
+      <Accordion label="Apariencia">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {THEMES.map((t) => {
             const active = theme === t.id;
             return (
               <button key={t.id} onClick={() => applyTheme(t.id)}
-                style={{
-                  padding: "12px 14px", borderRadius: 12, textAlign: "left",
-                  background: active ? "var(--accent-soft)" : "var(--raised)",
-                  border: active ? `0.5px solid var(--accent-glow)` : "0.5px solid var(--glass-border)",
-                  display: "flex", alignItems: "center", gap: 10,
-                }}>
+                style={{ padding: "12px 14px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? `0.5px solid var(--accent-glow)` : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 12, height: 12, borderRadius: "50%", background: t.preview, flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{t.label}</p>
@@ -262,66 +255,38 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             );
           })}
         </div>
-
-        {/* Divider */}
-        <div style={{ height: "0.5px", background: "var(--glass-border)", margin: "2px 0" }} />
-
-        {/* Estilo de íconos */}
-        <div>
-          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 8 }}>Estilo de íconos</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {ICON_STYLES.map((s) => {
-              const active = iconStyle === s.id;
-              return (
-                <button key={s.id} onClick={() => setIconStyle(s.id)}
-                  style={{
-                    padding: "10px 12px", borderRadius: 12, textAlign: "left",
-                    background: active ? "var(--accent-soft)" : "var(--raised)",
-                    border: active ? `0.5px solid var(--accent-glow)` : "0.5px solid var(--glass-border)",
-                    display: "flex", alignItems: "center", gap: 8,
-                  }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{s.label}</p>
-                    <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
-                  </div>
-                  {active && <div style={{ fontSize: 11, color: "var(--accent)", flexShrink: 0 }}>✓</div>}
-                </button>
-              );
-            })}
-          </div>
+        <div style={{ height: "0.5px", background: "var(--glass-border)" }} />
+        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)" }}>Estilo de íconos</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {ICON_STYLES.map((s) => {
+            const active = iconStyle === s.id;
+            return (
+              <button key={s.id} onClick={() => setIconStyle(s.id)}
+                style={{ padding: "10px 12px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? `0.5px solid var(--accent-glow)` : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{s.label}</p>
+                  <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
+                </div>
+                {active && <div style={{ fontSize: 11, color: "var(--accent)", flexShrink: 0 }}>✓</div>}
+              </button>
+            );
+          })}
         </div>
-
-        <p style={{ fontSize: 10, color: "var(--ink-muted)" }}>
-          Los cambios se aplican al instante en toda la app.
-        </p>
-      </Section>
+      </Accordion>
 
       {/* Mis categorías */}
-      <Section label="Mis categorías">
+      <Accordion label="Mis categorías">
         {catLoading ? (
           <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "8px 0" }}>Cargando...</p>
         ) : categories.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Aún no tenés categorías personalizadas</p>
+          <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Aún no tenés categorías</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setEditingCat(cat)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "10px 12px", borderRadius: 12,
-                  background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-                  textAlign: "left", width: "100%",
-                }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: (cat.color ?? "var(--accent)") + "22",
-                  border: `1px solid ${cat.color ?? "var(--accent)"}33`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: cat.color ?? "var(--accent)",
-                }}>
-                  <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={18} />
+              <button key={cat.id} onClick={() => setEditingCat(cat)}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textAlign: "left", width: "100%" }}>
+                <div style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, background: (cat.color ?? "var(--accent)") + "22", border: `1px solid ${cat.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)" }}>
+                  <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={17} />
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", flex: 1 }}>{cat.name}</span>
                 {cat.color && <div style={{ width: 10, height: 10, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />}
@@ -332,59 +297,14 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             ))}
           </div>
         )}
-        <button
-          onClick={() => setEditingCat("new")}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600,
-            background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)",
-            color: "var(--accent)",
-          }}>
+        <button onClick={() => setEditingCat("new")}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)" }}>
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
         </button>
-      </Section>
-
-      {/* WhatsApp vinculado */}
-      <Section label="WhatsApp vinculado">
-        {phones.length > 0 ? phones.map((p) => (
-          <div key={p.id} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: p.verified ? "var(--positive)" : "var(--warning)" }} />
-              <span style={{ fontSize: 13, color: "var(--ink)" }}>{p.phone_number}</span>
-            </div>
-            <span style={{
-              fontSize: 10, padding: "2px 8px", borderRadius: 999, fontWeight: 600,
-              background: p.verified ? "rgba(52,199,89,0.10)" : "rgba(255,149,0,0.10)",
-              color: p.verified ? "var(--positive)" : "var(--warning)",
-              border: `0.5px solid ${p.verified ? "rgba(52,199,89,0.25)" : "rgba(255,149,0,0.25)"}`,
-            }}>
-              {p.verified ? "verificado" : "pendiente"}
-            </span>
-          </div>
-        )) : (
-          <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Ningún número vinculado</p>
-        )}
-        <div className="flex gap-2 pt-1" style={{ borderTop: "0.5px solid var(--glass-border-dim)" }}>
-          <input
-            style={{ ...inp, flex: 1 }}
-            placeholder="+54 9 11 0000-0000"
-            value={newPhone}
-            onChange={(e) => setNewPhone(e.target.value)}
-            type="tel"
-          />
-          <button onClick={addPhone}
-            className="px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", flexShrink: 0 }}>
-            Agregar
-          </button>
-        </div>
-        <p style={{ fontSize: 11, color: "var(--ink-dim)" }}>
-          Neo te enviará un código de verificación por WhatsApp.
-        </p>
-      </Section>
+      </Accordion>
 
       {/* Cuenta */}
-      <Section label="Cuenta">
+      <Accordion label="Cuenta">
         <div className="flex items-center justify-between">
           <div>
             <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>Email</p>
@@ -392,18 +312,11 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           </div>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--positive)", boxShadow: "0 0 6px rgba(52,199,89,0.35)" }} />
         </div>
-      </Section>
-
-      {/* Cerrar sesión */}
-      <button onClick={signOut}
-        style={{
-          padding: "14px", borderRadius: 14, fontSize: 13, fontWeight: 600,
-          background: "rgba(255,59,48,0.07)",
-          color: "var(--negative)",
-          border: "0.5px solid rgba(255,59,48,0.18)",
-        }}>
-        Cerrar sesión
-      </button>
+        <button onClick={signOut}
+          style={{ padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.07)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
+          Cerrar sesión
+        </button>
+      </Accordion>
 
       {/* Category edit / create modal */}
       {editingCat !== null && (

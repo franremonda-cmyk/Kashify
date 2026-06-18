@@ -1,10 +1,11 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import HeroBalanceCard from "./HeroBalanceCard";
 import CategoryIcon from "./CategoryIcon";
 import SpendingChart, { type ChartMonth } from "./SpendingChart";
 import TransactionSheet from "./TransactionSheet";
-import type { Balance } from "@/types";
+import type { Balance, SavingsGoal } from "@/types";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; }
 interface RecentTx {
@@ -32,6 +33,7 @@ interface Props {
   metrics: CurrencyMetrics[];
   chartData: Record<string, ChartMonth[]>;
   recent: RecentTx[];
+  goals?: SavingsGoal[];
 }
 
 const SYMBOLS: Record<string, string> = {
@@ -86,10 +88,138 @@ function MetricCard({ label, value, sym, isIncome }: {
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent }: Props) {
+// Mini donut solo el círculo — colapsable
+function MiniDonut({ data, income, sym }: { data: { name: string; amount: number; color?: string }[]; income: number; sym: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const R = 40, CX = 50, CY = 50, stroke = 7;
+  const GAP = 0.008;
+  const circ = 2 * Math.PI * R;
+  const base = income > 0 ? income : data.reduce((s, d) => s + d.amount, 0);
+  let offset = 0;
+  const slices = data.slice(0, 6).map((d, i) => {
+    const pct = Math.min(d.amount / base, 1);
+    const dash = Math.max(0, pct * circ - GAP * circ);
+    const s = { pct, dash, offset: offset + (GAP * circ) / 2, color: d.color ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length], name: d.name, amount: d.amount };
+    offset += pct * circ;
+    return s;
+  });
+
+  function fmt(n: number) {
+    if (n >= 1_000_000) return `${(n/1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${Math.round(n/1_000)}K`;
+    return String(Math.round(n));
+  }
+  const totalExp = data.reduce((s, d) => s + d.amount, 0);
+
+  return (
+    <div style={{ borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 16px" }}>
+        <svg width="100" height="100" viewBox="0 0 100 100" style={{ flexShrink: 0 }}>
+          <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--raised)" strokeWidth={stroke}/>
+          {slices.map((s, i) => (
+            <circle key={i} cx={CX} cy={CY} r={R} fill="none"
+              stroke={s.color} strokeWidth={stroke}
+              strokeDasharray={`${s.dash} ${circ - s.dash}`}
+              strokeDashoffset={-(s.offset - circ / 4)}
+              strokeLinecap="butt"/>
+          ))}
+          <text x={CX} y={CY - 5} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--positive)" fontFamily="monospace">{sym}{fmt(income)}</text>
+          <text x={CX} y={CY + 9} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--negative)" fontFamily="monospace">{sym}{fmt(totalExp)}</text>
+        </svg>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 8 }}>Gastos por categoría</p>
+          {/* Top 2 categorías siempre visibles */}
+          {slices.slice(0, 2).map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+              <div style={{ width: 3, height: 12, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
+              <span style={{ fontSize: 11, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+              <span style={{ fontSize: 10, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums" }}>
+                {income > 0 ? `${Math.round(s.pct * 100)}%` : fmt(s.amount)}
+              </span>
+            </div>
+          ))}
+          {slices.length > 2 && (
+            <button onClick={() => setExpanded(v => !v)}
+              style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)", background: "transparent", marginTop: 2 }}>
+              {expanded ? "Ver menos ↑" : `+${slices.length - 2} más ↓`}
+            </button>
+          )}
+        </div>
+      </div>
+      {/* Detalle expandido */}
+      {expanded && (
+        <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 6, borderTop: "0.5px solid var(--glass-border-dim)" }}>
+          {slices.slice(2).map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: i === 0 ? 10 : 0 }}>
+              <div style={{ width: 3, height: 12, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
+              <span style={{ fontSize: 11, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+              <span style={{ fontSize: 10, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums" }}>
+                {income > 0 ? `${Math.round(s.pct * 100)}%` : fmt(s.amount)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Widget compacto de metas
+function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
+  if (goals.length === 0) return null;
+  function fmt(n: number, currency: string) {
+    if (n >= 1_000_000) return `${currency} ${(n/1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${currency} ${Math.round(n/1_000)}K`;
+    return `${currency} ${Math.round(n).toLocaleString("es-AR")}`;
+  }
+  return (
+    <section className="flex flex-col gap-2 enter-up" data-delay="3">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          Metas de ahorro
+        </p>
+        <Link href="/metas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todas →</Link>
+      </div>
+      <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+        {goals.map((g, i) => {
+          const pct = Math.min(100, (g.current_amount / g.target_amount) * 100);
+          const reached = g.status === "reached" || g.current_amount >= g.target_amount;
+          return (
+            <Link key={g.id} href="/metas" style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+              borderBottom: i < goals.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
+              textDecoration: "none",
+            }}>
+              <div style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, background: g.color + "22", border: `1px solid ${g.color}33`, display: "flex", alignItems: "center", justifyContent: "center", color: g.color }}>
+                <CategoryIcon icon={g.icon} name={g.name} color={g.color} size={16} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>
+                    {reached ? "✓ Lograda" : `${pct.toFixed(0)}%`}
+                  </span>
+                </div>
+                <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "width 400ms ease-out" }} />
+                </div>
+                <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 4 }}>
+                  {fmt(g.current_amount, g.currency_code)} de {fmt(g.target_amount, g.currency_code)}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent, goals = [] }: Props) {
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [showAllTx, setShowAllTx] = useState(false);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
@@ -99,6 +229,21 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
     ?? { currency_code: selectedCurrency, income: 0, expense: 0 };
   const sym = SYMBOLS[selectedCurrency] ?? selectedCurrency;
   const chartMonths = chartData[selectedCurrency] ?? [];
+
+  // Categorías de gasto para el donut (mes actual, moneda seleccionada)
+  const expenseByCategory: Record<string, { name: string; amount: number; color?: string }> = {};
+  recent
+    .filter(t => (t.type === "expense" || t.type === "installment-payment") && t.currency_code === selectedCurrency)
+    .forEach(t => {
+      const cat = t.categories as { name?: string; color?: string } | null;
+      const catName = cat?.name ?? "Otros";
+      const catColor = catColorOrFallback(cat?.color, catName);
+      if (!expenseByCategory[catName]) expenseByCategory[catName] = { name: catName, amount: 0, color: catColor };
+      expenseByCategory[catName].amount += Number(t.amount);
+    });
+  const donutData = Object.values(expenseByCategory).sort((a, b) => b.amount - a.amount);
+
+  const visibleTx = showAllTx ? recent : recent.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-4">
@@ -114,36 +259,33 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} />
       </div>
 
+      {/* Widget de metas */}
+      <GoalsWidget goals={goals} />
+
+      {/* Últimas transacciones — máx 5 con botón ver todas */}
       {recent.length > 0 && (
-        <section className="flex flex-col gap-3 enter-up" data-delay="3">
-          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            Últimas transacciones
-          </p>
-          <div style={{
-            borderRadius: 16, overflow: "hidden",
-            border: "0.5px solid var(--glass-border)",
-            background: "var(--base)", boxShadow: "var(--shadow-sm)",
-          }}>
-            {recent.map((t, i) => {
+        <section className="flex flex-col gap-2 enter-up" data-delay="4">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Últimas transacciones
+            </p>
+            <Link href="/historial" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todas →</Link>
+          </div>
+          <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+            {visibleTx.map((t, i) => {
               const cat = t.categories as { name?: string; icon?: string; color?: string } | null;
               const isIncome  = t.type === "income";
               const isInstall = t.type === "installment-payment";
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
               const catColor  = catColorOrFallback(cat?.color, cat?.name ?? "");
-              const iconBg    = `${catColor}22`;
-              const iconColor = catColor;
               return (
                 <button key={`${t.id}-${i}`} onClick={() => setSelectedTx(t)} style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
-                  borderBottom: i < recent.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
+                  borderBottom: i < visibleTx.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
                   width: "100%", textAlign: "left", background: "transparent",
                   transition: "background 120ms ease-out",
                 }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: iconBg, color: iconColor,
-                  }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: catColor + "22", color: catColor }}>
                     <CategoryIcon name={cat?.name} icon={cat?.icon} color={cat?.color} size={16} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -154,21 +296,34 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
                       {cat?.name ?? "Sin categoría"} · {t.date}
                     </p>
                   </div>
-                  <span style={{
-                    fontSize: 13, fontWeight: 600, color: amtColor,
-                    fontVariantNumeric: "tabular-nums", flexShrink: 0,
-                    fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
-                  }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                     {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                   </span>
                 </button>
               );
             })}
+            {recent.length > 5 && (
+              <button onClick={() => setShowAllTx(v => !v)} style={{
+                width: "100%", padding: "10px 16px", fontSize: 12, fontWeight: 600,
+                color: "var(--accent)", background: "var(--raised)",
+                borderTop: "0.5px solid var(--glass-border-dim)", textAlign: "center",
+              }}>
+                {showAllTx ? "Ver menos ↑" : `Ver ${recent.length - 5} más ↓`}
+              </button>
+            )}
           </div>
         </section>
       )}
 
-      <div className="enter-up" data-delay="4">
+      {/* Donut colapsable */}
+      {donutData.length > 0 && (
+        <div className="enter-up" data-delay="5">
+          <MiniDonut data={donutData} income={m.income} sym={sym} />
+        </div>
+      )}
+
+      {/* Gráfico de líneas mensual */}
+      <div className="enter-up" data-delay="6">
         <SpendingChart data={chartMonths} currencySymbol={sym} />
       </div>
 

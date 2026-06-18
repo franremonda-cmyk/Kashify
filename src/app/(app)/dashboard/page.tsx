@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const yearAgo    = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().split("T")[0];
 
-  const [balancesRes, profileRes, pendingRes, txMonthRes, txHistoryRes] = await Promise.all([
+  const [balancesRes, profileRes, pendingRes, txMonthRes, txHistoryRes, goalsRes] = await Promise.all([
     supabase.from("balances").select("*").eq("user_id", user.id).order("currency_code"),
     supabase.from("profiles").select("*").eq("user_id", user.id).single(),
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
@@ -31,6 +31,7 @@ export default async function DashboardPage() {
       .eq("user_id", user.id).is("deleted_at", null)
       .gte("date", yearAgo)
       .order("date", { ascending: true }),
+    supabase.from("savings_goals").select("*").eq("user_id", user.id).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
   ]);
 
   const balances   = balancesRes.data ?? [];
@@ -38,6 +39,7 @@ export default async function DashboardPage() {
   const pending    = pendingRes.data ?? [];
   const txAll      = txMonthRes.data ?? [];
   const txHistory  = txHistoryRes.data ?? [];
+  const goals      = goalsRes.data ?? [];
 
   if (!profile?.display_name) redirect("/onboarding");
 
@@ -122,6 +124,7 @@ export default async function DashboardPage() {
         metrics={metrics}
         chartData={chartData}
         recent={recent}
+        goals={goals}
       />
 
       {/* Empty state */}

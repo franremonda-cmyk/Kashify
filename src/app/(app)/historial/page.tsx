@@ -4,9 +4,64 @@ import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
 import dynamic from "next/dynamic";
-const ImportFlow = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
+const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 import TransactionSheet from "@/components/TransactionSheet";
 import type { Transaction } from "@/types";
+
+// Import modal usando el overlay estándar
+function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
+  const [mounted, setMounted] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const scrollRef  = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const el = overlayRef.current;
+    if (!el) return;
+    const prevent = (e: TouchEvent) => {
+      if (scrollRef.current && e.target instanceof Node && scrollRef.current.contains(e.target)) return;
+      e.preventDefault();
+    };
+    el.addEventListener("touchmove", prevent, { passive: false });
+    return () => el.removeEventListener("touchmove", prevent);
+  }, [mounted]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      ref={overlayRef}
+      role="presentation"
+      style={{ position: "fixed", inset: 0, zIndex: 9100, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(0,0,0,0.65)", touchAction: "none" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        role="dialog" aria-modal="true" aria-label="Importar transacciones"
+        className="w-full max-w-sm flex flex-col"
+        style={{ borderRadius: "24px 24px 0 0", background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "0 -8px 40px rgba(0,0,0,0.20)", maxHeight: "92dvh", minHeight: 0 }}
+      >
+        <div style={{ flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0" }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>Importar transacciones</p>
+            <button onClick={onClose} aria-label="Cerrar"
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span aria-hidden="true">✕</span>
+            </button>
+          </div>
+        </div>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px calc(28px + env(safe-area-inset-bottom, 0px))", touchAction: "pan-y" }}>
+          <ImportFlowLazy
+            inline
+            onDone={(count) => { void count; onDone(); }}
+            onCancel={onClose}
+          />
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 interface Category { id: string; name: string; icon: string; color?: string; }
 
@@ -327,10 +382,24 @@ export default function ActividadPage() {
   const [selectedTx, setSelectedTx]         = useState<Transaction | null>(null);
   const [showImport, setShowImport]         = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showAllTx, setShowAllTx]           = useState(false);
+  // Extra data for detailed widgets
+  const [goals, setGoals]         = useState<import("@/types").SavingsGoal[]>([]);
+  const [installmentPlans, setInstallmentPlans] = useState<import("@/types").InstallmentPlan[]>([]);
+  const [catsWithBudget, setCatsWithBudget] = useState<{ id: string; name: string; color?: string; icon?: string; monthly_limit: number; currency_code: string }[]>([]);
   const currencyInitialized = useRef(false);
 
   useEffect(() => {
-    fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
+    // Extra widgets data
+    fetch("/api/goals").then(r => r.ok ? r.json() : []).then(setGoals).catch(() => {});
+    fetch("/api/installments").then(r => r.ok ? r.json() : []).then(setInstallmentPlans).catch(() => {});
+    fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string; category_budgets?: { monthly_limit: number; currency_code: string }[] }[]) => {
+      setCatsWithBudget(cats.filter(c => c.category_budgets && c.category_budgets.length > 0).map(c => ({
+        id: c.id, name: c.name, color: c.color, icon: c.icon,
+        monthly_limit: c.category_budgets![0].monthly_limit,
+        currency_code: c.category_budgets![0].currency_code,
+      })));
+    }).catch(() => {});
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
@@ -415,9 +484,9 @@ export default function ActividadPage() {
       )}
 
       {showImport && (
-        <ImportFlow
+        <ImportModal
           onDone={() => { setShowImport(false); fetchTransactions(); }}
-          onCancel={() => setShowImport(false)}
+          onClose={() => setShowImport(false)}
         />
       )}
 
@@ -536,47 +605,59 @@ export default function ActividadPage() {
             <p style={{ fontSize: 13, color: "var(--ink)" }}>Sin movimientos</p>
           </div>
         )}
-        {!loading && filtered.length > 0 && (
-          <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
-            {filtered.map((t, i) => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const catData   = (t as any).categories ?? t.category;
-              const isIncome  = t.type === "income";
-              const isInstall = t.type === "installment-payment";
-              const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
-              const catColor  = catColorOrFallback(catData?.color, catData?.name ?? "");
-              const iconBg    = `${catColor}22`;
-              const iconColor = catColor;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setSelectedTx(t)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
-                    borderBottom: i < filtered.length-1 ? "0.5px solid var(--glass-border-dim)" : "none",
-                    width: "100%", textAlign: "left",
-                    background: "transparent",
-                    transition: "background 120ms ease-out",
-                  }}
-                >
-                  <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: iconBg, color: iconColor }}>
-                    <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={16}/>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
-                    <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{t.date ? ` · ${t.date}` : ""}</p>
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
-                      {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-                    </p>
-                    <p style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
-                  </div>
+        {!loading && filtered.length > 0 && (() => {
+          const visibleTx = showAllTx ? filtered : filtered.slice(0, 5);
+          return (
+            <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+              {visibleTx.map((t, i) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const catData   = (t as any).categories ?? t.category;
+                const isIncome  = t.type === "income";
+                const isInstall = t.type === "installment-payment";
+                const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
+                const catColor  = catColorOrFallback(catData?.color, catData?.name ?? "");
+                const iconBg    = `${catColor}22`;
+                const iconColor = catColor;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTx(t)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+                      borderBottom: i < visibleTx.length-1 ? "0.5px solid var(--glass-border-dim)" : "none",
+                      width: "100%", textAlign: "left",
+                      background: "transparent",
+                      transition: "background 120ms ease-out",
+                    }}
+                  >
+                    <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: iconBg, color: iconColor }}>
+                      <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={16}/>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
+                      <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{t.date ? ` · ${t.date}` : ""}</p>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
+                        {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+                      </p>
+                      <p style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
+                    </div>
+                  </button>
+                );
+              })}
+              {filtered.length > 5 && (
+                <button onClick={() => setShowAllTx(v => !v)} style={{
+                  width: "100%", padding: "10px 16px", fontSize: 12, fontWeight: 600,
+                  color: "var(--accent)", background: "var(--raised)",
+                  borderTop: "0.5px solid var(--glass-border-dim)", textAlign: "center",
+                }}>
+                  {showAllTx ? "Ver menos ↑" : `Ver las ${filtered.length - 5} restantes ↓`}
                 </button>
-              );
-            })}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {total > 50 && (
@@ -586,6 +667,121 @@ export default function ActividadPage() {
           <button onClick={() => setPage(p => p+1)} disabled={page*50>=total} style={{ fontSize: 13, padding: "8px 16px", borderRadius: 10, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", opacity: page*50>=total?0.3:1 }}>Sig →</button>
         </div>
       )}
+
+      {/* ── Sección de gráficos detallados ─────────────────────── */}
+
+      {/* Metas de ahorro */}
+      {goals.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Metas de ahorro</p>
+            <a href="/metas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todas →</a>
+          </div>
+          <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+            {goals.map((g, i) => {
+              const pct = Math.min(100, (g.current_amount / g.target_amount) * 100);
+              const reached = g.status === "reached" || g.current_amount >= g.target_amount;
+              function fmtG(n: number) { return Number(n).toLocaleString("es-AR", { maximumFractionDigits: 0 }); }
+              return (
+                <div key={g.id} style={{ padding: "12px 16px", borderBottom: i < goals.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: g.color + "22", border: `1px solid ${g.color}33`, display: "flex", alignItems: "center", justifyContent: "center", color: g.color, flexShrink: 0 }}>
+                        <CategoryIcon icon={g.icon} name={g.name} color={g.color} size={14} />
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{g.name}</span>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)" }}>
+                      {reached ? "¡Lograda!" : `${pct.toFixed(0)}%`}
+                    </span>
+                  </div>
+                  <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "width 500ms ease-out" }} />
+                  </div>
+                  <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 4 }}>
+                    {g.currency_code} {fmtG(g.current_amount)} de {fmtG(g.target_amount)}
+                    {g.target_date ? ` · ${new Date(g.target_date).toLocaleDateString("es-AR", { month: "short", year: "numeric" })}` : ""}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Cuotas activas */}
+      {installmentPlans.filter(p => p.status === "active").length > 0 && (
+        <section className="flex flex-col gap-2">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Cuotas activas</p>
+            <a href="/cuotas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todas →</a>
+          </div>
+          <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+            {installmentPlans.filter(p => p.status === "active").map((plan, i, arr) => {
+              const payments = (plan as import("@/types").InstallmentPlan & { installment_payments?: { status: string }[] }).installment_payments ?? [];
+              const paidCount = payments.filter((p: { status: string }) => p.status === "paid").length;
+              const pct = (paidCount / plan.n_installments) * 100;
+              return (
+                <div key={plan.id} style={{ padding: "12px 16px", borderBottom: i < arr.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{plan.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", fontVariantNumeric: "tabular-nums" }}>
+                      {plan.currency_code} {Number(plan.installment_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })} · cuota {paidCount + 1}/{plan.n_installments}
+                    </span>
+                  </div>
+                  <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "var(--accent)", transition: "width 500ms ease-out" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Límites de categorías */}
+      {catsWithBudget.length > 0 && (() => {
+        const spendByCat: Record<string, number> = {};
+        filtered.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
+          const catId = t.category_id ?? "";
+          spendByCat[catId] = (spendByCat[catId] ?? 0) + Number(t.amount);
+        });
+        return (
+          <section className="flex flex-col gap-2">
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Límites de categorías — este mes</p>
+            <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+              {catsWithBudget.map((cat, i) => {
+                const spent = spendByCat[cat.id] ?? 0;
+                const pct = Math.min(100, (spent / cat.monthly_limit) * 100);
+                const over = pct >= 100;
+                const warn = pct >= 80 && pct < 100;
+                const barColor = over ? "var(--negative)" : warn ? "var(--warning)" : (cat.color ?? "var(--accent)");
+                return (
+                  <div key={cat.id} style={{ padding: "12px 16px", borderBottom: i < catsWithBudget.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                        <div style={{ width: 26, height: 26, borderRadius: 7, background: (cat.color ?? "#7B61FF") + "22", display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
+                          <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={13} />
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{cat.name}</span>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: over ? "var(--negative)" : "var(--ink-muted)", fontVariantNumeric: "tabular-nums" }}>
+                          {cat.currency_code} {Number(spent).toLocaleString("es-AR", { maximumFractionDigits: 0 })} / {Number(cat.monthly_limit).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+                        </span>
+                        {over && <span style={{ fontSize: 9, marginLeft: 5, color: "var(--negative)", fontWeight: 700 }}>⚠ límite superado</span>}
+                      </div>
+                    </div>
+                    <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: barColor, transition: "width 500ms ease-out" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
     </div>
   );
 }

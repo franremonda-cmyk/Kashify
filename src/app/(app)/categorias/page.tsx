@@ -1,133 +1,233 @@
 "use client";
 import { useState, useEffect } from "react";
+import CategoryIcon from "@/components/CategoryIcon";
+import CategoryModal from "@/components/CategoryModal";
+import { useIconStyle } from "@/context/IconStyleContext";
 
+interface Budget { monthly_limit: number; currency_code: string }
 interface Category {
   id: string; name: string; icon: string; color: string; is_default: boolean;
-  category_budgets?: { monthly_limit: number; currency_code: string }[];
+  category_budgets?: Budget[];
 }
 
+const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP"];
+
+const inp: React.CSSProperties = {
+  background: "var(--raised)",
+  border: "0.5px solid var(--glass-border)",
+  borderRadius: 12,
+  padding: "11px 14px",
+  color: "var(--ink)",
+  fontSize: 14,
+  width: "100%",
+  outline: "none",
+};
+
 export default function CategoriasPage() {
+  const { iconStyle } = useIconStyle();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [showNew, setShowNew] = useState(false);
-  const [newName, setNewName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [editingCat, setEditingCat] = useState<Category | "new" | null>(null);
+  // Límite: state del panel expandido por categoría
   const [editBudget, setEditBudget] = useState<{ id: string; limit: string; currency: string } | null>(null);
+  // Nuevo límite: dropdown para elegir qué categoría
+  const [showNewBudget, setShowNewBudget] = useState(false);
+  const [newBudgetCatId, setNewBudgetCatId] = useState("");
+  const [newBudgetLimit, setNewBudgetLimit] = useState("");
+  const [newBudgetCurrency, setNewBudgetCurrency] = useState("ARS");
+  const existingColors = categories.map(c => c.color).filter(Boolean);
 
-  useEffect(() => {
-    fetch("/api/categories").then((r) => r.json()).then(setCategories);
-  }, []);
-
-  async function addCategory() {
-    if (!newName.trim()) return;
-    await fetch("/api/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName.trim(), icon: "📦", color: "#6366f1" }),
-    });
-    setNewName("");
-    setShowNew(false);
-    fetch("/api/categories").then((r) => r.json()).then(setCategories);
+  async function load() {
+    setLoading(true);
+    const res = await fetch("/api/categories");
+    if (res.ok) setCategories(await res.json());
+    setLoading(false);
   }
 
-  async function saveBudget() {
-    if (!editBudget) return;
+  useEffect(() => { load(); }, []);
+
+  async function saveBudget(catId: string, limit: string, currency: string) {
+    if (!limit || isNaN(parseFloat(limit))) return;
     await fetch("/api/budgets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        category_id: editBudget.id,
-        monthly_limit: parseFloat(editBudget.limit),
-        currency_code: editBudget.currency,
-      }),
+      body: JSON.stringify({ category_id: catId, monthly_limit: parseFloat(limit), currency_code: currency }),
     });
     setEditBudget(null);
-    fetch("/api/categories").then((r) => r.json()).then(setCategories);
+    load();
   }
 
-  const inputStyle = {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: 10,
-    padding: "8px 12px",
-    color: "var(--text-primary)",
-    fontSize: 14,
-  };
+  async function saveNewBudget() {
+    if (!newBudgetCatId || !newBudgetLimit) return;
+    await fetch("/api/budgets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category_id: newBudgetCatId, monthly_limit: parseFloat(newBudgetLimit), currency_code: newBudgetCurrency }),
+    });
+    setShowNewBudget(false);
+    setNewBudgetCatId("");
+    setNewBudgetLimit("");
+    setNewBudgetCurrency("ARS");
+    load();
+  }
+
+  // Categorías sin límite para el dropdown de "nuevo límite"
+  const catsWithoutBudget = categories.filter(c => !c.category_budgets?.length);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Categorías</h1>
-        <button
-          onClick={() => setShowNew(true)}
-          className="text-sm px-3 py-2 rounded-xl font-medium"
-          style={{ background: "var(--accent)", color: "#fff" }}
-        >
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between enter-up">
+        <div>
+          <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>Categorías</h1>
+          <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Organizá y controlá tus gastos</p>
+        </div>
+        <button onClick={() => setEditingCat("new")}
+          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}>
           + Nueva
         </button>
       </div>
 
-      {showNew && (
-        <div className="glass p-4 flex gap-2">
-          <input
-            style={{ ...inputStyle, flex: 1 }}
-            placeholder="Nombre de categoría"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addCategory()}
-            autoFocus
-          />
-          <button onClick={addCategory} className="px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ background: "var(--accent)", color: "#fff" }}>OK</button>
-          <button onClick={() => setShowNew(false)} className="px-3 py-2 rounded-xl text-sm"
-            style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-secondary)" }}>✕</button>
+      {/* Lista de categorías */}
+      {loading ? (
+        <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Cargando...</p>
+      ) : (
+        <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+          {categories.map((cat, i) => {
+            const budget = cat.category_budgets?.[0];
+            const isEditing = editBudget?.id === cat.id;
+            return (
+              <div key={cat.id} style={{ borderBottom: i < categories.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px" }}>
+                  {/* Ícono correcto */}
+                  <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: (cat.color ?? "var(--accent)") + "22", border: `1px solid ${cat.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)" }}>
+                    <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={18} style={iconStyle} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{cat.name}</span>
+                      {cat.is_default && (
+                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 999, background: "var(--raised)", color: "var(--ink-dim)", border: "0.5px solid var(--glass-border)" }}>default</span>
+                      )}
+                    </div>
+                    {budget && (
+                      <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>
+                        Límite: {budget.currency_code} {Number(budget.monthly_limit).toLocaleString("es-AR")}
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => setEditBudget(isEditing ? null : { id: cat.id, limit: String(budget?.monthly_limit ?? ""), currency: budget?.currency_code ?? "ARS" })}
+                      style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: budget ? "var(--accent)" : "var(--ink-muted)", fontWeight: 600 }}>
+                      {budget ? "Límite" : "+ Límite"}
+                    </button>
+                    <button onClick={() => setEditingCat(cat)}
+                      style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 600 }}>
+                      Editar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline budget editor */}
+                {isEditing && (
+                  <div style={{ display: "flex", gap: 8, padding: "0 16px 12px" }}>
+                    <select style={{ ...inp, width: 90 }} value={editBudget.currency}
+                      onChange={(e) => setEditBudget(b => b ? { ...b, currency: e.target.value } : b)}>
+                      {CURRENCIES.map(c => <option key={c}>{c}</option>)}
+                    </select>
+                    <input style={{ ...inp, flex: 1 }} type="number" inputMode="decimal" placeholder="Límite mensual"
+                      value={editBudget.limit}
+                      onChange={(e) => setEditBudget(b => b ? { ...b, limit: e.target.value } : b)}
+                      onKeyDown={(e) => e.key === "Enter" && saveBudget(cat.id, editBudget.limit, editBudget.currency)}
+                    />
+                    <button onClick={() => saveBudget(cat.id, editBudget.limit, editBudget.currency)}
+                      style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}>✓</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        {categories.map((cat) => {
-          const budget = cat.category_budgets?.[0];
-          const isEditing = editBudget?.id === cat.id;
-
-          return (
-            <div key={cat.id} className="glass p-3 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span>{cat.icon}</span>
-                  <span className="text-sm font-medium">{cat.name}</span>
-                  {cat.is_default && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full"
-                      style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-secondary)" }}>
-                      default
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => setEditBudget(
-                    isEditing ? null : { id: cat.id, limit: String(budget?.monthly_limit ?? ""), currency: budget?.currency_code ?? "ARS" }
-                  )}
-                  className="text-xs px-2.5 py-1 rounded-lg"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-secondary)" }}
-                >
-                  {budget ? `${budget.currency_code} ${Number(budget.monthly_limit).toLocaleString("es-AR")}` : "Agregar límite"}
-                </button>
-              </div>
-
-              {isEditing && (
-                <div className="flex gap-2">
-                  <select style={{ ...inputStyle, width: 80 }} value={editBudget.currency}
-                    onChange={(e) => setEditBudget((b) => b ? { ...b, currency: e.target.value } : b)}>
-                    {["ARS", "USD", "EUR"].map((c) => <option key={c}>{c}</option>)}
-                  </select>
-                  <input style={{ ...inputStyle, flex: 1 }} type="number" placeholder="Límite mensual"
-                    value={editBudget.limit}
-                    onChange={(e) => setEditBudget((b) => b ? { ...b, limit: e.target.value } : b)} />
-                  <button onClick={saveBudget} className="px-3 py-2 rounded-xl text-sm font-medium"
-                    style={{ background: "var(--accent)", color: "#fff" }}>✓</button>
-                </div>
-              )}
+      {/* Panel para agregar límite a una categoría sin límite */}
+      {catsWithoutBudget.length > 0 && (
+        <div style={{ borderRadius: 16, border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+          <button onClick={() => setShowNewBudget(v => !v)}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "transparent" }}>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Agregar límite mensual</p>
+              <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Asignale un techo de gasto a una categoría</p>
             </div>
-          );
-        })}
-      </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+              style={{ color: "var(--ink-dim)", transition: "transform 200ms ease-out", transform: showNewBudget ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          {showNewBudget && (
+            <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 10, borderTop: "0.5px solid var(--glass-border-dim)" }}>
+              <div style={{ height: 4 }} />
+              {/* Dropdown de categorías */}
+              <select style={inp} value={newBudgetCatId} onChange={(e) => setNewBudgetCatId(e.target.value)}>
+                <option value="">Elegir categoría...</option>
+                {catsWithoutBudget.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {/* Opción: crear categoría nueva */}
+              <button onClick={() => setEditingCat("new")}
+                style={{ fontSize: 12, color: "var(--accent)", textAlign: "left", background: "transparent", paddingLeft: 4, fontWeight: 600 }}>
+                + Crear nueva categoría
+              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <select style={{ ...inp, width: 90 }} value={newBudgetCurrency} onChange={(e) => setNewBudgetCurrency(e.target.value)}>
+                  {CURRENCIES.map(c => <option key={c}>{c}</option>)}
+                </select>
+                <input style={{ ...inp, flex: 1 }} type="number" inputMode="decimal" placeholder="Monto mensual"
+                  value={newBudgetLimit} onChange={(e) => setNewBudgetLimit(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && saveNewBudget()}
+                />
+              </div>
+              <button onClick={saveNewBudget} disabled={!newBudgetCatId || !newBudgetLimit}
+                style={{ padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: newBudgetCatId && newBudgetLimit ? "var(--accent)" : "var(--raised)", color: newBudgetCatId && newBudgetLimit ? "#FFFFFF" : "var(--ink-dim)" }}>
+                Guardar límite
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal crear/editar categoría */}
+      {editingCat !== null && (
+        <CategoryModal
+          cat={editingCat === "new" ? undefined : editingCat}
+          existingColors={existingColors}
+          currentStyle={iconStyle}
+          onSave={async (patch) => {
+            const catId = editingCat === "new" ? null : editingCat.id;
+            if (catId) {
+              await fetch(`/api/categories/${catId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
+            } else {
+              const res = await fetch("/api/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
+              // Si había un límite pendiente, asignarlo a la nueva categoría
+              if (newBudgetLimit && res.ok) {
+                const newCat = await res.json();
+                await fetch("/api/budgets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category_id: newCat.id, monthly_limit: parseFloat(newBudgetLimit), currency_code: newBudgetCurrency }) });
+                setShowNewBudget(false);
+                setNewBudgetCatId("");
+                setNewBudgetLimit("");
+              }
+            }
+            setEditingCat(null);
+            load();
+          }}
+          onDelete={editingCat !== "new" && !editingCat.is_default ? async () => {
+            await fetch(`/api/categories/${editingCat.id}`, { method: "DELETE" });
+            setEditingCat(null);
+            load();
+          } : undefined}
+          onClose={() => setEditingCat(null)}
+        />
+      )}
     </div>
   );
 }
