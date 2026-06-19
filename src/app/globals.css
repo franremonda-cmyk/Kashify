@@ -310,11 +310,11 @@ button, a, input, select, textarea {
 @keyframes neo-pulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 28px rgba(123,97,255,0.35), 0 0 60px rgba(123,97,255,0.15);
+    box-shadow: 0 0 28px var(--accent-glow), 0 0 60px var(--accent-soft);
   }
   50% {
     transform: scale(1.07);
-    box-shadow: 0 0 48px rgba(123,97,255,0.55), 0 0 90px rgba(123,97,255,0.25);
+    box-shadow: 0 0 52px var(--accent-glow), 0 0 100px var(--accent-soft);
   }
 }
 

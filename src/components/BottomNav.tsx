@@ -331,7 +331,6 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
           backdropFilter: "blur(48px) saturate(260%)",
           border: "0.5px solid var(--glass-border)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), 0 24px 80px rgba(0,0,0,0.80)",
-          overflow: "hidden",
         }}
       >
         <div className="flex items-center justify-between">
@@ -352,7 +351,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3" style={{ width: "100%", overflow: "hidden" }}>
           {/* Tipo */}
           <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--raised)" }}>
             {(["expense", "income"] as const).map((t) => (

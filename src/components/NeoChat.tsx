@@ -230,21 +230,19 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   // ── Render ────────────────────────────────────────────────────────────────
 
   const avatarClass = avatarState === "thinking" ? "neo-avatar-thinking" : isActive ? "neo-avatar-active" : "neo-avatar-idle";
-  const avatarGradient = "linear-gradient(135deg, #7B61FF 0%, #A78BFA 50%, #818CF8 100%)";
+  const avatarBg = "var(--accent)";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "calc(100dvh - 24px - 104px)", position: "relative" }}>
 
       {/* ── IDLE state — centered avatar ── */}
       {!isActive && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "24px 0" }}>
-          {/* Avatar */}
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "24px 0 80px" }}>
+          {/* Avatar — no letter, pure color from theme */}
           <div
             className={avatarClass}
-            style={{ width: 140, height: 140, borderRadius: "50%", background: avatarGradient, display: "flex", alignItems: "center", justifyContent: "center", cursor: "default", flexShrink: 0 }}
-          >
-            <span style={{ fontSize: 52, fontWeight: 800, color: "#FFFFFF", letterSpacing: "-2px", fontFamily: "var(--font-display, system-ui)" }}>N</span>
-          </div>
+            style={{ width: 140, height: 140, borderRadius: "50%", background: avatarBg, flexShrink: 0, boxShadow: "0 0 40px var(--accent-glow)" }}
+          />
 
           <div style={{ textAlign: "center" }}>
             <p style={{ fontSize: 22, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.5px" }}>Neo</p>
@@ -279,10 +277,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 12, borderBottom: "0.5px solid var(--glass-border)", flexShrink: 0 }}>
             <div
               className={avatarClass}
-              style={{ width: 44, height: 44, borderRadius: "50%", background: avatarGradient, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-            >
-              <span style={{ fontSize: 18, fontWeight: 800, color: "#FFFFFF" }}>N</span>
-            </div>
+              style={{ width: 44, height: 44, borderRadius: "50%", background: avatarBg, flexShrink: 0, boxShadow: "0 0 16px var(--accent-glow)" }}
+            />
             <div>
               <p style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>Neo</p>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -294,8 +290,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             </div>
           </div>
 
-          {/* Message list */}
-          <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "12px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Message list — paddingBottom leaves room for the fixed input bar */}
+          <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "12px 0 80px", display: "flex", flexDirection: "column", gap: 8 }}>
             {messages.map(msg => (
               <MessageBubble
                 key={msg.id}
@@ -319,8 +315,18 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
         </>
       )}
 
-      {/* ── Input (always at bottom) ── */}
-      <div style={{ flexShrink: 0, paddingTop: 10 }}>
+      {/* ── Input — fixed above bottom nav ── */}
+      <div style={{
+        position: "fixed",
+        bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "min(100%, 520px)",
+        padding: "10px 16px 12px",
+        background: "var(--void)",
+        borderTop: "0.5px solid var(--glass-border)",
+        zIndex: 200,
+      }}>
         <form
           onSubmit={e => { e.preventDefault(); sendMessage(input); }}
           style={{ display: "flex", gap: 8 }}
