@@ -348,6 +348,10 @@ button, a, input, select, textarea {
 .neo-avatar-active {
   animation: neo-pulse 3s ease-in-out infinite;
 }
+/* Navbar Neo avatar animates while a conversation is active */
+body.neo-chatting .neo-nav-avatar {
+  animation: neo-pulse 1.6s ease-in-out infinite, neo-blob 2.4s ease-in-out infinite;
+}
 
 /* ─── Desktop sidebar layout ─────────────── */
 

@@ -150,6 +150,13 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   useEffect(() => { scrollToBottom(); }, [keyboardH, scrollToBottom]);
 
+  // Tell the navbar a conversation is active (via body class) so it can animate
+  // its Neo avatar while chatting. CSS rule lives in globals.css.
+  useEffect(() => {
+    document.body.classList.toggle("neo-chatting", isActive);
+    return () => { document.body.classList.remove("neo-chatting"); };
+  }, [isActive]);
+
   // ── Send ─────────────────────────────────────────────────────────────────
 
   async function sendMessage(text: string) {
@@ -318,41 +325,27 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       transition: "bottom 180ms ease-out",
     }}>
 
-      {/* ── IDLE state ── */}
+      {/* ── IDLE state — landing sin franja, avatar centrado moviéndose ── */}
       {!isActive && (
         <>
-          {/* Header strip */}
-          <div style={{
-            flexShrink: 0,
-            display: "flex", alignItems: "center", gap: 12,
-            padding: "calc(10px + env(safe-area-inset-top, 0px)) 16px 10px",
-            background: "var(--accent)",
-          }}>
-            <div className="neo-avatar-active" style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
-            <div>
-              <p style={{ fontSize: 16, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>Neo</p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.2 }}>asistente personal de finanzas</p>
-            </div>
-          </div>
-
-          {/* Welcome body — scrollable */}
+          {/* Welcome body — scrollable, no top strip */}
           <div style={{
             flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch",
             background: "var(--base)",
-            display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 12, padding: "32px 16px 24px",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            gap: 14, padding: "calc(40px + env(safe-area-inset-top, 0px)) 20px 28px",
           } as React.CSSProperties}>
-            <div className="neo-avatar-idle" style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 32px var(--accent-glow)" }} />
+            <div className="neo-avatar-idle" style={{ width: 96, height: 96, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 40px var(--accent-glow)" }} />
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>Hola, soy Neo</p>
-              <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 4 }}>Tu asistente personal de finanzas</p>
+              <p style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>Hola, soy Neo</p>
+              <p style={{ fontSize: 13.5, color: "var(--ink-muted)", marginTop: 4 }}>Tu asistente personal de finanzas</p>
             </div>
             {!hasPhone && (
               <a href="/perfil" style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#fff", textDecoration: "none" }}>
                 Conectar WhatsApp →
               </a>
             )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", marginTop: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 420, marginTop: 4 }}>
               {SUGGESTIONS.map(s => (
                 <button key={s} onClick={() => sendMessage(s)}
                   style={{ padding: "12px 16px", borderRadius: 14, fontSize: 14, fontWeight: 500, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink)", textAlign: "left" }}>

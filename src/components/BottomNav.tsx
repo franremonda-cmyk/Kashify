@@ -697,7 +697,7 @@ function ActivityIcon({ active }: { active: boolean }) {
 function NeoIcon({ active }: { active: boolean }) {
   return (
     <div
-      className={active ? "neo-avatar-idle" : undefined}
+      className={`neo-nav-avatar${active ? " neo-avatar-idle" : ""}`}
       style={{
         width: 26,
         height: 26,
