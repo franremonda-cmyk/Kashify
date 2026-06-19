@@ -248,19 +248,22 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // Nav pill top edge: bottom=16px + safe-area, height=60px → total ~76px + safe-area
-  const INPUT_BOTTOM = "calc(80px + env(safe-area-inset-bottom, 0px))";
+  // In active mode we use a fixed full-screen overlay (z-index 60) that covers the
+  // app navbar (z-index 40). The input bar then only needs to clear the system
+  // safe-area-inset-bottom, not the app navbar — giving proper scroll containment.
+  const SAFE_BOTTOM = "env(safe-area-inset-bottom, 0px)";
+  // In idle mode the input sits above the app navbar
+  const IDLE_INPUT_BOTTOM = "calc(80px + env(safe-area-inset-bottom, 0px))";
 
   return (
-    <div style={{
-      display: "flex", flexDirection: "column",
-      height: "100dvh", overflow: "hidden",
-      marginTop: -24, marginLeft: -16, marginRight: -16, marginBottom: -104,
-    }}>
-
-      {/* ── IDLE state ── */}
+    <>
+      {/* ── IDLE state — normal document flow, bottom nav visible ── */}
       {!isActive && (
-        <>
+        <div style={{
+          display: "flex", flexDirection: "column",
+          marginTop: -24, marginLeft: -16, marginRight: -16, marginBottom: -104,
+          minHeight: "calc(100dvh - 0px)",
+        }}>
           {/* Header idle */}
           <div style={{
             flexShrink: 0,
@@ -277,10 +280,10 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
           {/* Body */}
           <div style={{
-            flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch",
+            flex: 1,
             background: "var(--base)",
             display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 12, padding: "32px 16px 160px",
+            gap: 12, padding: "32px 16px 180px",
           }}>
             <div className="neo-avatar-idle" style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 32px var(--accent-glow)" }} />
             <div style={{ textAlign: "center" }}>
@@ -302,15 +305,15 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             </div>
           </div>
 
-          {/* Input bar idle — same fixed bar */}
+          {/* Input bar — fixed above app navbar */}
           <div style={{
-            position: "fixed", bottom: INPUT_BOTTOM, left: 0, right: 0, zIndex: 50,
+            position: "fixed", bottom: IDLE_INPUT_BOTTOM, left: 0, right: 0, zIndex: 50,
             padding: "8px 12px",
             background: "var(--void)",
             borderTop: "0.5px solid var(--glass-border)",
             display: "flex", alignItems: "center", gap: 8,
           }}>
-            <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, background: "var(--raised)", borderRadius: 24, padding: "2px 4px 2px 16px", border: "0.5px solid var(--glass-border)" }}>
+            <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ flex: 1, display: "flex", alignItems: "center", background: "var(--raised)", borderRadius: 24, padding: "2px 4px 2px 16px", border: "0.5px solid var(--glass-border)" }}>
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -329,20 +332,23 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
               </button>
             )}
           </div>
-        </>
+        </div>
       )}
 
-      {/* ── ACTIVE state ── */}
+      {/* ── ACTIVE state — full-screen fixed overlay, covers app navbar ── */}
       {isActive && (
-        <>
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 60,
+          display: "flex", flexDirection: "column",
+          background: "var(--base)",
+        }}>
           {/* WhatsApp-style header */}
           <div style={{
             flexShrink: 0,
             display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 16px 10px 8px",
+            padding: `calc(10px + env(safe-area-inset-top, 0px)) 16px 10px 8px`,
             background: "var(--accent)",
           }}>
-            {/* Back to close/reset */}
             <button
               onClick={() => { setIsActive(false); setMessages([]); }}
               style={{ width: 36, height: 36, borderRadius: "50%", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
@@ -362,17 +368,14 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             </div>
           </div>
 
-          {/* Chat area — WhatsApp wallpaper feel */}
+          {/* Message list — scrolls within the remaining space */}
           <div ref={listRef} style={{
             flex: 1, minHeight: 0,
             overflowY: "auto", WebkitOverflowScrolling: "touch",
-            background: "var(--base)",
-            padding: "8px 8px 130px",
+            padding: "8px 8px 90px",
             display: "flex", flexDirection: "column", gap: 2,
           } as React.CSSProperties}>
-
             {messages.map((msg, i) => {
-              // Date separator
               const prevMsg = messages[i - 1];
               const showDate = !prevMsg || msg.ts.toDateString() !== prevMsg.ts.toDateString();
               return (
@@ -410,15 +413,14 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             )}
           </div>
 
-          {/* WhatsApp-style input bar */}
+          {/* Input bar — pinned to bottom of overlay, just above system safe area */}
           <div style={{
-            position: "fixed", bottom: INPUT_BOTTOM, left: 0, right: 0, zIndex: 50,
-            padding: "8px 12px",
+            flexShrink: 0,
+            padding: `8px 12px calc(8px + ${SAFE_BOTTOM})`,
             background: "var(--void)",
             borderTop: "0.5px solid var(--glass-border)",
             display: "flex", alignItems: "flex-end", gap: 8,
           }}>
-            {/* Context hint */}
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
               {pendingAction?.type === "needs_amount" && (
                 <p style={{ fontSize: 11, color: "var(--accent)", paddingInline: 14 }}>
@@ -430,7 +432,6 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
                   Esperando nombre de la meta...
                 </p>
               )}
-              {/* Input pill */}
               <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", alignItems: "center", background: "var(--raised)", borderRadius: 24, padding: "2px 4px 2px 16px", border: "0.5px solid var(--glass-border)" }}>
                 <input
                   ref={inputRef}
@@ -446,16 +447,15 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
                 )}
               </form>
             </div>
-            {/* Mic button */}
             {!input.trim() && (
               <button type="button" onClick={startVoice} style={{ width: 44, height: 44, borderRadius: "50%", background: listening ? "var(--accent)" : "var(--raised)", border: "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: listening ? "0 0 12px var(--accent-glow)" : "none", transition: "background 150ms" }}>
                 <MicIcon color={listening ? "#fff" : "var(--ink-muted)"} />
               </button>
             )}
           </div>
-        </>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
