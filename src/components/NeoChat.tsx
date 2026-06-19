@@ -101,8 +101,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [isActive, setIsActive] = useState(initialMessages.length > 0);
   const [busyPending, setBusyPending] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  const [vp, setVp] = useState({ kb: 0, offsetTop: 0, height: 0 });
-  const keyboardH = vp.kb;
+  const [kbOpen, setKbOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -131,51 +130,40 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
   useEffect(() => { if (isActive) scrollToBottom(); }, [isActive, scrollToBottom]);
 
-  // ── Keyboard tracking (visualViewport) ─────────────────────────────────────
-  // iOS Safari, when the keyboard opens, scrolls the layout viewport to reveal
-  // the focused input — which pushes our fixed header off-screen and lets the
-  // navbar float. To counter that, we pin the container to the *visual* viewport
-  // exactly: height = vv.height and a translateY(vv.offsetTop) so it always tracks
-  // the visible area above the keyboard.
+  // ── Keyboard detection (visualViewport) ────────────────────────────────────
+  // Track whether the soft keyboard is open by comparing the current visual
+  // viewport height against the largest height ever seen (= no keyboard).
+  // We use 100dvh for sizing — it adjusts automatically for the keyboard and
+  // URL bar on modern iOS/Android — so we only need kbOpen to toggle the
+  // navbar-visible vs keyboard-visible height formula.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     let raf = 0;
     const apply = () => {
       raf = 0;
-      const height = vv.height;
-      const offsetTop = vv.offsetTop;
-      // Track the largest height seen (= no keyboard). Keyboard height is how much
-      // smaller the viewport currently is vs that max — robust against innerHeight
-      // quirks across iOS Safari versions.
-      if (height > maxVpHeight.current) maxVpHeight.current = height;
-      const kb = Math.max(0, maxVpHeight.current - height);
-      // Skip the state update if nothing meaningful changed (avoids re-render storms).
-      setVp(prev =>
-        Math.abs(prev.height - height) < 1 && Math.abs(prev.offsetTop - offsetTop) < 1 && Math.abs(prev.kb - kb) < 1
-          ? prev
-          : { kb, offsetTop, height }
-      );
+      const h = vv.height;
+      if (h > maxVpHeight.current) maxVpHeight.current = h;
+      const kb = Math.max(0, maxVpHeight.current - h);
+      setKbOpen(kb > 80);
     };
     const onResize = () => { if (!raf) raf = requestAnimationFrame(apply); };
     vv.addEventListener("resize", onResize);
-    vv.addEventListener("scroll", onResize);
     apply();
     return () => {
       if (raf) cancelAnimationFrame(raf);
       vv.removeEventListener("resize", onResize);
-      vv.removeEventListener("scroll", onResize);
     };
   }, []);
 
-  useEffect(() => { scrollToBottom(); }, [keyboardH, scrollToBottom]);
+  useEffect(() => { scrollToBottom(); }, [kbOpen, scrollToBottom]);
 
   // Hide the app navbar while the keyboard is open so it sits behind the keyboard
   // and only the input shows above it. CSS rule lives in globals.css.
   useEffect(() => {
-    document.body.classList.toggle("neo-keyboard-open", keyboardH > 80);
+    document.body.classList.toggle("neo-keyboard-open", kbOpen);
     return () => { document.body.classList.remove("neo-keyboard-open"); };
-  }, [keyboardH]);
+  }, [kbOpen]);
 
   // Tell the navbar a conversation is active (via body class) so it can animate
   // its Neo avatar while chatting. CSS rule lives in globals.css.
@@ -284,20 +272,13 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   // Single fixed flex-column container (WhatsApp ".phone"). Its bottom edge is
   // dynamic: when the keyboard is closed it sits just above the app navbar
-  // (navbar visible); when the keyboard opens it lifts above the keyboard so the
-  // input rides on top of it and the navbar is covered by the keyboard.
-  const kbOpen = keyboardH > 80;
-  // Always pin to the visual viewport: top follows vv.offsetTop (counters Safari's
-  // page scroll), height = vv.height. When the keyboard is closed we shrink the
-  // height to leave the navbar visible below; when open we use full vv.height so
-  // the input rides right above the keyboard and the navbar is hidden behind it.
-  const vh = vp.height || (typeof window !== "undefined" ? window.innerHeight : 0);
+  // (navbar visible); when the keyboard opens it fills the full visual viewport
+  // (100dvh auto-shrinks for the keyboard on modern iOS/Android, no translateY needed).
   const containerStyle: React.CSSProperties = {
     top: 0,
     height: kbOpen
-      ? `${vh}px`
-      : `calc(${vh}px - 84px - env(safe-area-inset-bottom, 0px))`,
-    transform: `translateY(${vp.offsetTop}px)`,
+      ? "100dvh"
+      : "calc(100dvh - 84px - env(safe-area-inset-bottom, 0px))",
   };
 
   // Shared input bar (used by idle + active). No microphone — text only.
