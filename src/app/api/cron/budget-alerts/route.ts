@@ -59,12 +59,27 @@ export async function GET(request: Request) {
       if (existing) continue;
 
       try {
-        await sendBudgetAlert(phone, budget.categories?.name ?? "", totalSpent, budget.monthly_limit, threshold);
-        await supabase.from("notification_log").insert({
-          user_id: budget.user_id,
-          alert_type: alertType,
-          ref_id: budget.category_id,
-        });
+        const catName = budget.categories?.name ?? "esta categoría";
+        const cur = budget.currency_code;
+        const spentFmt = totalSpent.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+        const limitFmt = budget.monthly_limit.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+        const notifMsg = threshold >= 100
+          ? `⚠️ Superaste el límite en ${catName}: gastaste ${cur} ${spentFmt} de ${cur} ${limitFmt}.`
+          : `📊 Usaste el ${threshold}% de tu límite en ${catName}: ${cur} ${spentFmt} de ${cur} ${limitFmt}.`;
+
+        await Promise.all([
+          sendBudgetAlert(phone, catName, totalSpent, budget.monthly_limit, threshold).catch(() => {}),
+          supabase.from("neo_notifications").insert({
+            user_id: budget.user_id,
+            message: notifMsg,
+            type: "budget_alert",
+          }),
+          supabase.from("notification_log").insert({
+            user_id: budget.user_id,
+            alert_type: alertType,
+            ref_id: budget.category_id,
+          }),
+        ]);
         alerts++;
       } catch (e) {
         console.error("Budget alert failed:", e);
