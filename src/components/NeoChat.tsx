@@ -114,6 +114,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const maxVpHeight = useRef(0);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then(d => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
@@ -140,7 +141,11 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     const onResize = () => {
       const height = vv.height;
       const offsetTop = vv.offsetTop;
-      const kb = Math.max(0, window.innerHeight - height - offsetTop);
+      // Track the largest height seen (= no keyboard). Keyboard height is how much
+      // smaller the viewport currently is vs that max — robust against innerHeight
+      // quirks across iOS Safari versions.
+      if (height > maxVpHeight.current) maxVpHeight.current = height;
+      const kb = Math.max(0, maxVpHeight.current - height);
       setVp({ kb, offsetTop, height });
     };
     vv.addEventListener("resize", onResize);
@@ -272,14 +277,19 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   // dynamic: when the keyboard is closed it sits just above the app navbar
   // (navbar visible); when the keyboard opens it lifts above the keyboard so the
   // input rides on top of it and the navbar is covered by the keyboard.
-  const NAV_CLEARANCE = "calc(84px + env(safe-area-inset-bottom, 0px))";
-  const kbOpen = keyboardH > 20;
-  // Keyboard open → pin to the visual viewport (height + translateY) so header
-  // stays put and input rides above the keyboard. Keyboard closed → end above
-  // the navbar so it stays visible.
-  const containerStyle: React.CSSProperties = kbOpen
-    ? { top: 0, bottom: "auto", height: `${vp.height}px`, transform: `translateY(${vp.offsetTop}px)` }
-    : { top: 0, bottom: NAV_CLEARANCE, height: "auto", transform: "none" };
+  const kbOpen = keyboardH > 80;
+  // Always pin to the visual viewport: top follows vv.offsetTop (counters Safari's
+  // page scroll), height = vv.height. When the keyboard is closed we shrink the
+  // height to leave the navbar visible below; when open we use full vv.height so
+  // the input rides right above the keyboard and the navbar is hidden behind it.
+  const vh = vp.height || (typeof window !== "undefined" ? window.innerHeight : 0);
+  const containerStyle: React.CSSProperties = {
+    top: 0,
+    height: kbOpen
+      ? `${vh}px`
+      : `calc(${vh}px - 84px - env(safe-area-inset-bottom, 0px))`,
+    transform: `translateY(${vp.offsetTop}px)`,
+  };
 
   // Shared input bar (used by idle + active). No microphone — text only.
   const inputBar = (
