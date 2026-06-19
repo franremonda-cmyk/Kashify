@@ -695,16 +695,32 @@ function ActivityIcon({ active }: { active: boolean }) {
 
 function NeoIcon({ active }: { active: boolean }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth={active ? 0 : 1.5} strokeLinecap="round" strokeLinejoin="round">
-      {active ? (
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
-      ) : (
-        <>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M9 8v8M15 8v8" />
-        </>
-      )}
-    </svg>
+    <div
+      className={active ? "neo-avatar-idle" : undefined}
+      style={{
+        width: 26,
+        height: 26,
+        borderRadius: "50%",
+        background: active ? "var(--accent)" : "var(--raised)",
+        border: active ? "none" : "1.5px solid var(--ink-muted)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: active ? "0 0 10px var(--accent-glow)" : "none",
+        transition: "background 200ms ease, box-shadow 200ms ease",
+        flexShrink: 0,
+      }}
+    >
+      <span style={{
+        fontSize: 11,
+        fontWeight: 800,
+        color: active ? "#FFFFFF" : "var(--ink-muted)",
+        lineHeight: 1,
+        letterSpacing: "-0.5px",
+      }}>
+        N
+      </span>
+    </div>
   );
 }
 
