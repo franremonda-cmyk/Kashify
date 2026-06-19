@@ -18,10 +18,16 @@ type Intent =
   | { type: "goals_query" }
   | { type: "installments_query" }
   | { type: "edit_budget"; category: string; amount: number }
+  | { type: "delete_budget"; category: string }
   | { type: "delete_tx"; search: string }
   | { type: "register_tx"; txType: "income" | "expense"; amount: number; description: string; currency: string }
   | { type: "create_goal"; name: string; amount?: number }
+  | { type: "delete_goal"; name: string }
+  | { type: "rename_goal"; oldName: string; newName: string }
+  | { type: "set_goal_target"; name: string; amount: number }
   | { type: "deposit_goal"; amount: number; goalName: string }
+  | { type: "pay_installment"; name: string }
+  | { type: "cancel_installment"; name: string }
   | { type: "create_installment"; name: string; installmentAmount: number; nInstallments: number }
   | { type: "natural_tx"; txType: "income" | "expense"; description: string; amount: number; suggestedCategory: string | null }
   | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
@@ -108,6 +114,33 @@ function detectIntent(msg: string): Intent {
     const amount = parseFloat(editMatch[2].replace(/\./g, "").replace(",", "."));
     if (!isNaN(amount)) return { type: "edit_budget", category: editMatch[1].trim(), amount };
   }
+
+  // ── Delete goal ───────────────────────────────────────────────────────────
+  const deleteGoalMatch = m.match(/(?:elimin[ao]r?|borra[r]?|saca[r]?|quita[r]?|borr[ao]|elimina)\s+(?:la\s+)?(?:meta|objetivo|ahorro)\s+(?:de\s+|llamad[ao]\s+)?["']?(.+?)["']?$/);
+  if (deleteGoalMatch) return { type: "delete_goal", name: deleteGoalMatch[1].trim() };
+
+  // ── Rename goal ───────────────────────────────────────────────────────────
+  const renameGoalMatch = m.match(/(?:renombr[ao]r?|cambi[ao]r?\s+(?:el\s+)?nombre\s+(?:de\s+)?(?:la\s+)?(?:meta\s+)?)\s*["']?(.+?)["']?\s+a\s+["']?(.+?)["']?$/);
+  if (renameGoalMatch) return { type: "rename_goal", oldName: renameGoalMatch[1].trim(), newName: renameGoalMatch[2].trim() };
+
+  // ── Set goal target amount ────────────────────────────────────────────────
+  const setGoalTargetMatch = m.match(/(?:cambi[ao]r?|edit[ao]r?|modific[ao]r?|actualiz[ao]r?|pon[eé]|fij[ao]r?)\s+(?:el\s+)?(?:objetivo|monto|target|meta)\s+(?:de\s+)?(?:la\s+)?(?:meta\s+)?["']?(.+?)["']?\s+a\s+(\d[\d.,]*)/);
+  if (setGoalTargetMatch) {
+    const amount = parseFloat(setGoalTargetMatch[2].replace(/\./g, "").replace(",", "."));
+    if (!isNaN(amount)) return { type: "set_goal_target", name: setGoalTargetMatch[1].trim(), amount };
+  }
+
+  // ── Pay installment ───────────────────────────────────────────────────────
+  const payInstallMatch = m.match(/(?:pag[ueé]|pagué|registr[ao]r?\s+(?:el\s+)?pago\s+de|pago\s+la\s+cuota\s+de|pagué\s+(?:la\s+)?cuota\s+de|pago\s+cuota\s+de)\s+["']?(.+?)["']?$/);
+  if (payInstallMatch) return { type: "pay_installment", name: payInstallMatch[1].trim() };
+
+  // ── Cancel installment ────────────────────────────────────────────────────
+  const cancelInstallMatch = m.match(/(?:cancel[ao]r?|salda[r]?|cerr[ao]r?|termina[r]?|cancel[ao])\s+(?:la\s+)?(?:cuota|plan|deuda)\s+(?:de\s+)?["']?(.+?)["']?$/);
+  if (cancelInstallMatch) return { type: "cancel_installment", name: cancelInstallMatch[1].trim() };
+
+  // ── Delete budget ─────────────────────────────────────────────────────────
+  const deleteBudgetMatch = m.match(/(?:elimin[ao]r?|borra[r]?|saca[r]?|quita[r]?|borra el|elimina el|saca el|quita el)\s+(?:el\s+)?(?:l[ií]?mite|presupuesto)\s+(?:de\s+)?["']?(.+?)["']?$/);
+  if (deleteBudgetMatch) return { type: "delete_budget", category: deleteBudgetMatch[1].trim() };
 
   // ── Delete transaction ────────────────────────────────────────────────────
   const deleteMatch = m.match(/(?:elimin[ao]r?|borra[r]?|saca[r]?|quita[r]?|borr[ao]|elimina)\s+(?:el\s+|la\s+)?(?:(?:gasto|pago|ingreso|compra|transaccion)\s+(?:de\s+)?)?(.+)/);
@@ -274,7 +307,7 @@ export async function POST(req: Request) {
   // ── Help (0 tokens, 0 DB) ─────────────────────────────────────────────────
   if (intent.type === "help") {
     return NextResponse.json({
-      text: `Puedo ayudarte con:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Ver ingresos: "¿cuánto cobré?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n• Ver metas: "mis metas"\n• Ver cuotas: "mis cuotas"\n• Crear meta: "agrega una meta llamada viaje"\n• Crear cuota: "agrega una cuota Netflix por 6 meses de 5000"\n• Eliminar gasto: "borra el gasto de Netflix"`,
+      text: `Puedo ayudarte con:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n\nMetas:\n• Ver: "mis metas"\n• Crear: "agrega una meta viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Cambiar objetivo: "cambiá el objetivo de viaje a 50000"\n• Depositar: "depositá 5000 en viaje"\n• Eliminar: "eliminá la meta viaje"\n\nCuotas:\n• Ver: "mis cuotas"\n• Crear: "agrega cuota Netflix por 6 meses de 5000"\n• Pagar: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"\n\nLímites:\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"`,
     });
   }
 
@@ -493,6 +526,94 @@ export async function POST(req: Request) {
     return NextResponse.json({ text: `✅ Listo. Actualicé el límite de ${match.name} a ${fmt(intent.amount, profile?.primary_currency ?? "ARS")} por mes.` });
   }
 
+  // ── Delete goal (ask confirmation) ───────────────────────────────────────
+  if (intent.type === "delete_goal") {
+    const { data: goals } = await supabase.from("savings_goals").select("id, name").eq("user_id", user.id).neq("status", "archived");
+    const goalNorm = normalize(intent.name);
+    const match = goals?.find(g => normalize(g.name).includes(goalNorm) || goalNorm.includes(normalize(g.name)));
+    if (!match) return NextResponse.json({ text: `No encontré una meta llamada "${intent.name}". Revisá los nombres en Metas.` });
+    return NextResponse.json({
+      text: `¿Seguro que querés eliminar la meta "${match.name}"? Esta acción no se puede deshacer.`,
+      action: { type: "confirm_delete_goal", goalId: match.id, goalName: match.name },
+    });
+  }
+
+  // ── Rename goal ───────────────────────────────────────────────────────────
+  if (intent.type === "rename_goal") {
+    const { data: goals } = await supabase.from("savings_goals").select("id, name").eq("user_id", user.id).neq("status", "archived");
+    const oldNorm = normalize(intent.oldName);
+    const match = goals?.find(g => normalize(g.name).includes(oldNorm) || oldNorm.includes(normalize(g.name)));
+    if (!match) return NextResponse.json({ text: `No encontré una meta llamada "${intent.oldName}".` });
+    await supabase.from("savings_goals").update({ name: intent.newName }).eq("id", match.id).eq("user_id", user.id);
+    return NextResponse.json({ text: `Renombré "${match.name}" a "${intent.newName}".`, action: { type: "refresh" } });
+  }
+
+  // ── Set goal target ───────────────────────────────────────────────────────
+  if (intent.type === "set_goal_target") {
+    const { data: goals } = await supabase.from("savings_goals").select("id, name, currency_code").eq("user_id", user.id).neq("status", "archived");
+    const goalNorm = normalize(intent.name);
+    const match = goals?.find(g => normalize(g.name).includes(goalNorm) || goalNorm.includes(normalize(g.name)));
+    if (!match) return NextResponse.json({ text: `No encontré una meta llamada "${intent.name}".` });
+    await supabase.from("savings_goals").update({ target_amount: intent.amount }).eq("id", match.id).eq("user_id", user.id);
+    return NextResponse.json({ text: `Actualicé el objetivo de "${match.name}" a ${fmt(intent.amount, match.currency_code)}.`, action: { type: "refresh" } });
+  }
+
+  // ── Pay installment ───────────────────────────────────────────────────────
+  if (intent.type === "pay_installment") {
+    const { data: plans } = await supabase.from("installment_plans").select("id, name, installment_amount, currency_code, n_installments").eq("user_id", user.id).eq("status", "active");
+    const nameNorm = normalize(intent.name);
+    const match = plans?.find(p => normalize(p.name).includes(nameNorm) || nameNorm.includes(normalize(p.name)));
+    if (!match) return NextResponse.json({ text: `No encontré una cuota activa llamada "${intent.name}".` });
+
+    // Find next pending payment
+    const { data: next } = await supabase.from("installment_payments").select("id, payment_number, amount").eq("plan_id", match.id).eq("user_id", user.id).eq("status", "pending").order("payment_number", { ascending: true }).limit(1).single();
+    if (!next) return NextResponse.json({ text: `No hay cuotas pendientes para "${match.name}".` });
+
+    // Create transaction
+    const { data: tx } = await supabase.from("transactions").insert({
+      user_id: user.id,
+      type: "installment-payment",
+      amount: next.amount,
+      currency_code: match.currency_code,
+      description: `${match.name} — cuota ${next.payment_number}/${match.n_installments}`,
+      date: new Date().toISOString().split("T")[0],
+    }).select().single();
+
+    await supabase.from("installment_payments").update({ status: "paid", transaction_id: tx?.id ?? null }).eq("id", next.id).eq("user_id", user.id);
+
+    // Check if all paid
+    const { count } = await supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("plan_id", match.id).eq("user_id", user.id).eq("status", "pending");
+    if ((count ?? 0) === 0) {
+      await supabase.from("installment_plans").update({ status: "paid" }).eq("id", match.id).eq("user_id", user.id);
+      return NextResponse.json({ text: `Registré el último pago de "${match.name}". ¡Plan saldado!`, action: { type: "refresh" } });
+    }
+
+    return NextResponse.json({ text: `Registré la cuota ${next.payment_number}/${match.n_installments} de "${match.name}" — ${fmt(Number(next.amount), match.currency_code)}.`, action: { type: "refresh" } });
+  }
+
+  // ── Cancel installment (ask confirmation) ─────────────────────────────────
+  if (intent.type === "cancel_installment") {
+    const { data: plans } = await supabase.from("installment_plans").select("id, name").eq("user_id", user.id).eq("status", "active");
+    const nameNorm = normalize(intent.name);
+    const match = plans?.find(p => normalize(p.name).includes(nameNorm) || nameNorm.includes(normalize(p.name)));
+    if (!match) return NextResponse.json({ text: `No encontré una cuota activa llamada "${intent.name}".` });
+    return NextResponse.json({
+      text: `¿Seguro que querés saldar el plan "${match.name}"? Se eliminarán los pagos pendientes.`,
+      action: { type: "confirm_cancel_installment", planId: match.id, planName: match.name },
+    });
+  }
+
+  // ── Delete budget ─────────────────────────────────────────────────────────
+  if (intent.type === "delete_budget") {
+    const { data: cats } = await supabase.from("categories").select("id, name").eq("user_id", user.id);
+    const catNorm = normalize(intent.category);
+    const match = cats?.find(c => normalize(c.name).includes(catNorm) || catNorm.includes(normalize(c.name)));
+    if (!match) return NextResponse.json({ text: `No encontré la categoría "${intent.category}".` });
+    const { error } = await supabase.from("category_budgets").delete().eq("user_id", user.id).eq("category_id", match.id);
+    if (error) return NextResponse.json({ text: "No pude eliminar el límite. Intentá desde Categorías." });
+    return NextResponse.json({ text: `Eliminé el límite mensual de ${match.name}.`, action: { type: "refresh" } });
+  }
+
   // ── Delete transaction ────────────────────────────────────────────────────
   if (intent.type === "delete_tx") {
     const { from } = monthRange();
@@ -698,11 +819,12 @@ export async function POST(req: Request) {
     "Mis límites · Mis metas · Mis cuotas",
     "Compré una milanesa por 1500",
     "Cobré el sueldo de 200000",
-    "Registrá un gasto de 500 en pizza",
-    "Agrega una meta llamada viaje a Europa",
+    "Agrega una meta llamada viaje",
     "Depositá 5000 en la meta viaje",
-    "Eliminá [descripción del gasto]",
-    "Editá el límite de [categoría] a [monto]",
+    "Pagué la cuota de Netflix",
+    "Cancelá la cuota de iPhone",
+    "Borrá el gasto de [descripción]",
+    "Escribí 'ayuda' para ver todo lo que puedo hacer",
   ];
   return NextResponse.json({
     text: `No entendí bien. Podés pedirme:\n${hints.map(h => `• ${h}`).join("\n")}`,
