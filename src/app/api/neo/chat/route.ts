@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import Anthropic from "@anthropic-ai/sdk";
-import { detectPurchaseIntent } from "@/lib/neo-keywords";
+import { detectPurchaseIntent, categoryForText } from "@/lib/neo-keywords";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
+
+// A FlowContext is a partially-filled action waiting for its missing slots.
+// It round-trips between client and server: the server asks for the next slot,
+// the client echoes the context back with the user's next message.
+type FlowContext =
+  | { flow: "expense" | "income"; description?: string; amount?: number; category?: string | null }
+  | { flow: "installment"; name?: string; nInstallments?: number; installmentAmount?: number }
+  | { flow: "goal"; name?: string; target?: number }
+  | { flow: "budget"; category?: string; amount?: number }
+  | { flow: "clarify" };
 
 type Intent =
   | { type: "greeting" }
@@ -20,7 +29,6 @@ type Intent =
   | { type: "edit_budget"; category: string; amount: number }
   | { type: "delete_budget"; category: string }
   | { type: "delete_tx"; search: string }
-  | { type: "register_tx"; txType: "income" | "expense"; amount: number; description: string; currency: string }
   | { type: "create_goal"; name: string; amount?: number }
   | { type: "delete_goal"; name: string }
   | { type: "rename_goal"; oldName: string; newName: string }
@@ -28,16 +36,8 @@ type Intent =
   | { type: "deposit_goal"; amount: number; goalName: string }
   | { type: "pay_installment"; name: string }
   | { type: "cancel_installment"; name: string }
-  | { type: "create_installment_needs_info" }
-  | { type: "create_installment"; name: string; installmentAmount: number; nInstallments: number }
-  | { type: "natural_tx"; txType: "income" | "expense"; description: string; amount: number; suggestedCategory: string | null }
-  | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
-  | { type: "create_goal_needs_name" }
+  | { type: "flow"; ctx: FlowContext }
   | { type: "unknown" };
-
-type PendingContext =
-  | { type?: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
-  | { type: "create_goal_name" };
 
 interface DeleteCandidate {
   id: string;
@@ -147,19 +147,14 @@ function detectIntent(msg: string): Intent {
   const deleteMatch = m.match(/(?:elimin[ao]r?|borra[r]?|saca[r]?|quita[r]?|borr[ao]|elimina)\s+(?:el\s+|la\s+)?(?:(?:gasto|pago|ingreso|compra|transaccion)\s+(?:de\s+)?)?(.+)/);
   if (deleteMatch) return { type: "delete_tx", search: deleteMatch[1].trim() };
 
-  // ── Register transaction (explicit) ──────────────────────────────────────
-  if (/registr[ao]r?|anot[ao]r?|guard[ao]r?|carg[ao]r?|apunt[ao]r?/.test(m)) {
+  // ── Register transaction (explicit) → expense/income flow ────────────────
+  if (/registr[ao]r?|anot[ao]r?|guard[ao]r?|carg[ao]r?|apunt[ao]r?/.test(m) && !/cuota|meta|objetivo|l[ií]mite/.test(m)) {
+    const txType: "income" | "expense" = /ingreso|sueldo|cobr[eé]/.test(m) ? "income" : "expense";
     const amtMatch = m.match(/(\d[\d.,]+)/);
-    if (amtMatch) {
-      const amount = parseFloat(amtMatch[1].replace(/\./g, "").replace(",", "."));
-      if (!isNaN(amount) && amount > 0) {
-        const txType: "income" | "expense" = /ingreso|sueldo|cobr[eé]/.test(m) ? "income" : "expense";
-        const cur = /usd|dolar/.test(m) ? "USD" : /eur/.test(m) ? "EUR" : "ARS";
-        const descMatch = m.match(/(?:en|de|para|por)\s+(?!ars|usd|eur|uyu|brl)(.+)$/);
-        const description = descMatch?.[1]?.replace(/\d[\d.,]*/g, "").trim() ?? "";
-        return { type: "register_tx", txType, amount, description, currency: cur };
-      }
-    }
+    const amount = amtMatch ? parseFloat(amtMatch[1].replace(/\./g, "").replace(",", ".")) : undefined;
+    const descMatch = m.match(/(?:en|de|para|por)\s+(?!ars|usd|eur|uyu|brl)(.+)$/);
+    const description = descMatch?.[1]?.replace(/\d[\d.,]*/g, "").trim() || undefined;
+    return { type: "flow", ctx: { flow: txType, amount: amount && amount > 0 ? amount : undefined, description, category: description ? categoryForText(description) : null } };
   }
 
   // ── Create goal ───────────────────────────────────────────────────────────
@@ -170,7 +165,7 @@ function detectIntent(msg: string): Intent {
     if (name.length > 0) return { type: "create_goal", name, amount };
   }
   if (/(?:agrega[r]?|crea[r]?|nueva|nuevo)\s+(?:una?\s+)?(?:nueva?\s+)?(?:meta|objetivo)\b/.test(m))
-    return { type: "create_goal_needs_name" };
+    return { type: "flow", ctx: { flow: "goal" } };
 
   // ── Deposit to goal ───────────────────────────────────────────────────────
   const depositMatch = m.match(/(?:deposit[ao]r?|sum[ao]r?|sumal[eo]|agreg[ao]r?l?[eo]?|ponel[eo]|cargal[eo]|mandal[eo])\s+(\d[\d.,]+)\s*(?:pesos|ars|usd|eur|uyu)?\s*(?:a|en|para)\s+(?:(?:la\s+)?(?:meta|ahorro)\s+)?["']?(.+?)["']?$/);
@@ -179,29 +174,220 @@ function detectIntent(msg: string): Intent {
     if (!isNaN(amount) && amount > 0) return { type: "deposit_goal", amount, goalName: depositMatch[2].trim() };
   }
 
-  // ── Create installment — without details (ask for info) ──────────────────
-  if (/(?:nueva\s+cuota|cuota\s+nueva|quiero\s+(?:una?\s+)?cuota|agrega[r]?\s+(?:una?\s+)?cuota\s*$|nueva\s+cuota\s*$)/.test(m))
-    return { type: "create_installment_needs_info" };
+  // ── Create budget / limit → budget flow ──────────────────────────────────
+  const budgetCreateMatch = m.match(/(?:pon[eé]r?|crea[r]?|agrega[r]?|fija[r]?|nuevo)\s+(?:un\s+)?(?:l[ií]?mite|presupuesto)\s+(?:(?:de|para|a|en)\s+)?(.+?)(?:\s+(?:de|a|en)\s+(\d[\d.,]*))?$/);
+  if (budgetCreateMatch && !/edit|modific|actualiz|cambi/.test(m)) {
+    const cat = budgetCreateMatch[1]?.replace(/\b(de|a|en|para)\b/g, "").trim();
+    const amt = budgetCreateMatch[2] ? parseFloat(budgetCreateMatch[2].replace(/\./g, "").replace(",", ".")) : undefined;
+    return { type: "flow", ctx: { flow: "budget", category: cat || undefined, amount: amt && amt > 0 ? amt : undefined } };
+  }
 
-  // ── Create installment ────────────────────────────────────────────────────
-  const cuotaMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?cuota\s+(?:de\s+|llamada\s+|para\s+)?(.+?)\s+(?:por\s+|de\s+|en\s+)(\d+)\s+(?:cuotas?|meses?|pagos?)\s+(?:de\s+|a\s+)?(\d[\d.,]*)/);
-  if (cuotaMatch) {
-    const installmentAmount = parseFloat(cuotaMatch[3].replace(/\./g, "").replace(",", "."));
-    const nInstallments = parseInt(cuotaMatch[2]);
-    if (!isNaN(installmentAmount) && !isNaN(nInstallments) && nInstallments > 0)
-      return { type: "create_installment", name: cuotaMatch[1].trim(), installmentAmount, nInstallments };
+  // ── Installment (en cuotas / N cuotas) → installment flow ────────────────
+  // Comes AFTER installments_query / pay / cancel (matched earlier), so only
+  // creation phrasing reaches here.
+  if (/\bcuotas?\b|\ben\s+\d+\s+pagos?\b/.test(m)) {
+    const countMatch = m.match(/(?:en\s+)?(\d+)\s*(?:cuotas?|pagos?)/);
+    const nInstallments = countMatch ? parseInt(countMatch[1]) : undefined;
+    const amtMatch = m.match(/(?:cuotas?|pagos?)\s+de\s+(\d[\d.,]*)|de\s+(\d[\d.,]*)\s*(?:cada|c\/u|por\s+mes|mensual)/);
+    const rawAmt = amtMatch?.[1] ?? amtMatch?.[2];
+    const installmentAmount = rawAmt ? parseFloat(rawAmt.replace(/\./g, "").replace(",", ".")) : undefined;
+    // Extract the item name: strip verbs, cuota wording, amounts, filler.
+    const name = m
+      .replace(/\b(compr[eé]|comprar|pagu[eé]|pagar|saqu[eé]|sacar|adquir[ií]|me\s+compr[eé]|agrega[r]?|crea[r]?|nueva|cuota|registr[ao]r?)\b/g, " ")
+      .replace(/\ben\s+\d+\s*(?:cuotas?|pagos?)\b/g, " ")
+      .replace(/\b\d+\s*(?:cuotas?|pagos?)\b/g, " ")
+      .replace(/\bcuotas?\s+de\s+\d[\d.,]*/g, " ")
+      .replace(/\bde\s+\d[\d.,]*\s*(?:cada|c\/u|por\s+mes|mensual)?/g, " ")
+      .replace(/\ben\s+cuotas?\b/g, " ")
+      .replace(/\b(un|una|unos|unas|el|la|los|las|mi|mis|al|del|por)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return { type: "flow", ctx: { flow: "installment", name: name || undefined, nInstallments: nInstallments && nInstallments > 0 ? nInstallments : undefined, installmentAmount: installmentAmount && installmentAmount > 0 ? installmentAmount : undefined } };
   }
 
   // ── Natural language purchase/income (keyword library, 0 tokens) ──────────
   const purchase = detectPurchaseIntent(m);
   if (purchase.found) {
-    if (purchase.amount !== null)
-      return { type: "natural_tx", txType: purchase.txType, description: purchase.item, amount: purchase.amount, suggestedCategory: purchase.suggestedCategory };
-    else
-      return { type: "needs_amount", txType: purchase.txType, description: purchase.item, suggestedCategory: purchase.suggestedCategory };
+    return {
+      type: "flow",
+      ctx: {
+        flow: purchase.txType,
+        description: purchase.item || undefined,
+        amount: purchase.amount ?? undefined,
+        category: purchase.suggestedCategory,
+      },
+    };
   }
 
   return { type: "unknown" };
+}
+
+// ─── Flow engine (slot-filling) ──────────────────────────────────────────────
+
+function parseNum(s: string): number | null {
+  const cleaned = s.replace(/[^\d.,]/g, "");
+  if (!cleaned) return null;
+  const n = parseFloat(cleaned.replace(/\./g, "").replace(",", "."));
+  return isNaN(n) || n <= 0 ? null : n;
+}
+
+function isCancelMsg(s: string): boolean {
+  return /^(no|nada|olvida(lo)?|cancela(lo)?|deja(lo)?|deja|dejá|no importa|mejor no|ya esta|ya está)\b/.test(normalize(s));
+}
+
+function cleanText(s: string): string {
+  return s.replace(/^(en|de|fue|son|por|para|un|una|el|la)\s+/i, "").replace(/[.!?]+$/, "").trim();
+}
+
+// Which slot is still missing (drives both the question and the fill).
+function missingSlot(ctx: FlowContext): string | null {
+  switch (ctx.flow) {
+    case "expense":
+      if (!ctx.description) return "description";
+      if (ctx.amount == null) return "amount";
+      return null;
+    case "income":
+      if (ctx.amount == null) return "amount";
+      return null;
+    case "installment":
+      if (!ctx.name) return "iname";
+      if (ctx.nInstallments == null) return "icount";
+      if (ctx.installmentAmount == null) return "iamount";
+      return null;
+    case "goal":
+      if (!ctx.name) return "gname";
+      return null;
+    case "budget":
+      if (!ctx.category) return "bcategory";
+      if (ctx.amount == null) return "bamount";
+      return null;
+    case "clarify":
+      return "clarify";
+  }
+}
+
+function fillSlot(ctx: FlowContext, message: string): FlowContext {
+  const slot = missingSlot(ctx);
+  const t = cleanText(message);
+  const num = parseNum(message);
+  const c = { ...ctx } as Record<string, unknown>;
+  switch (slot) {
+    case "description":
+      c.description = t;
+      c.category = (ctx as { category?: string | null }).category ?? categoryForText(t);
+      break;
+    case "amount":
+      if (num != null) c.amount = num;
+      break;
+    case "iname":
+    case "gname":
+      c.name = t;
+      break;
+    case "icount":
+      if (num != null) c.nInstallments = Math.round(num);
+      break;
+    case "iamount":
+      if (num != null) c.installmentAmount = num;
+      break;
+    case "bcategory":
+      c.category = t;
+      break;
+    case "bamount":
+      if (num != null) c.amount = num;
+      break;
+  }
+  return c as FlowContext;
+}
+
+function slotQuestion(ctx: FlowContext, slot: string): { text: string; options?: string[] } {
+  switch (slot) {
+    case "description": return { text: "¿En qué lo gastaste?" };
+    case "amount": return { text: ctx.flow === "income" ? "¿Cuánto cobraste?" : "¿Cuánto te salió?" };
+    case "iname": return { text: "¿Qué compraste en cuotas?" };
+    case "icount": return { text: "¿En cuántas cuotas?" };
+    case "iamount": return { text: "¿De cuánto es cada cuota?" };
+    case "gname": return { text: "¿Cómo querés llamar la meta?" };
+    case "bcategory": return { text: "¿Para qué categoría es el límite?" };
+    case "bamount": return { text: "¿De cuánto es el límite mensual?" };
+    case "clarify": return { text: "No entendí 🤔 ¿Qué querés hacer?", options: ["Registrar gasto", "Registrar ingreso", "Consultar"] };
+    default: return { text: "¿Podés repetirlo?" };
+  }
+}
+
+type SupabaseClient = Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
+
+// Either ask for the next missing slot, or execute the completed action.
+async function respondFlow(supabase: SupabaseClient, userId: string, ctx: FlowContext): Promise<NextResponse> {
+  const slot = missingSlot(ctx);
+  if (slot) {
+    const q = slotQuestion(ctx, slot);
+    return NextResponse.json({ text: q.text, pending: ctx, ...(q.options ? { options: q.options } : {}) });
+  }
+
+  switch (ctx.flow) {
+    case "expense":
+    case "income": {
+      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
+      const currency = profile?.primary_currency ?? "ARS";
+      const catName = ctx.category ?? (ctx.description ? categoryForText(ctx.description) : null);
+      const catId = catName ? await resolveCategoryId(supabase, userId, catName) : null;
+      const desc = ctx.description || (ctx.flow === "income" ? "Ingreso" : "Gasto");
+      const { error } = await supabase.from("transactions").insert({
+        user_id: userId, type: ctx.flow, amount: ctx.amount,
+        currency_code: currency, description: desc,
+        date: new Date().toISOString().split("T")[0], category_id: catId,
+      });
+      if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
+      const catLabel = catName ? ` · ${catName}` : "";
+      return NextResponse.json({ text: `✅ Registré: ${desc} — ${fmt(ctx.amount!, currency)}${catLabel}.`, action: { type: "refresh" } });
+    }
+    case "installment": {
+      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
+      const currency = profile?.primary_currency ?? "ARS";
+      const today = new Date().toISOString().split("T")[0];
+      const { error } = await supabase.from("installment_plans").insert({
+        user_id: userId, name: ctx.name, installment_amount: ctx.installmentAmount,
+        n_installments: ctx.nInstallments, currency_code: currency, status: "active", start_date: today,
+      });
+      if (error) return NextResponse.json({ text: "No pude crear la cuota. Intentá desde la sección Cuotas." });
+      return NextResponse.json({
+        text: `✅ Creé la cuota "${ctx.name}": ${ctx.nInstallments} cuotas de ${fmt(ctx.installmentAmount!, currency)}.\nTotal: ${fmt(ctx.installmentAmount! * ctx.nInstallments!, currency)}.`,
+        action: { type: "refresh" },
+      });
+    }
+    case "goal": {
+      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
+      const currency = profile?.primary_currency ?? "ARS";
+      const { error } = await supabase.from("savings_goals").insert({
+        user_id: userId, name: ctx.name, target_amount: ctx.target ?? 0,
+        current_amount: 0, currency_code: currency, status: "active",
+      });
+      if (error) return NextResponse.json({ text: "No pude crear la meta. Intentá desde la sección Metas." });
+      return NextResponse.json({ text: `✅ Creé la meta "${ctx.name}". Podés ponerle un objetivo desde Metas.`, action: { type: "refresh" } });
+    }
+    case "budget": {
+      const { data: cats } = await supabase.from("categories").select("id, name").eq("user_id", userId);
+      const catNorm = normalize(ctx.category!);
+      const match = cats?.find(c => normalize(c.name).includes(catNorm) || catNorm.includes(normalize(c.name)));
+      if (!match) return NextResponse.json({ text: `No encontré la categoría "${ctx.category}". Revisá el nombre en Categorías.` });
+      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
+      await supabase.from("category_budgets").upsert(
+        { user_id: userId, category_id: match.id, monthly_limit: ctx.amount, currency_code: profile?.primary_currency ?? "ARS", period_type: "always" },
+        { onConflict: "user_id,category_id" }
+      );
+      return NextResponse.json({ text: `✅ Puse un límite de ${fmt(ctx.amount!, profile?.primary_currency ?? "ARS")} por mes en ${match.name}.`, action: { type: "refresh" } });
+    }
+    case "clarify":
+      return NextResponse.json(slotQuestion(ctx, "clarify"));
+  }
+}
+
+// Map a clarify quick-reply (or free text) to a fresh flow, or null to fall through.
+function interpretClarify(message: string): FlowContext | null {
+  const m = normalize(message);
+  if (/^gast|registrar gasto|un gasto|gasto$/.test(m)) return { flow: "expense" };
+  if (/^ingres|cobr|registrar ingreso|un ingreso|ingreso$/.test(m)) return { flow: "income" };
+  return null;
 }
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
@@ -252,47 +438,35 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const message: string = body.message ?? "";
-  const pendingContext: PendingContext | undefined = body.pendingContext;
+  const pendingContext: FlowContext | undefined = body.pendingContext;
   if (!message.trim()) return NextResponse.json({ text: "Escribime algo 😊" });
 
-  // If there's pending context from a previous Neo question
+  // ── Continuation: the user is answering a previous Neo question ───────────
   if (pendingContext) {
-    if (pendingContext.type === "create_goal_name") {
-      // User replied with the goal name
-      const name = message.trim();
-      if (name.length > 0) {
-        const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
-        const currency = profile?.primary_currency ?? "ARS";
-        const { error } = await supabase.from("savings_goals").insert({
-          user_id: user.id, name, currency_code: currency, target_amount: 0, current_amount: 0,
-        });
-        if (error) return NextResponse.json({ text: "No pude crear la meta. Intentá desde la sección Metas." });
-        return NextResponse.json({ text: `✅ Meta "${name}" creada. ¡A ahorrar!`, action: { type: "refresh" } });
-      }
-    } else if (/^\d[\d.,]*$/.test(message.trim())) {
-      // User replied with an amount (needs_amount flow)
-      const amount = parseFloat(message.trim().replace(/\./g, "").replace(",", "."));
-      if (!isNaN(amount) && amount > 0) {
-        const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
-        const currency = profile?.primary_currency ?? "ARS";
-        const catId = pendingContext.suggestedCategory ? await resolveCategoryId(supabase, user.id, pendingContext.suggestedCategory) : null;
-        const { error } = await supabase.from("transactions").insert({
-          user_id: user.id,
-          type: pendingContext.txType,
-          amount,
-          currency_code: currency,
-          description: pendingContext.description,
-          date: new Date().toISOString().split("T")[0],
-          category_id: catId,
-        });
-        if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
-        const catLabel = pendingContext.suggestedCategory ? ` · ${pendingContext.suggestedCategory}` : "";
-        return NextResponse.json({ text: `✅ Registré: ${pendingContext.description} — ${fmt(amount, currency)}${catLabel}.`, action: { type: "refresh" } });
-      }
+    if (isCancelMsg(message)) {
+      return NextResponse.json({ text: "Dale, cancelado.", action: { type: "cancel_pending" } });
+    }
+    if (pendingContext.flow === "clarify") {
+      const switched = interpretClarify(message);
+      if (switched) return respondFlow(supabase, user.id, switched);
+      if (/consult|ver|saldo|cuanto|cuánto/.test(normalize(message)) && detectIntent(message).type === "unknown")
+        return NextResponse.json({ text: "Decime qué querés consultar:\n• \"mi saldo\"\n• \"cuánto gasté este mes\"\n• \"mis metas\" / \"mis cuotas\" / \"mis límites\"" });
+      // not a clarify choice → process the reply as a fresh message (fall through)
+    } else {
+      const filled = fillSlot(pendingContext, message);
+      const changed = JSON.stringify(filled) !== JSON.stringify(pendingContext);
+      if (changed) return respondFlow(supabase, user.id, filled);
+      // Couldn't fill (e.g. user changed topic): try a fresh detection below,
+      // and if that's unknown we re-ask the same slot.
+      const reIntent = detectIntent(message);
+      if (reIntent.type === "unknown") return respondFlow(supabase, user.id, pendingContext);
     }
   }
 
   const intent = detectIntent(message);
+
+  // ── Flow start (expense/income/installment/goal/budget) ──────────────────
+  if (intent.type === "flow") return respondFlow(supabase, user.id, intent.ctx);
 
   // ── Greeting (0 tokens, 0 DB) ─────────────────────────────────────────────
   if (intent.type === "greeting") {
@@ -646,41 +820,6 @@ export async function POST(req: Request) {
     });
   }
 
-  // ── Register transaction ──────────────────────────────────────────────────
-  if (intent.type === "register_tx") {
-    const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
-    const currency = intent.currency !== "ARS" ? intent.currency : (profile?.primary_currency ?? "ARS");
-
-    // Auto-categorize by matching description against category names
-    let categoryId: string | null = null;
-    if (intent.description) {
-      const { data: cats } = await supabase.from("categories").select("id, name").eq("user_id", user.id);
-      const descNorm = normalize(intent.description);
-      const catMatch = cats?.find(c =>
-        descNorm.includes(normalize(c.name)) ||
-        normalize(c.name).split(" ").some((w: string) => w.length > 3 && descNorm.includes(w))
-      );
-      categoryId = catMatch?.id ?? null;
-    }
-
-    const desc = intent.description || (intent.txType === "expense" ? "Gasto" : "Ingreso");
-    const { error } = await supabase.from("transactions").insert({
-      user_id: user.id,
-      type: intent.txType,
-      amount: intent.amount,
-      currency_code: currency,
-      description: desc,
-      date: new Date().toISOString().split("T")[0],
-      category_id: categoryId,
-    });
-
-    if (error) return NextResponse.json({ text: "No pude registrar la transacción. Intentá desde el botón +." });
-    return NextResponse.json({
-      text: `✅ Registré: ${desc} — ${fmt(intent.amount, currency)}.`,
-      action: { type: "refresh" },
-    });
-  }
-
   // ── Create goal ───────────────────────────────────────────────────────────
   if (intent.type === "create_goal") {
     const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
@@ -723,136 +862,19 @@ export async function POST(req: Request) {
     });
   }
 
-  // ── Create installment needs info ────────────────────────────────────────
-  if (intent.type === "create_installment_needs_info") {
-    return NextResponse.json({
-      text: "Para crear la cuota necesito un poco más:\n• Nombre (ej: Netflix, iPhone 15)\n• Cuántas cuotas\n• Monto por cuota\n\nEjemplo: \"agrega cuota iPhone por 12 cuotas de 45000\"",
-    });
-  }
-
-  // ── Create installment ────────────────────────────────────────────────────
-  if (intent.type === "create_installment") {
-    const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
-    const currency = profile?.primary_currency ?? "ARS";
-    const today = new Date().toISOString().split("T")[0];
-    const { error } = await supabase.from("installment_plans").insert({
-      user_id: user.id,
-      name: intent.name,
-      installment_amount: intent.installmentAmount,
-      n_installments: intent.nInstallments,
-      currency_code: currency,
-      status: "active",
-      start_date: today,
-    });
-    if (error) return NextResponse.json({ text: "No pude crear la cuota. Intentá desde la sección Cuotas." });
-    return NextResponse.json({
-      text: `✅ Creé la cuota "${intent.name}": ${intent.nInstallments} cuotas de ${fmt(intent.installmentAmount, currency)}.\nTotal: ${fmt(intent.installmentAmount * intent.nInstallments, currency)}.`,
-      action: { type: "refresh" },
-    });
-  }
-
-  // ── Natural language transaction (with amount) ────────────────────────────
-  if (intent.type === "natural_tx") {
-    const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
-    const currency = profile?.primary_currency ?? "ARS";
-    const catId = intent.suggestedCategory ? await resolveCategoryId(supabase, user.id, intent.suggestedCategory) : null;
-    const desc = intent.description || (intent.txType === "income" ? "Ingreso" : "Gasto");
-    const { error } = await supabase.from("transactions").insert({
-      user_id: user.id,
-      type: intent.txType,
-      amount: intent.amount,
-      currency_code: currency,
-      description: desc,
-      date: new Date().toISOString().split("T")[0],
-      category_id: catId,
-    });
-    if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
-    const catLabel = intent.suggestedCategory ? ` · ${intent.suggestedCategory}` : "";
-    return NextResponse.json({
-      text: `✅ Registré: ${desc} — ${fmt(intent.amount, currency)}${catLabel}.`,
-      action: { type: "refresh" },
-    });
-  }
-
-  // ── Create goal needs name — ask for it ──────────────────────────────────
-  if (intent.type === "create_goal_needs_name") {
-    return NextResponse.json({
-      text: "¿Cómo querés llamarla?",
-      action: { type: "needs_goal_name" },
-    });
-  }
-
-  // ── Needs amount — ask follow-up (no DB write yet) ────────────────────────
-  if (intent.type === "needs_amount") {
-    const phrase = intent.txType === "income" ? "¿Cuánto cobraste?" : "¿Cuánto te salió?";
-    return NextResponse.json({
-      text: `Entendido, ${intent.description}. ${phrase}`,
-      action: { type: "needs_amount", txType: intent.txType, description: intent.description, suggestedCategory: intent.suggestedCategory },
-    });
-  }
-
-  // ── Unknown → Haiku fallback (if message is long enough to be parseable) ──
-  if (message.trim().split(" ").length >= 4) {
-    try {
-      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
-      const currency = profile?.primary_currency ?? "ARS";
-      const client = new Anthropic();
-      const resp = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 120,
-        messages: [{
-          role: "user",
-          content: `Sos un asistente de finanzas personales. Clasificá este mensaje en español como JSON (sin explicación):\n{"type":"expense"|"income"|"unknown","amount":number|null,"description":"string"}\n- "expense": gasto, compra, pago, salida de dinero\n- "income": cobro, ingreso, depósito, entrada de dinero\n- "unknown": no es claramente un gasto o ingreso\nMoneda: ${currency}\nMensaje: "${message.trim()}"`,
-        }],
-      });
-      const raw = (resp.content[0] as { type: string; text: string }).text.trim();
-      const parsed = JSON.parse(raw.replace(/```json?|```/g, "").trim());
-      if (parsed.type !== "unknown" && parsed.amount && parsed.description) {
-        const catId = null;
-        const { error } = await supabase.from("transactions").insert({
-          user_id: user.id,
-          type: parsed.type,
-          amount: parsed.amount,
-          currency_code: currency,
-          description: parsed.description,
-          date: new Date().toISOString().split("T")[0],
-          category_id: catId,
-        });
-        if (!error) return NextResponse.json({ text: `✅ Registré: ${parsed.description} — ${fmt(parsed.amount, currency)}.`, action: { type: "refresh" } });
-      }
-    } catch {
-      // fallback to hint list below
-    }
-  }
-
-  // ── Unknown → respuesta contextual según lo que intentaba hacer ──────────
+  // ── Unknown → ask (clarify flow, never assume, 0 IA) ─────────────────────
+  // Light domain hints when the user is clearly trying something but malformed;
+  // otherwise the clarify flow asks what they want to do.
   const mn = normalize(message);
-
-  if (/gast|compra|pagu[eé]|sali[oó]|cost[oó]|me.?cobrar|me.?debitar/.test(mn))
-    return NextResponse.json({ text: `No entendí bien el gasto. Probá así:\n• "compré una milanesa por 1500"\n• "gasté 500 en nafta"\n• "pagué el alquiler de 80000"` });
-
-  if (/cobr|ingres|recibi|sueldo|me.?pag|me.?dio|me.?regal|me.?deposit|factur|gané/.test(mn))
-    return NextResponse.json({ text: `No entendí bien el ingreso. Probá así:\n• "cobré 150000"\n• "me pagaron 50000"\n• "me regalaron 20000"` });
-
   if (/meta|ahorro|objetivo/.test(mn))
     return NextResponse.json({ text: `Para metas puedo:\n• Crear: "agrega una meta viaje"\n• Ver: "mis metas"\n• Depositar: "depositá 5000 en viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Eliminar: "eliminá la meta viaje"` });
-
   if (/cuota|deuda|mensualidad/.test(mn))
-    return NextResponse.json({ text: `Para cuotas puedo:\n• Crear: "agrega cuota iPhone por 12 cuotas de 45000"\n• Ver: "mis cuotas"\n• Registrar pago: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"` });
-
+    return NextResponse.json({ text: `Para cuotas puedo:\n• Crear: "comprá la tele en 12 cuotas de 30000"\n• Ver: "mis cuotas"\n• Registrar pago: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"` });
   if (/l[ií]mite|presupuesto/.test(mn))
-    return NextResponse.json({ text: `Para límites puedo:\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"` });
-
+    return NextResponse.json({ text: `Para límites puedo:\n• Poner: "poné un límite de 30000 en Comida"\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 40000"\n• Eliminar: "eliminá el límite de Comida"` });
   if (/borr|elimin|sac[aá]|quit/.test(mn))
-    return NextResponse.json({ text: `Para eliminar, decime qué querés borrar:\n• Gasto: "borrá el gasto de Netflix"\n• Meta: "eliminá la meta viaje"\n• Cuota: "cancelá la cuota de iPhone"\n• Límite: "eliminá el límite de Comida"` });
+    return NextResponse.json({ text: `Para eliminar, decime qué:\n• Gasto: "borrá el gasto de Netflix"\n• Meta: "eliminá la meta viaje"\n• Cuota: "cancelá la cuota de iPhone"\n• Límite: "eliminá el límite de Comida"` });
 
-  if (/edit|cambi|modific|actualiz|renombr/.test(mn))
-    return NextResponse.json({ text: `Para editar, decime qué querés cambiar:\n• Meta (nombre): "renombrá la meta viaje a vacaciones"\n• Meta (objetivo): "cambiá el objetivo de viaje a 50000"\n• Límite: "editá el límite de Comida a 30000"` });
-
-  if (/agrega|crea|nueva|nuevo|registra|anota/.test(mn))
-    return NextResponse.json({ text: `¿Qué querés agregar?\n• Gasto: "compré una milanesa por 1500"\n• Ingreso: "cobré 150000"\n• Meta: "agrega una meta viaje"\n• Cuota: "agrega cuota Netflix por 6 cuotas de 5000"` });
-
-  return NextResponse.json({
-    text: `No entendí bien. Podés decirme:\n• "compré [algo] por [monto]" — para registrar un gasto\n• "cobré [monto]" — para registrar un ingreso\n• "mis metas / mis cuotas / mis límites" — para consultar\n\nO escribí "ayuda" para ver todo lo que puedo hacer.`,
-  });
+  // Truly unknown → ask, never assume, no AI.
+  return respondFlow(supabase, user.id, { flow: "clarify" });
 }

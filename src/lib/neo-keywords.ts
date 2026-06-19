@@ -50,6 +50,14 @@ export const SPEND_VERBS = [
   "arranque", "arranqué",
   // Puse (coloquial para pagar)
   "puse",
+  // Jerga argentina de gasto
+  "me clavaron", "me clavo", "me clavó",
+  "me mande", "me mandé",
+  "tire", "tiré",
+  "banque", "banqué",
+  "fie", "fié", "saque fiado", "saqué fiado",
+  "lo puse yo", "puse yo",
+  "me sale", "me salen",
 ];
 
 export const INCOME_VERBS = [
@@ -86,6 +94,14 @@ export const INCOME_VERBS = [
   "ingrese", "ingresé",
   // Me cobré
   "me deposito el", "me depositó el",
+  // Jerga argentina de ingreso
+  "me bancaron", "me banco", "me bancó",
+  "me devolvieron", "me devolvio", "me devolvió",
+  "me fiaron",
+  "cobre la jubilacion", "cobré la jubilación",
+  "me llego la beca", "me llegó la beca",
+  "me pagaron la changa", "cobre la changa", "cobré la changa",
+  "hice una changa",
 ];
 
 // ─── keyword → categoría ──────────────────────────────────────────────────────
@@ -145,6 +161,11 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
   sprite:"Comida",
   // Lácteos
   mantequilla:"Comida", crema:"Comida", ricota:"Comida", muzarella:"Comida",
+  // Jerga / bebida argentina
+  birra:"Comida", birras:"Comida", chela:"Comida", chelas:"Comida",
+  fernet:"Comida", vermut:"Comida", picada:"Comida", milanga:"Comida", mila:"Comida",
+  tostado:"Comida", submarino:"Comida", criollos:"Comida", bizcochos:"Comida",
+  escabio:"Comida", facu:"Comida", lagrimita:"Comida",
 
   // ── Transporte ────────────────────────────────────────────────────────────
   uber:"Transporte", cabify:"Transporte", taxi:"Transporte", didi:"Transporte",
@@ -162,6 +183,7 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
   // Mecánica / repuestos
   mecanico:"Transporte", neumatico:"Transporte", goma:"Transporte",
   repuesto:"Transporte", bateria:"Transporte", lavadero:"Transporte",
+  trapito:"Transporte", grua:"Transporte",
 
   // ── Ocio ─────────────────────────────────────────────────────────────────
   netflix:"Ocio", spotify:"Ocio", cine:"Ocio", disney:"Ocio",
@@ -182,6 +204,9 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
   carpintero:"Hogar", pintor:"Hogar", portero:"Hogar",
   edesur:"Hogar", edenor:"Hogar", metrogas:"Hogar", aysa:"Hogar",
   fibertel:"Hogar", cablevision:"Hogar", telecentro:"Hogar",
+  naturgy:"Hogar", camuzzi:"Hogar", abl:"Hogar", rentas:"Hogar",
+  municipalidad:"Hogar", personal:"Hogar", claro:"Hogar", movistar:"Hogar",
+  tuenti:"Hogar", recarga:"Hogar",
   mueble:"Hogar", colchon:"Hogar", heladera:"Hogar", lavarropas:"Hogar",
   microondas:"Hogar", electrodomestico:"Hogar",
   detergente:"Hogar", lavandina:"Hogar",
@@ -195,6 +220,8 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
   farmacia:"Salud", medico:"Salud", medicamento:"Salud",
   hospital:"Salud", clinica:"Salud", prepaga:"Salud",
   osde:"Salud", galeno:"Salud", ioma:"Salud", pami:"Salud",
+  farmacity:"Salud", "swiss medical":"Salud", medicus:"Salud", omint:"Salud",
+  "sancor salud":"Salud", "obra social":"Salud",
   dentista:"Salud", odontologo:"Salud",
   psicologo:"Salud", kinesiologo:"Salud", nutricionista:"Salud",
   oftalmologo:"Salud", dermatologo:"Salud", cardiologo:"Salud",
@@ -288,6 +315,19 @@ function norm(s: string) {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 }
 
+// Infer a category from free text (no verb required). Scans words + bigrams.
+export function categoryForText(text: string): string | null {
+  const words = norm(text).split(/\s+/).filter(Boolean);
+  for (const word of words) {
+    if (KEYWORD_TO_CATEGORY[word]) return KEYWORD_TO_CATEGORY[word];
+  }
+  for (let i = 0; i < words.length - 1; i++) {
+    const bigram = words[i] + " " + words[i + 1];
+    if (KEYWORD_TO_CATEGORY[bigram]) return KEYWORD_TO_CATEGORY[bigram];
+  }
+  return null;
+}
+
 export function detectPurchaseIntent(normalized: string): PurchaseIntent {
   const notFound: PurchaseIntent = { found: false, txType: "expense", item: "", suggestedCategory: null, amount: null };
 
@@ -355,7 +395,10 @@ export function detectPurchaseIntent(normalized: string): PurchaseIntent {
     }
   }
 
-  const item = rest || normalized;
+  // IMPORTANT: do NOT fall back to the whole message. If only verb+amount was
+  // given ("gasté 20"), item stays empty so the caller asks "¿en qué?" instead
+  // of assuming a description.
+  const item = rest;
 
   // Find category by checking each word in the item against the keyword map
   let suggestedCategory: string | null = null;

@@ -106,11 +106,10 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
-  const [pendingAction, setPendingAction] = useState<
-    | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
-    | { type: "needs_goal_name" }
-    | null
-  >(null);
+  // Generic slot-filling context echoed back to the server (opaque to the client)
+  // and optional quick-reply chips the server offers (e.g. Gasto/Ingreso/Consultar).
+  const [pendingCtx, setPendingCtx] = useState<unknown | null>(null);
+  const [quickReplies, setQuickReplies] = useState<string[] | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -138,7 +137,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => {
+    let raf = 0;
+    const apply = () => {
+      raf = 0;
       const height = vv.height;
       const offsetTop = vv.offsetTop;
       // Track the largest height seen (= no keyboard). Keyboard height is how much
@@ -146,12 +147,19 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       // quirks across iOS Safari versions.
       if (height > maxVpHeight.current) maxVpHeight.current = height;
       const kb = Math.max(0, maxVpHeight.current - height);
-      setVp({ kb, offsetTop, height });
+      // Skip the state update if nothing meaningful changed (avoids re-render storms).
+      setVp(prev =>
+        Math.abs(prev.height - height) < 1 && Math.abs(prev.offsetTop - offsetTop) < 1 && Math.abs(prev.kb - kb) < 1
+          ? prev
+          : { kb, offsetTop, height }
+      );
     };
+    const onResize = () => { if (!raf) raf = requestAnimationFrame(apply); };
     vv.addEventListener("resize", onResize);
     vv.addEventListener("scroll", onResize);
-    onResize();
+    apply();
     return () => {
+      if (raf) cancelAnimationFrame(raf);
       vv.removeEventListener("resize", onResize);
       vv.removeEventListener("scroll", onResize);
     };
@@ -183,19 +191,17 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     setThinking(true);
 
     const body: Record<string, unknown> = { message: text.trim() };
-    if (pendingAction?.type === "needs_amount" && /^\d[\d.,]*$/.test(text.trim())) {
-      body.pendingContext = pendingAction; setPendingAction(null);
-    } else if (pendingAction?.type === "needs_goal_name") {
-      body.pendingContext = { type: "create_goal_name" }; setPendingAction(null);
-    }
+    if (pendingCtx) body.pendingContext = pendingCtx;
+    setQuickReplies(null);
 
     try {
       const res = await fetch("/api/neo/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = res.ok ? await res.json() : { text: "No pude procesar tu mensaje. Intentá de nuevo." };
 
-      if (data.action?.type === "needs_amount") setPendingAction({ type: "needs_amount", txType: data.action.txType, description: data.action.description, suggestedCategory: data.action.suggestedCategory });
-      else if (data.action?.type === "needs_goal_name") setPendingAction({ type: "needs_goal_name" });
-      else setPendingAction(null);
+      // Slot-filling continuation: store whatever pending context the server returns.
+      setPendingCtx(data.pending ?? null);
+      setQuickReplies(Array.isArray(data.options) ? data.options : null);
+      if (data.action?.type === "cancel_pending") { setPendingCtx(null); setQuickReplies(null); }
 
       const actionTypes = ["confirm_delete", "confirm_delete_goal", "confirm_cancel_installment"];
       setMessages(prev => [...prev, {
@@ -299,15 +305,15 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       background: "var(--base)",
       display: "flex", flexDirection: "column", gap: 4,
     }}>
-      {pendingAction?.type === "needs_amount" && (
-        <p style={{ fontSize: 11, color: "var(--accent)", paddingInline: 14 }}>
-          Esperando monto para: {pendingAction.description}
-        </p>
-      )}
-      {pendingAction?.type === "needs_goal_name" && (
-        <p style={{ fontSize: 11, color: "var(--accent)", paddingInline: 14 }}>
-          Esperando nombre de la meta...
-        </p>
+      {quickReplies && quickReplies.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingInline: 6, paddingBottom: 2 }}>
+          {quickReplies.map(q => (
+            <button key={q} type="button" onClick={() => sendMessage(q)}
+              style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--glass-border)" }}>
+              {q}
+            </button>
+          ))}
+        </div>
       )}
       <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", background: "var(--raised)", borderRadius: 24, padding: "4px 6px 4px 16px", border: "0.5px solid var(--glass-border)", minHeight: 44 }}>

@@ -10,7 +10,8 @@ const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: f
 import TransactionSheet from "@/components/TransactionSheet";
 import BudgetDetailModal from "@/components/BudgetDetailModal";
 import TxBreakdownModal from "@/components/TxBreakdownModal";
-import SpendingChart, { type ChartMonth } from "@/components/SpendingChart";
+import type { ChartMonth } from "@/components/SpendingChart";
+const SpendingChart = dynamic(() => import("@/components/SpendingChart"), { ssr: false, loading: () => <div style={{ height: 200 }} /> });
 import type { Transaction } from "@/types";
 
 const CURRENCY_SYMBOLS: Record<string, string> = {

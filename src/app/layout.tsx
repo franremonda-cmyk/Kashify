@@ -37,7 +37,7 @@ export const viewport: Viewport = {
   themeColor: "#F2F2F7",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  viewportFit: "cover", // habilita env(safe-area-inset-*) en notch/Dynamic Island
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
