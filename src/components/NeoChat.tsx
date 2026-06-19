@@ -100,7 +100,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [isActive, setIsActive] = useState(initialMessages.length > 0);
   const [busyPending, setBusyPending] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  const [listening, setListening] = useState(false);
+  const [keyboardH, setKeyboardH] = useState(0);
   const [pendingAction, setPendingAction] = useState<
     | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
     | { type: "needs_goal_name" }
@@ -109,8 +109,6 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then(d => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
@@ -125,28 +123,28 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
   useEffect(() => { if (isActive) scrollToBottom(); }, [isActive, scrollToBottom]);
 
-  // ── Voice ────────────────────────────────────────────────────────────────
-
-  function startVoice() {
-    if (typeof window === "undefined") return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any;
-    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-    if (!SR) return;
-    const rec = new SR();
-    rec.lang = "es-AR";
-    rec.interimResults = false;
-    rec.onresult = (e: { results: { [n: number]: { [n: number]: { transcript: string } } } }) => {
-      setListening(false);
-      sendMessage(e.results[0][0].transcript);
+  // ── Keyboard tracking (visualViewport) ─────────────────────────────────────
+  // When the on-screen keyboard opens, the visual viewport shrinks. We compute
+  // its height and lift the whole fixed container above the keyboard, so the
+  // input rides on top of the keyboard and covers the app navbar; when the
+  // keyboard closes, the container sits above the navbar (navbar visible again).
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardH(kb);
     };
-    rec.onerror = () => setListening(false);
-    rec.onend = () => setListening(false);
-    recognitionRef.current = rec;
-    rec.start();
-    setListening(true);
-    setIsActive(true);
-  }
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    onResize();
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+    };
+  }, []);
+
+  useEffect(() => { scrollToBottom(); }, [keyboardH, scrollToBottom]);
 
   // ── Send ─────────────────────────────────────────────────────────────────
 
@@ -248,47 +246,100 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // In active mode we use a fixed full-screen overlay (z-index 60) that covers the
-  // app navbar (z-index 40). The input bar then only needs to clear the system
-  // safe-area-inset-bottom, not the app navbar — giving proper scroll containment.
-  const SAFE_BOTTOM = "env(safe-area-inset-bottom, 0px)";
-  // In idle mode the input sits above the app navbar
-  const IDLE_INPUT_BOTTOM = "calc(80px + env(safe-area-inset-bottom, 0px))";
+  // Single fixed flex-column container (WhatsApp ".phone"). Its bottom edge is
+  // dynamic: when the keyboard is closed it sits just above the app navbar
+  // (navbar visible); when the keyboard opens it lifts above the keyboard so the
+  // input rides on top of it and the navbar is covered by the keyboard.
+  const NAV_CLEARANCE = "calc(84px + env(safe-area-inset-bottom, 0px))";
+  const containerBottom = keyboardH > 0 ? `${keyboardH}px` : NAV_CLEARANCE;
+
+  // Shared input bar (used by idle + active). No microphone — text only.
+  const inputBar = (
+    <div style={{
+      flexShrink: 0,
+      padding: "6px 8px 8px",
+      background: "var(--base)",
+      display: "flex", flexDirection: "column", gap: 4,
+    }}>
+      {pendingAction?.type === "needs_amount" && (
+        <p style={{ fontSize: 11, color: "var(--accent)", paddingInline: 14 }}>
+          Esperando monto para: {pendingAction.description}
+        </p>
+      )}
+      {pendingAction?.type === "needs_goal_name" && (
+        <p style={{ fontSize: 11, color: "var(--accent)", paddingInline: 14 }}>
+          Esperando nombre de la meta...
+        </p>
+      )}
+      <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", background: "var(--raised)", borderRadius: 24, padding: "4px 6px 4px 16px", border: "0.5px solid var(--glass-border)", minHeight: 44 }}>
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Escribir mensaje a Neo…"
+            style={{ flex: 1, fontSize: 15.5, background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "6px 0" }}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={thinking || !input.trim()}
+          aria-label="Enviar"
+          style={{
+            width: 44, height: 44, borderRadius: "50%",
+            background: input.trim() && !thinking ? "var(--accent)" : "var(--raised)",
+            border: "0.5px solid var(--glass-border)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: input.trim() && !thinking ? "0 0 12px var(--accent-glow)" : "none",
+            transition: "background 150ms",
+          }}
+        >
+          <SendIcon color={input.trim() && !thinking ? "#fff" : "var(--ink-muted)"} />
+        </button>
+      </form>
+    </div>
+  );
 
   return (
-    <>
-      {/* ── IDLE state — normal document flow, bottom nav visible ── */}
+    <div style={{
+      position: "fixed",
+      top: 0, left: 0, right: 0,
+      bottom: containerBottom,
+      zIndex: 20,
+      display: "flex", flexDirection: "column",
+      background: "var(--base)",
+      transition: "bottom 180ms ease-out",
+    }}>
+
+      {/* ── IDLE state ── */}
       {!isActive && (
-        <div style={{
-          display: "flex", flexDirection: "column",
-          marginTop: -24, marginLeft: -16, marginRight: -16, marginBottom: -104,
-          minHeight: "calc(100dvh - 0px)",
-        }}>
-          {/* Header idle */}
+        <>
+          {/* Header strip */}
           <div style={{
             flexShrink: 0,
             display: "flex", alignItems: "center", gap: 12,
-            padding: "12px 16px",
+            padding: "calc(10px + env(safe-area-inset-top, 0px)) 16px 10px",
             background: "var(--accent)",
           }}>
-            <div className="neo-avatar-idle" style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
+            <div className="neo-avatar-active" style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
             <div>
-              <p style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>Neo</p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)" }}>Tu asistente personal</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>Neo</p>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.2 }}>asistente personal de finanzas</p>
             </div>
           </div>
 
-          {/* Body */}
+          {/* Welcome body — scrollable */}
           <div style={{
-            flex: 1,
+            flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch",
             background: "var(--base)",
             display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 12, padding: "32px 16px 180px",
-          }}>
+            gap: 12, padding: "32px 16px 24px",
+          } as React.CSSProperties}>
             <div className="neo-avatar-idle" style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 32px var(--accent-glow)" }} />
             <div style={{ textAlign: "center" }}>
               <p style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>Hola, soy Neo</p>
-              <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 4 }}>Preguntame lo que quieras sobre tus finanzas</p>
+              <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 4 }}>Tu asistente personal de finanzas</p>
             </div>
             {!hasPhone && (
               <a href="/perfil" style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#fff", textDecoration: "none" }}>
@@ -305,76 +356,45 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             </div>
           </div>
 
-          {/* Input bar — fixed above app navbar */}
-          <div style={{
-            position: "fixed", bottom: IDLE_INPUT_BOTTOM, left: 0, right: 0, zIndex: 50,
-            padding: "8px 12px",
-            background: "var(--void)",
-            borderTop: "0.5px solid var(--glass-border)",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ flex: 1, display: "flex", alignItems: "center", background: "var(--raised)", borderRadius: 24, padding: "2px 4px 2px 16px", border: "0.5px solid var(--glass-border)" }}>
-              <input
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="Mensaje"
-                style={{ flex: 1, fontSize: 15, background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "8px 0" }}
-              />
-              {input.trim() && (
-                <button type="submit" style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--accent)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <SendIcon />
-                </button>
-              )}
-            </form>
-            {!input.trim() && (
-              <button type="button" onClick={startVoice} style={{ width: 44, height: 44, borderRadius: "50%", background: listening ? "var(--accent)" : "var(--raised)", border: "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: listening ? "0 0 12px var(--accent-glow)" : "none" }}>
-                <MicIcon color={listening ? "#fff" : "var(--ink-muted)"} />
-              </button>
-            )}
-          </div>
-        </div>
+          {inputBar}
+        </>
       )}
 
-      {/* ── ACTIVE state — full-screen fixed overlay, covers app navbar ── */}
+      {/* ── ACTIVE state ── */}
       {isActive && (
-        <div style={{
-          position: "fixed",
-          top: 0, left: 0, right: 0, bottom: 0,
-          zIndex: 200,
-          display: "flex", flexDirection: "column",
-          background: "var(--base)",
-        }}>
-          {/* WhatsApp-style header */}
+        <>
+          {/* WhatsApp-style header strip */}
           <div style={{
             flexShrink: 0,
             display: "flex", alignItems: "center", gap: 10,
-            padding: `calc(10px + env(safe-area-inset-top, 0px)) 16px 10px 8px`,
+            padding: "calc(10px + env(safe-area-inset-top, 0px)) 16px 10px 6px",
             background: "var(--accent)",
           }}>
             <button
-              onClick={() => { setIsActive(false); setMessages([]); }}
+              onClick={() => setIsActive(false)}
+              aria-label="Volver"
               style={{ width: 36, height: 36, borderRadius: "50%", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
 
             <div className={thinking ? "neo-avatar-thinking" : "neo-avatar-active"} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
 
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 16, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>Neo</p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.2 }}>
-                {thinking ? "escribiendo..." : hasPhone ? phoneNumber : "en línea"}
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {thinking ? "escribiendo..." : "asistente personal de finanzas"}
               </p>
             </div>
           </div>
 
-          {/* Message list — scrolls within the remaining space */}
+          {/* Message list — the only scrollable area */}
           <div ref={listRef} style={{
             flex: 1, minHeight: 0,
             overflowY: "auto", WebkitOverflowScrolling: "touch",
-            padding: "8px 8px 80px",
+            padding: "8px 8px 12px",
             display: "flex", flexDirection: "column", gap: 2,
           } as React.CSSProperties}>
             {messages.map((msg, i) => {
@@ -415,73 +435,19 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             )}
           </div>
 
-          {/* Input bar — fixed at bottom, z-index 201 to sit on top of overlay */}
-          <div style={{
-            position: "fixed",
-            left: 0, right: 0,
-            bottom: 0,
-            zIndex: 201,
-            padding: `8px 12px calc(8px + ${SAFE_BOTTOM})`,
-            background: "var(--void)",
-            borderTop: "0.5px solid var(--glass-border)",
-            display: "flex", alignItems: "flex-end", gap: 8,
-          }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-              {pendingAction?.type === "needs_amount" && (
-                <p style={{ fontSize: 11, color: "var(--accent)", paddingInline: 14 }}>
-                  Esperando monto para: {pendingAction.description}
-                </p>
-              )}
-              {pendingAction?.type === "needs_goal_name" && (
-                <p style={{ fontSize: 11, color: "var(--accent)", paddingInline: 14 }}>
-                  Esperando nombre de la meta...
-                </p>
-              )}
-              <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", alignItems: "center", background: "var(--raised)", borderRadius: 24, padding: "2px 4px 2px 16px", border: "0.5px solid var(--glass-border)" }}>
-                <input
-                  ref={inputRef}
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder="Mensaje"
-                  style={{ flex: 1, fontSize: 15, background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "10px 0" }}
-                />
-                {input.trim() && (
-                  <button type="submit" disabled={thinking} style={{ width: 36, height: 36, borderRadius: "50%", background: thinking ? "var(--raised)" : "var(--accent)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 2 }}>
-                    <SendIcon />
-                  </button>
-                )}
-              </form>
-            </div>
-            {!input.trim() && (
-              <button type="button" onClick={startVoice} style={{ width: 44, height: 44, borderRadius: "50%", background: listening ? "var(--accent)" : "var(--raised)", border: "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: listening ? "0 0 12px var(--accent-glow)" : "none", transition: "background 150ms" }}>
-                <MicIcon color={listening ? "#fff" : "var(--ink-muted)"} />
-              </button>
-            )}
-          </div>
-        </div>
+          {inputBar}
+        </>
       )}
-    </>
+    </div>
   );
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function SendIcon() {
+function SendIcon({ color = "#fff" }: { color?: string }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "rotate(90deg)" }}>
-      <line x1="12" y1="19" x2="12" y2="5" />
-      <polyline points="5 12 12 5 19 12" />
-    </svg>
-  );
-}
-
-function MicIcon({ color }: { color: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="2" width="6" height="12" rx="3" />
-      <path d="M5 10a7 7 0 0 0 14 0" />
-      <line x1="12" y1="19" x2="12" y2="22" />
-      <line x1="9" y1="22" x2="15" y2="22" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={color}>
+      <path d="M2 12l19-9-7 19-2.5-7.5L2 12z" />
     </svg>
   );
 }
