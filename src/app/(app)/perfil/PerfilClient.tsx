@@ -248,11 +248,14 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       {/* ① Datos personales + Cuenta */}
       <Accordion label="Datos personales">
         {/* Nombre */}
-        <div className="flex gap-2">
-          <input style={{ ...inp, flex: 1 }} placeholder="Tu nombre"
-            value={displayName} onChange={(e) => setDisplayName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveName()} />
-          <SaveButton onClick={saveName} saving={savingName} label={savedName ? "✓" : "Guardar"} />
+        <div>
+          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 8 }}>Nombre y apellido</p>
+          <div className="flex gap-2">
+            <input style={{ ...inp, flex: 1 }} placeholder="Tu nombre"
+              value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveName()} />
+            <SaveButton onClick={saveName} saving={savingName} label={savedName ? "✓" : "Guardar"} />
+          </div>
         </div>
 
         <Divider />

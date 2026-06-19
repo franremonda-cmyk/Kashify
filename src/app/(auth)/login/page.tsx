@@ -48,7 +48,7 @@ export default function LoginPage() {
               Kashify
             </h1>
             <p className="text-sm mt-0.5" style={{ color: "var(--ink-muted)" }}>
-              Tus finanzas, por WhatsApp
+              Manejá tus finanzas desde WhatsApp
             </p>
           </div>
         </div>
@@ -92,11 +92,9 @@ export default function LoginPage() {
         </div>
 
         {/* Bottom accent */}
-        <div className="flex items-center gap-2">
-          <div className="h-px flex-1" style={{ background: "var(--glass-border)" }} />
-          <span className="text-[11px]" style={{ color: "var(--ink-dim)" }}>Neo te espera</span>
-          <div className="h-px flex-1" style={{ background: "var(--glass-border)" }} />
-        </div>
+        <p className="text-center text-[11px]" style={{ color: "var(--ink-dim)" }}>
+          Neo, tu asistente personal, te espera
+        </p>
       </div>
     </main>
   );

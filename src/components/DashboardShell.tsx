@@ -240,14 +240,11 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   if (relevant.length === 0) return null;
   return (
     <section className="enter-up" data-delay="4">
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
-        <div>
-          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>
-            Límites este mes
-          </p>
-          <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 1 }}>Tocá una categoría para ver el detalle y editar su techo.</p>
-        </div>
-        <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none", flexShrink: 0, marginTop: 2 }}>Ver todos →</Link>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)" }}>
+          Límites por categoría
+        </p>
+        <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todos →</Link>
       </div>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
         {relevant.map((b) => {

@@ -9,6 +9,13 @@ export function useModalTouchLock() {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
+    if (!mounted) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [mounted]);
+
+  useEffect(() => {
     const el = overlayRef.current;
     if (!el) return;
     const prevent = (e: TouchEvent) => {

@@ -764,10 +764,7 @@ export default function ActividadPage() {
         return (
           <section className="flex flex-col gap-2">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 2 }}>Límites este mes</p>
-                <p style={{ fontSize: 11, color: "var(--ink-dim)", paddingLeft: 2, marginTop: 1 }}>Cuánto llevás gastado de cada techo. Tocá uno para ver el detalle.</p>
-              </div>
+              <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 2 }}>Límites por categoría</p>
               <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>+ Agregar límite</Link>
             </div>
             {catsWithBudget.length === 0 ? (
