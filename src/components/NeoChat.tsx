@@ -106,9 +106,12 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
-  // Generic slot-filling context echoed back to the server (opaque to the client)
-  // and optional quick-reply chips the server offers (e.g. Gasto/Ingreso/Consultar).
-  const [pendingCtx, setPendingCtx] = useState<unknown | null>(null);
+  // Generic slot-filling context echoed back to the server (opaque to the client).
+  // useRef instead of useState: sendMessage must always read the *current* value,
+  // not a value captured in a stale closure from a previous render (iOS Safari
+  // fires visualViewport events that cause re-renders mid-fetch, which would
+  // make a useState closure see null even after the context was set).
+  const pendingCtxRef = useRef<unknown | null>(null);
   const [quickReplies, setQuickReplies] = useState<string[] | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -191,7 +194,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     setThinking(true);
 
     const body: Record<string, unknown> = { message: text.trim() };
-    if (pendingCtx) body.pendingContext = pendingCtx;
+    if (pendingCtxRef.current) body.pendingContext = pendingCtxRef.current;
     setQuickReplies(null);
 
     try {
@@ -199,9 +202,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       const data = res.ok ? await res.json() : { text: "No pude procesar tu mensaje. Intentá de nuevo." };
 
       // Slot-filling continuation: store whatever pending context the server returns.
-      setPendingCtx(data.pending ?? null);
+      pendingCtxRef.current = data.pending ?? null;
       setQuickReplies(Array.isArray(data.options) ? data.options : null);
-      if (data.action?.type === "cancel_pending") { setPendingCtx(null); setQuickReplies(null); }
+      if (data.action?.type === "cancel_pending") { pendingCtxRef.current = null; setQuickReplies(null); }
 
       const actionTypes = ["confirm_delete", "confirm_delete_goal", "confirm_cancel_installment"];
       setMessages(prev => [...prev, {
