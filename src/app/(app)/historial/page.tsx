@@ -8,6 +8,7 @@ import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import dynamic from "next/dynamic";
 const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 import TransactionSheet from "@/components/TransactionSheet";
+import BudgetDetailModal from "@/components/BudgetDetailModal";
 import type { Transaction } from "@/types";
 
 // Import modal usando el overlay estándar
@@ -371,6 +372,9 @@ export default function ActividadPage() {
   const [showImport, setShowImport]         = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showAllTx, setShowAllTx]           = useState(false);
+  const [viewYear, setViewYear]             = useState(() => new Date().getFullYear());
+  const [viewMonth, setViewMonth]           = useState(() => new Date().getMonth() + 1);
+  const [selectedBudget, setSelectedBudget] = useState<{ id: string; name: string; icon?: string; color?: string; monthly_limit: number; currency_code: string; spent?: number } | null>(null);
   // Extra data for detailed widgets
   const [goals, setGoals]         = useState<import("@/types").SavingsGoal[]>([]);
   const [installmentPlans, setInstallmentPlans] = useState<import("@/types").InstallmentPlan[]>([]);
@@ -404,7 +408,10 @@ export default function ActividadPage() {
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page) });
+    const from = `${viewYear}-${String(viewMonth).padStart(2,"0")}-01`;
+    const lastDay = new Date(viewYear, viewMonth, 0).getDate();
+    const to = `${viewYear}-${String(viewMonth).padStart(2,"0")}-${lastDay}`;
+    const params = new URLSearchParams({ page: String(page), from, to });
     if (search) params.set("search", search);
     if (filters.categories.length === 1) params.set("category_id", filters.categories[0]);
     if (filters.types.length === 1) params.set("type", filters.types[0]);
@@ -413,7 +420,7 @@ export default function ActividadPage() {
     setTransactions(json.data ?? []);
     setTotal(json.count ?? 0);
     setLoading(false);
-  }, [page, search, filters.categories, filters.types]);
+  }, [page, search, filters.categories, filters.types, viewYear, viewMonth]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
@@ -525,6 +532,45 @@ export default function ActividadPage() {
           </div>
         </div>
       </div>
+
+      {/* Navegador de meses */}
+      {(() => {
+        const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const now = new Date();
+        const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth() + 1;
+        function prevMonth() {
+          setPage(1);
+          setShowAllTx(false);
+          if (viewMonth === 1) { setViewYear(y => y - 1); setViewMonth(12); }
+          else setViewMonth(m => m - 1);
+        }
+        function nextMonth() {
+          if (isCurrentMonth) return;
+          setPage(1);
+          setShowAllTx(false);
+          if (viewMonth === 12) { setViewYear(y => y + 1); setViewMonth(1); }
+          else setViewMonth(m => m + 1);
+        }
+        return (
+          <div className="enter-up flex items-center justify-between" style={{ background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 14, padding: "6px 10px", boxShadow: "var(--shadow-sm)" }}>
+            <button onClick={prevMonth} aria-label="Mes anterior"
+              style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
+                {MONTHS_ES[viewMonth - 1]} {viewYear}
+              </p>
+              {isCurrentMonth && <p style={{ fontSize: 9, color: "var(--accent)", fontWeight: 600, marginTop: 1 }}>mes actual</p>}
+            </div>
+            <button onClick={nextMonth} aria-label="Mes siguiente"
+              disabled={isCurrentMonth}
+              style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: isCurrentMonth ? "var(--ink-dim)" : "var(--ink-muted)", opacity: isCurrentMonth ? 0.4 : 1 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        );
+      })()}
 
       {availableCurrencies.length > 1 && (
         <div className="enter-up" data-delay="1" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -755,25 +801,32 @@ export default function ActividadPage() {
                   const pct = Math.min(100, cat.monthly_limit > 0 ? (spent / cat.monthly_limit) * 100 : 0);
                   const over = pct >= 100;
                   const warn = pct >= 80;
-                  const barColor = over ? "#FF453A" : warn ? "#FF9500" : "#34C759";
+                  const gradientColor = pct < 50
+                    ? `hsl(${120 - pct * 0.6}, 72%, 50%)`
+                    : pct < 80
+                    ? `hsl(${90 - (pct - 50) * 2.4}, 80%, 48%)`
+                    : `hsl(${16 - Math.max(0, pct - 80) * 0.4}, 88%, 52%)`;
                   const labelColor = over ? "var(--negative)" : warn ? "var(--warning)" : "var(--positive)";
                   return (
-                    <div key={cat.id} style={{
-                      flexShrink: 0, width: 80, padding: "10px 8px 8px",
-                      borderRadius: 14, background: "var(--base)",
-                      border: `0.5px solid ${over ? "rgba(255,69,58,0.3)" : "var(--glass-border)"}`,
-                      boxShadow: "var(--shadow-sm)",
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                    }}>
+                    <button key={cat.id}
+                      onClick={() => setSelectedBudget({ ...cat, spent })}
+                      style={{
+                        flexShrink: 0, width: 80, padding: "10px 8px 8px",
+                        borderRadius: 14, background: "var(--base)",
+                        border: `0.5px solid ${over ? "rgba(255,69,58,0.3)" : "var(--glass-border)"}`,
+                        boxShadow: "var(--shadow-sm)",
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                        cursor: "pointer",
+                      }}>
                       <div style={{ width: 32, height: 32, borderRadius: 9, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
                         <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={15} />
                       </div>
                       <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
-                      <div style={{ width: "100%", height: 3, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: barColor, transition: "width 400ms ease-out" }} />
+                      <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
                       </div>
                       <p style={{ fontSize: 11, fontWeight: 700, color: labelColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
-                    </div>
+                    </button>
                   );
                 })}
                 <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
@@ -791,6 +844,13 @@ export default function ActividadPage() {
           </section>
         );
       })()}
+
+      {selectedBudget && (
+        <BudgetDetailModal
+          budget={selectedBudget}
+          onClose={() => setSelectedBudget(null)}
+        />
+      )}
     </div>
   );
 }

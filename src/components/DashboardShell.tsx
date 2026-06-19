@@ -5,6 +5,7 @@ import HeroBalanceCard from "./HeroBalanceCard";
 import CategoryIcon from "./CategoryIcon";
 import SpendingChart, { type ChartMonth } from "./SpendingChart";
 import TransactionSheet from "./TransactionSheet";
+import BudgetDetailModal from "./BudgetDetailModal";
 import type { Balance, SavingsGoal } from "@/types";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; }
@@ -228,26 +229,32 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
 }
 
 // Franja horizontal de límites de categoría
-function BudgetStrip({ budgets, currency }: { budgets: BudgetEntry[]; currency: string }) {
+function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; currency: string; onSelect: (b: BudgetEntry) => void }) {
   const relevant = budgets.filter(b => b.currency_code === currency).slice(0, 5);
   if (relevant.length === 0) return null;
   return (
     <section className="enter-up" data-delay="4">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
           Límites este mes
         </p>
-        <Link href="/historial" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todos →</Link>
+        <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todos →</Link>
       </div>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
         {relevant.map((b) => {
           const pct = b.monthly_limit > 0 ? Math.min(100, ((b.spent ?? 0) / b.monthly_limit) * 100) : 0;
-          const color = pct >= 100 ? "var(--negative)" : pct >= 80 ? "var(--warning)" : "var(--positive)";
-          const barColor = pct >= 100 ? "#FF453A" : pct >= 80 ? "#FF9500" : "#34C759";
+          const textColor = pct >= 100 ? "var(--negative)" : pct >= 80 ? "var(--warning)" : "var(--positive)";
+          // Gradiente dinámico: verde→amarillo→rojo según porcentaje
+          const gradientColor = pct < 50
+            ? `hsl(${120 - pct * 0.6}, 72%, 50%)`
+            : pct < 80
+            ? `hsl(${90 - (pct - 50) * 2.4}, 80%, 48%)`
+            : `hsl(${16 - Math.max(0, pct - 80) * 0.4}, 88%, 52%)`;
           return (
-            <Link key={b.id} href="/historial" style={{ textDecoration: "none", flexShrink: 0 }}>
+            <button key={b.id} style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+              onClick={() => onSelect(b)}>
               <div style={{
-                width: 72, padding: "10px 8px 8px",
+                width: 76, padding: "10px 8px 8px",
                 borderRadius: 14, background: "var(--base)",
                 border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
@@ -256,21 +263,21 @@ function BudgetStrip({ budgets, currency }: { budgets: BudgetEntry[]; currency: 
                   <CategoryIcon icon={b.icon} name={b.name} color={b.color} size={15} />
                 </div>
                 <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
-                <div style={{ width: "100%", height: 3, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: barColor, transition: "width 400ms ease-out" }} />
+                <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
                 </div>
-                <p style={{ fontSize: 10, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
+                <p style={{ fontSize: 10, fontWeight: 700, color: textColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
               </div>
-            </Link>
+            </button>
           );
         })}
-        <Link href="/historial" style={{ textDecoration: "none", flexShrink: 0 }}>
+        <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
           <div style={{
-            width: 72, padding: "10px 8px 8px", borderRadius: 14,
+            width: 76, padding: "10px 8px 8px", borderRadius: 14,
             background: "var(--raised)", border: "0.5px dashed var(--glass-border-hover)",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 90,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 92,
           }}>
-            <span style={{ fontSize: 18, color: "var(--ink-dim)" }}>→</span>
+            <span style={{ fontSize: 18, color: "var(--ink-dim)" }}>+</span>
             <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Ver todos</p>
           </div>
         </Link>
@@ -282,6 +289,7 @@ function BudgetStrip({ budgets, currency }: { budgets: BudgetEntry[]; currency: 
 export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent, goals = [], budgets = [] }: Props) {
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
+  const [selectedBudget, setSelectedBudget] = useState<BudgetEntry | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showAllTx, setShowAllTx] = useState(false);
 
@@ -327,7 +335,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
       <GoalsWidget goals={goals} />
 
       {/* Franja de límites por categoría */}
-      <BudgetStrip budgets={budgets} currency={selectedCurrency} />
+      <BudgetStrip budgets={budgets} currency={selectedCurrency} onSelect={setSelectedBudget} />
 
       {/* Últimas transacciones — máx 5 con botón ver todas */}
       {recent.length > 0 && (
@@ -395,6 +403,13 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
           onClose={() => setSelectedTx(null)}
           onDeleted={() => setSelectedTx(null)}
           onSaved={() => setSelectedTx(null)}
+        />
+      )}
+
+      {selectedBudget && (
+        <BudgetDetailModal
+          budget={selectedBudget}
+          onClose={() => setSelectedBudget(null)}
         />
       )}
     </div>

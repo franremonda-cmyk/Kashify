@@ -13,7 +13,7 @@ interface Category  { id: string; name: string; icon?: string; color?: string }
 interface Budget    {
   id: string;
   category_id: string;
-  amount_limit: number;
+  monthly_limit: number;
   currency_code: string;
   period_type?: "always" | "specific_months";
   applies_months?: number[] | null;
@@ -194,7 +194,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         category_id: budget.category_id,
-        amount_limit: budget.amount_limit,
+        monthly_limit: budget.monthly_limit,
         currency_code: budget.currency_code,
         period_type: edit.period_type,
         applies_months: edit.period_type === "specific_months" ? edit.applies_months : null,
@@ -386,7 +386,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{b.categories?.name ?? "—"}</p>
-                      <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>{b.currency_code} {b.amount_limit.toLocaleString("es-AR")}</p>
+                      <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>{b.currency_code} {b.monthly_limit.toLocaleString("es-AR")}</p>
                     </div>
                   </div>
 

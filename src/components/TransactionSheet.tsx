@@ -114,7 +114,8 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
             background: "var(--base)",
             border: "0.5px solid var(--glass-border)",
             boxShadow: "0 24px 60px rgba(0,0,0,0.40)",
-            maxHeight: "100%",
+            maxHeight: "calc(100dvh - 40px)",
+            overflow: "hidden",
           }}
         >
           {/* Header */}
