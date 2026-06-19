@@ -162,7 +162,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   // Hide the app navbar while the keyboard is open so it sits behind the keyboard
   // and only the input shows above it. CSS rule lives in globals.css.
   useEffect(() => {
-    document.body.classList.toggle("neo-keyboard-open", keyboardH > 0);
+    document.body.classList.toggle("neo-keyboard-open", keyboardH > 80);
     return () => { document.body.classList.remove("neo-keyboard-open"); };
   }, [keyboardH]);
 
