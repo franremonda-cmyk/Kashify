@@ -111,6 +111,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const [budgetEdits, setBudgetEdits]   = useState<Record<string, { period_type: "always" | "specific_months"; applies_months: number[] }>>({});
   const [savingBudget, setSavingBudget] = useState<string | null>(null);
 
+  // Sub-secciones del acordeón Categorías
+  const [showMisCats, setShowMisCats]   = useState(false);
+  const [showLimits, setShowLimits]     = useState(false);
+
   const supabase = createClient();
 
   const fetchCategories = useCallback(async () => {
@@ -233,7 +237,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       </div>
 
       {/* ① Datos personales + Cuenta */}
-      <Accordion label="Datos personales" defaultOpen>
+      <Accordion label="Datos personales">
         {/* Nombre */}
         <div className="flex gap-2">
           <input style={{ ...inp, flex: 1 }} placeholder="Tu nombre"
@@ -335,102 +339,121 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
       {/* ③ Categorías + Límites */}
       <Accordion label="Categorías">
-        {/* Mis categorías */}
-        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Mis categorías</p>
-        {catLoading ? (
-          <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "8px 0" }}>Cargando...</p>
-        ) : categories.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Aún no tenés categorías</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {categories.map((cat) => (
-              <button key={cat.id} onClick={() => setEditingCat(cat)}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textAlign: "left", width: "100%" }}>
-                <div style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, background: (cat.color ?? "var(--accent)") + "22", border: `1px solid ${cat.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)" }}>
-                  <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={17} />
+        {/* Sub-botón: Mis categorías */}
+        <div style={{ borderRadius: 12, border: "0.5px solid var(--glass-border)", overflow: "hidden" }}>
+          <button
+            onClick={() => setShowMisCats(v => !v)}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "var(--raised)", textAlign: "left" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Mis categorías</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+              style={{ color: "var(--ink-dim)", transition: "transform 200ms", transform: showMisCats ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          {showMisCats && (
+            <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 8, borderTop: "0.5px solid var(--glass-border-dim)" }}>
+              {catLoading ? (
+                <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "8px 0" }}>Cargando...</p>
+              ) : categories.length === 0 ? (
+                <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Aún no tenés categorías</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {categories.map((cat) => (
+                    <button key={cat.id} onClick={() => setEditingCat(cat)}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", textAlign: "left", width: "100%" }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (cat.color ?? "var(--accent)") + "22", border: `1px solid ${cat.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)" }}>
+                        <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={15} />
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", flex: 1 }}>{cat.name}</span>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}>
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </button>
+                  ))}
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", flex: 1 }}>{cat.name}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}>
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
+              )}
+              <button onClick={() => setEditingCat("new")}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)" }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
               </button>
-            ))}
-          </div>
-        )}
-        <button onClick={() => setEditingCat("new")}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)" }}>
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
-        </button>
+            </div>
+          )}
+        </div>
 
-        <Divider />
-
-        {/* Configurar límites */}
-        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Configurar límites</p>
-
-        {budgets.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "8px 0" }}>
-            <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>No hay límites configurados</p>
-            <Link href="/categorias" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none", fontWeight: 600, display: "inline-block", marginTop: 6 }}>
-              + Agregar límite →
-            </Link>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {budgets.map((b) => {
-              const edit = budgetEdits[b.id] ?? { period_type: "always", applies_months: [] };
-              return (
-                <div key={b.id} style={{ borderRadius: 12, border: "0.5px solid var(--glass-border)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, background: "var(--raised)" }}>
-                  <div className="flex items-center gap-3">
-                    <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (b.categories?.color ?? "var(--accent)") + "22", border: `1px solid ${b.categories?.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.categories?.color ?? "var(--accent)" }}>
-                      <CategoryIcon icon={b.categories?.icon} name={b.categories?.name ?? ""} color={b.categories?.color} size={15} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{b.categories?.name ?? "—"}</p>
-                      <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>{b.currency_code} {b.monthly_limit.toLocaleString("es-AR")}</p>
-                    </div>
-                  </div>
-
-                  {/* Period type toggle */}
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {(["always", "specific_months"] as const).map((pt) => (
-                      <button key={pt}
-                        onClick={() => setBudgetEdits((prev) => ({ ...prev, [b.id]: { ...edit, period_type: pt } }))}
-                        style={{ flex: 1, padding: "7px 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: edit.period_type === pt ? "var(--accent-soft)" : "var(--base)", border: edit.period_type === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: edit.period_type === pt ? "var(--accent)" : "var(--ink-muted)" }}>
-                        {pt === "always" ? "Siempre" : "Meses específicos"}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Month picker */}
-                  {edit.period_type === "specific_months" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
-                      {MONTHS.map((m, i) => {
-                        const month = i + 1;
-                        const selected = edit.applies_months.includes(month);
-                        return (
-                          <button key={m} onClick={() => toggleMonth(b.id, month)}
-                            style={{ padding: "6px 0", borderRadius: 8, fontSize: 11, fontWeight: 600, background: selected ? "var(--accent-soft)" : "var(--base)", border: selected ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: selected ? "var(--accent)" : "var(--ink-dim)" }}>
-                            {m}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <button onClick={() => saveBudgetPeriod(b)}
-                    disabled={savingBudget === b.id}
-                    style={{ padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: savingBudget === b.id ? 0.6 : 1 }}>
-                    {savingBudget === b.id ? "Guardando..." : "Guardar"}
-                  </button>
+        {/* Sub-botón: Configurar límite por categoría */}
+        <div style={{ borderRadius: 12, border: "0.5px solid var(--glass-border)", overflow: "hidden" }}>
+          <button
+            onClick={() => setShowLimits(v => !v)}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "var(--raised)", textAlign: "left" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Configurar límite por categoría</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+              style={{ color: "var(--ink-dim)", transition: "transform 200ms", transform: showLimits ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          {showLimits && (
+            <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 10, borderTop: "0.5px solid var(--glass-border-dim)" }}>
+              {budgets.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "8px 0" }}>
+                  <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>No hay límites configurados</p>
+                  <Link href="/categorias" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none", fontWeight: 600, display: "inline-block", marginTop: 6 }}>
+                    + Agregar límite →
+                  </Link>
                 </div>
-              );
-            })}
-            <Link href="/categorias"
-              style={{ display: "block", textAlign: "center", padding: "10px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", textDecoration: "none" }}>
-              + Agregar límite
-            </Link>
-          </div>
-        )}
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {budgets.map((b) => {
+                    const edit = budgetEdits[b.id] ?? { period_type: "always", applies_months: [] };
+                    return (
+                      <div key={b.id} style={{ borderRadius: 12, border: "0.5px solid var(--glass-border)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, background: "var(--base)" }}>
+                        <div className="flex items-center gap-3">
+                          <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (b.categories?.color ?? "var(--accent)") + "22", border: `1px solid ${b.categories?.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.categories?.color ?? "var(--accent)" }}>
+                            <CategoryIcon icon={b.categories?.icon} name={b.categories?.name ?? ""} color={b.categories?.color} size={15} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{b.categories?.name ?? "—"}</p>
+                            <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>{b.currency_code} {b.monthly_limit.toLocaleString("es-AR")}</p>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {(["always", "specific_months"] as const).map((pt) => (
+                            <button key={pt}
+                              onClick={() => setBudgetEdits((prev) => ({ ...prev, [b.id]: { ...edit, period_type: pt } }))}
+                              style={{ flex: 1, padding: "7px 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: edit.period_type === pt ? "var(--accent-soft)" : "var(--raised)", border: edit.period_type === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: edit.period_type === pt ? "var(--accent)" : "var(--ink-muted)" }}>
+                              {pt === "always" ? "Siempre" : "Meses específicos"}
+                            </button>
+                          ))}
+                        </div>
+                        {edit.period_type === "specific_months" && (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+                            {MONTHS.map((m, i) => {
+                              const month = i + 1;
+                              const selected = edit.applies_months.includes(month);
+                              return (
+                                <button key={m} onClick={() => toggleMonth(b.id, month)}
+                                  style={{ padding: "6px 0", borderRadius: 8, fontSize: 11, fontWeight: 600, background: selected ? "var(--accent-soft)" : "var(--raised)", border: selected ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: selected ? "var(--accent)" : "var(--ink-dim)" }}>
+                                  {m}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <button onClick={() => saveBudgetPeriod(b)} disabled={savingBudget === b.id}
+                          style={{ padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: savingBudget === b.id ? 0.6 : 1 }}>
+                          {savingBudget === b.id ? "Guardando..." : "Guardar"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <Link href="/categorias"
+                    style={{ display: "block", textAlign: "center", padding: "10px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", textDecoration: "none" }}>
+                    + Agregar límite
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </Accordion>
 
       {/* ④ Metas de ahorro */}

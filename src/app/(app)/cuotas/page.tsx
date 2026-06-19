@@ -14,6 +14,7 @@ export default function CuotasPage() {
   const [plans, setPlans] = useState<PlanWithPayments[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PlanWithPayments | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   function load() {
     fetch("/api/installments").then((r) => r.json()).then(setPlans).catch(() => {});
@@ -21,6 +22,7 @@ export default function CuotasPage() {
   useEffect(() => { load(); }, []);
 
   async function handleCreate(data: InstallmentFormData) {
+    setCreateError(null);
     const res = await fetch("/api/installments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -29,6 +31,9 @@ export default function CuotasPage() {
     if (res.ok) {
       setShowForm(false);
       load();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      setCreateError(err.error ?? "No se pudo guardar. Revisá los campos.");
     }
   }
 
@@ -84,10 +89,17 @@ export default function CuotasPage() {
       </div>
 
       {showForm && (
-        <InstallmentForm
-          onSubmit={handleCreate}
-          onCancel={() => setShowForm(false)}
-        />
+        <>
+          {createError && (
+            <p style={{ fontSize: 12, color: "var(--negative)", padding: "10px 14px", borderRadius: 10, background: "rgba(255,59,48,0.08)", border: "0.5px solid rgba(255,59,48,0.25)" }}>
+              {createError}
+            </p>
+          )}
+          <InstallmentForm
+            onSubmit={handleCreate}
+            onCancel={() => { setShowForm(false); setCreateError(null); }}
+          />
+        </>
       )}
 
       {editingPlan && (

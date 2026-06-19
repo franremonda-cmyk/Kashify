@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 import TransactionSheet from "@/components/TransactionSheet";
 import BudgetDetailModal from "@/components/BudgetDetailModal";
+import TxBreakdownModal from "@/components/TxBreakdownModal";
 import type { Transaction } from "@/types";
 
 // Import modal usando el overlay estándar
@@ -375,6 +376,7 @@ export default function ActividadPage() {
   const [viewYear, setViewYear]             = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth]           = useState(() => new Date().getMonth() + 1);
   const [selectedBudget, setSelectedBudget] = useState<{ id: string; name: string; icon?: string; color?: string; monthly_limit: number; currency_code: string; spent?: number } | null>(null);
+  const [breakdownType, setBreakdownType] = useState<"income" | "expense" | null>(null);
   // Extra data for detailed widgets
   const [goals, setGoals]         = useState<import("@/types").SavingsGoal[]>([]);
   const [installmentPlans, setInstallmentPlans] = useState<import("@/types").InstallmentPlan[]>([]);
@@ -592,16 +594,18 @@ export default function ActividadPage() {
 
       {filtered.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }} className="enter-up" data-delay="1">
-          {[
-            { label: "Ingresos", value: incomeTotal, color: "var(--positive)" },
-            { label: "Gastos",   value: expenseTotal, color: "var(--negative)" },
-            { label: "Neto",     value: net, color: net >= 0 ? "var(--positive)" : "var(--negative)" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)" }}>
-              <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 4 }}>{label}</p>
-              <p style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>{value.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
-            </div>
-          ))}
+          <button onClick={() => setBreakdownType("income")} style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
+            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 4 }}>Ingresos</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: "var(--positive)", fontVariantNumeric: "tabular-nums" }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          </button>
+          <button onClick={() => setBreakdownType("expense")} style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
+            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 4 }}>Gastos</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          </button>
+          <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)" }}>
+            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 4 }}>Neto</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: net >= 0 ? "var(--positive)" : "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          </div>
         </div>
       )}
 
@@ -849,6 +853,14 @@ export default function ActividadPage() {
         <BudgetDetailModal
           budget={selectedBudget}
           onClose={() => setSelectedBudget(null)}
+        />
+      )}
+
+      {breakdownType && (
+        <TxBreakdownModal
+          type={breakdownType}
+          currency={selectedCurrency}
+          onClose={() => setBreakdownType(null)}
         />
       )}
     </div>

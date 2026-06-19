@@ -6,6 +6,7 @@ import CategoryIcon from "./CategoryIcon";
 import SpendingChart, { type ChartMonth } from "./SpendingChart";
 import TransactionSheet from "./TransactionSheet";
 import BudgetDetailModal from "./BudgetDetailModal";
+import TxBreakdownModal from "./TxBreakdownModal";
 import type { Balance, SavingsGoal } from "@/types";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; }
@@ -74,8 +75,8 @@ function useCounter(target: number, duration = 600) {
   return value;
 }
 
-function MetricCard({ label, value, sym, isIncome }: {
-  label: string; value: number; sym: string; isIncome: boolean;
+function MetricCard({ label, value, sym, isIncome, onClick }: {
+  label: string; value: number; sym: string; isIncome: boolean; onClick?: () => void;
 }) {
   const animated = useCounter(value);
   const color  = isIncome ? "var(--positive)" : "var(--negative)";
@@ -84,7 +85,7 @@ function MetricCard({ label, value, sym, isIncome }: {
   const full   = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <div style={{ flex: 1, padding: "14px 16px", borderRadius: 14, background: bg, border, boxShadow: "var(--shadow-sm)" }}>
+    <button onClick={onClick} style={{ flex: 1, padding: "14px 16px", borderRadius: 14, background: bg, border, boxShadow: "var(--shadow-sm)", textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
       <p style={{
         fontSize: 10, fontWeight: 600, textTransform: "uppercase",
         letterSpacing: "0.08em", color: "var(--ink-muted)", marginBottom: 8,
@@ -96,7 +97,8 @@ function MetricCard({ label, value, sym, isIncome }: {
       }}>
         {sym} {full}
       </p>
-    </div>
+      {onClick && <p style={{ fontSize: 9, color: "var(--ink-dim)", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>ver desglose →</p>}
+    </button>
   );
 }
 
@@ -290,6 +292,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
   const [selectedBudget, setSelectedBudget] = useState<BudgetEntry | null>(null);
+  const [breakdownType, setBreakdownType] = useState<"income" | "expense" | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showAllTx, setShowAllTx] = useState(false);
 
@@ -327,12 +330,9 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
       />
 
       <div className="flex gap-3 enter-up" data-delay="2">
-        <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  />
-        <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} />
+        <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />
+        <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} onClick={() => setBreakdownType("expense")} />
       </div>
-
-      {/* Widget de metas — máx 2 */}
-      <GoalsWidget goals={goals} />
 
       {/* Franja de límites por categoría */}
       <BudgetStrip budgets={budgets} currency={selectedCurrency} onSelect={setSelectedBudget} />
@@ -390,6 +390,9 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         </section>
       )}
 
+      {/* Widget de metas — máx 2 */}
+      <GoalsWidget goals={goals} />
+
       {/* Gráfico de líneas mensual */}
       <div className="enter-up" data-delay="6">
         <SpendingChart data={chartMonths} currencySymbol={sym} />
@@ -410,6 +413,14 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         <BudgetDetailModal
           budget={selectedBudget}
           onClose={() => setSelectedBudget(null)}
+        />
+      )}
+
+      {breakdownType && (
+        <TxBreakdownModal
+          type={breakdownType}
+          currency={selectedCurrency}
+          onClose={() => setBreakdownType(null)}
         />
       )}
     </div>

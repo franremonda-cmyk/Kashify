@@ -35,7 +35,11 @@ export async function GET(request: Request) {
 
   if (category) query = query.eq("category_id", category);
   if (currency) query = query.eq("currency_code", currency);
-  if (type) query = query.eq("type", type);
+  if (type) {
+    const types = type.split(",").map(t => t.trim()).filter(Boolean);
+    if (types.length === 1) query = query.eq("type", types[0]);
+    else if (types.length > 1) query = query.in("type", types);
+  }
   if (search) query = query.ilike("description", `%${search}%`);
   if (from) query = query.gte("date", from);
   if (to) query = query.lte("date", to);

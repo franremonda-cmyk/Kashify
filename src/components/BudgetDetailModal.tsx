@@ -43,7 +43,7 @@ export default function BudgetDetailModal({ budget, onClose }: Props) {
     const from = `${year}-${String(month).padStart(2, "0")}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const to = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
-    fetch(`/api/transactions?category_id=${budget.id}&from=${from}&to=${to}&sort_by=date&sort_dir=desc&page=1`)
+    fetch(`/api/transactions?category=${budget.id}&type=expense&from=${from}&to=${to}&sort_by=date&sort_dir=desc&page=1`)
       .then(r => r.ok ? r.json() : { data: [] })
       .then(json => { setTxs(json.data ?? []); setLoading(false); })
       .catch(() => setLoading(false));

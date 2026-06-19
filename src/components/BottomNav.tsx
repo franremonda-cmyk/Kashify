@@ -4,6 +4,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Fuse from "fuse.js";
+import CategoryModal from "@/components/CategoryModal";
+import { useIconStyle } from "@/context/IconStyleContext";
 
 const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "PYG", "BOB", "COP", "PEN", "GBP"];
 
@@ -233,11 +235,13 @@ function guessCategory(description: string, categories: Category[]): string {
   return "";
 }
 
-function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose: () => void; onSaved: () => void; initialType?: "expense" | "income" }) {
+  const { iconStyle } = useIconStyle();
   const [categories, setCategories] = useState<Category[]>([]);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [showNewCat, setShowNewCat] = useState(false);
   const [form, setForm] = useState({
-    type: "expense" as "expense" | "income",
+    type: initialType as "expense" | "income",
     description: "",
     amount: "",
     currency_code: "ARS",
@@ -370,7 +374,7 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           <div>
             <input
               style={inp}
-              placeholder="¿En qué gastaste?"
+              placeholder={form.type === "expense" ? "¿En qué gastaste?" : "¿Qué te ingresó?"}
               value={form.description}
               autoFocus
               onChange={(e) => handleDescriptionChange(e.target.value)}
@@ -409,23 +413,32 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           </div>
 
           {/* Categoría */}
-          <select
-            style={{
-              ...inp,
-              color: form.category_id ? "var(--ink)" : "var(--ink-dim)",
-            }}
-            value={form.category_id}
-            onChange={(e) => {
-              const id = e.target.value;
-              setForm((f) => ({ ...f, category_id: id }));
-              setSuggestion(null);
-              // C: save manual correction so next time this description auto-selects this category
-              if (id && form.description.trim().length >= 3) saveCorrection(form.description.trim(), id);
-            }}
-          >
-            <option value="">Sin categoría</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <div style={{ display: "flex", gap: 6 }}>
+            <select
+              style={{
+                ...inp,
+                flex: 1,
+                color: form.category_id ? "var(--ink)" : "var(--ink-dim)",
+              }}
+              value={form.category_id}
+              onChange={(e) => {
+                const id = e.target.value;
+                setForm((f) => ({ ...f, category_id: id }));
+                setSuggestion(null);
+                // C: save manual correction so next time this description auto-selects this category
+                if (id && form.description.trim().length >= 3) saveCorrection(form.description.trim(), id);
+              }}
+            >
+              <option value="">Sin categoría</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowNewCat(true)}
+              title="Nueva categoría"
+              style={{ ...inp, width: 42, flexShrink: 0, fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", padding: "0" }}
+            >+</button>
+          </div>
 
           {/* Fecha */}
           <input
@@ -452,6 +465,30 @@ function QuickAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           </button>
         </form>
       </div>
+      {showNewCat && (
+        <CategoryModal
+          existingColors={categories.map(c => (c as unknown as { color?: string }).color ?? "").filter(Boolean)}
+          currentStyle={iconStyle}
+          onSave={async (data) => {
+            const res = await fetch("/api/categories", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name: data.name, icon: data.icon ?? "", color: data.color ?? "#7B61FF" }),
+            });
+            if (res.ok) {
+              const newCat = await res.json();
+              const refreshed = await fetch("/api/categories").then(r => r.json());
+              setCategories(Array.isArray(refreshed) ? refreshed : []);
+              if (newCat?.id) {
+                setForm(f => ({ ...f, category_id: newCat.id }));
+                setSuggestion(null);
+              }
+            }
+            setShowNewCat(false);
+          }}
+          onClose={() => setShowNewCat(false)}
+        />
+      )}
     </div>
   );
 }
@@ -469,6 +506,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
+  const [quickAddType, setQuickAddType] = useState<"expense" | "income">("expense");
   const [neoBadge, setNeoBadge] = useState(0);
 
   useEffect(() => {
@@ -481,6 +519,16 @@ export default function BottomNav() {
       .then(undefined, () => {});
   }, []);
 
+  useEffect(() => {
+    function handleOpenQuickAdd(e: Event) {
+      const type = (e as CustomEvent<{ type: string }>).detail?.type;
+      setQuickAddType(type === "income" ? "income" : "expense");
+      setShowAdd(true);
+    }
+    window.addEventListener("open-quick-add", handleOpenQuickAdd);
+    return () => window.removeEventListener("open-quick-add", handleOpenQuickAdd);
+  }, []);
+
   function handleSaved() {
     setShowAdd(false);
     router.refresh();
@@ -489,7 +537,7 @@ export default function BottomNav() {
   return (
     <>
       {showAdd && (
-        <QuickAddModal onClose={() => setShowAdd(false)} onSaved={handleSaved} />
+        <QuickAddModal onClose={() => setShowAdd(false)} onSaved={handleSaved} initialType={quickAddType} />
       )}
 
       <nav

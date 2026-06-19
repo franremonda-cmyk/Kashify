@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       installment_amount, tna: tna ?? null,
       interest_type: interest_type ?? "none",
       card_name: card_name ?? null,
-      category_id: category_id ?? null,
+      category_id: category_id || null,
       first_payment_date,
       status: "active",
     })
