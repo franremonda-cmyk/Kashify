@@ -260,11 +260,17 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const avatarBg = "var(--accent)";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100dvh - 24px - 104px)", position: "relative" }}>
+    <div style={{
+      display: "flex", flexDirection: "column",
+      height: "100dvh",
+      /* cancel app layout padding to go truly full-screen */
+      marginTop: -24, marginLeft: -16, marginRight: -16, marginBottom: -104,
+      position: "relative", overflow: "hidden",
+    }}>
 
-      {/* ── IDLE state — centered avatar ── */}
+      {/* ── IDLE state — avatar from top ── */}
       {!isActive && (
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "24px 0 80px" }}>
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "64px 16px 160px" }}>
           {/* Avatar — no letter, pure color from theme */}
           <div
             className={avatarClass}
@@ -306,7 +312,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       {isActive && (
         <>
           {/* Header with small avatar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 12, borderBottom: "0.5px solid var(--glass-border)", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 8, paddingBottom: 12, paddingInline: 16, borderBottom: "0.5px solid var(--glass-border)", flexShrink: 0 }}>
             <div
               className={avatarClass}
               style={{ width: 44, height: 44, borderRadius: "50%", background: avatarBg, flexShrink: 0, boxShadow: "0 0 16px var(--accent-glow)" }}
@@ -323,7 +329,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           </div>
 
           {/* Message list — paddingBottom leaves room for the fixed input bar */}
-          <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "12px 0 80px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "12px 16px 120px", display: "flex", flexDirection: "column", gap: 8 }}>
             {messages.map(msg => (
               <MessageBubble
                 key={msg.id}
@@ -350,7 +356,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       {/* ── Input — fixed above bottom nav ── */}
       <div style={{
         position: "fixed",
-        bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
+        bottom: "calc(68px + env(safe-area-inset-bottom, 0px))",
         left: "50%",
         transform: "translateX(-50%)",
         width: "min(100%, 520px)",
