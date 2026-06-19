@@ -447,7 +447,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
 
           {/* Fecha */}
           <input
-            style={inp}
+            style={{ ...inp, WebkitAppearance: "none", appearance: "none" } as React.CSSProperties}
             type="date"
             value={form.date}
             onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}

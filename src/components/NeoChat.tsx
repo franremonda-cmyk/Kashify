@@ -291,13 +291,46 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             </a>
           )}
 
-          {/* Input hint — above chips */}
-          <p style={{ fontSize: 13, color: "var(--ink-dim)", textAlign: "center", marginTop: 4 }}>
-            Preguntale algo a Neo...
-          </p>
+          {/* Inline input — replaces the fixed bar in idle state */}
+          <form
+            onSubmit={e => { e.preventDefault(); sendMessage(input); }}
+            style={{ display: "flex", gap: 8, width: "100%" }}
+          >
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Preguntale algo a Neo..."
+              style={{
+                flex: 1, padding: "12px 16px", borderRadius: 14, fontSize: 15,
+                background: "var(--base)", border: "0.5px solid var(--glass-border)",
+                color: "var(--ink)", outline: "none", boxSizing: "border-box",
+              }}
+              onFocus={() => { if (input.trim()) setIsActive(true); }}
+            />
+            {!input.trim() ? (
+              <button type="button" onClick={startVoice}
+                style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: listening ? "var(--accent)" : "var(--raised)", border: listening ? "none" : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: listening ? "0 0 12px var(--accent-glow)" : "none", transition: "background 150ms ease-out" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: listening ? "#FFFFFF" : "var(--ink-muted)" }}>
+                  <rect x="9" y="2" width="6" height="12" rx="3"/>
+                  <path d="M5 10a7 7 0 0 0 14 0"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                  <line x1="9" y1="22" x2="15" y2="22"/>
+                </svg>
+              </button>
+            ) : (
+              <button type="submit"
+                style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: "var(--accent)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 150ms ease-out" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "#FFFFFF", transform: "rotate(90deg)" }}>
+                  <line x1="12" y1="19" x2="12" y2="5" />
+                  <polyline points="5 12 12 5 19 12" />
+                </svg>
+              </button>
+            )}
+          </form>
 
           {/* Suggestion chips */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", marginTop: 4 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
             {SUGGESTIONS.map(s => (
               <button key={s} onClick={() => sendMessage(s)}
                 style={{ padding: "11px 16px", borderRadius: 14, fontSize: 13, fontWeight: 500, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink)", textAlign: "left", boxShadow: "var(--shadow-sm)" }}>
@@ -350,80 +383,54 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
               </div>
             )}
           </div>
+
+          {/* ── Input bar — fixed above bottom nav ── */}
+          <div style={{
+            position: "fixed",
+            bottom: "calc(68px + env(safe-area-inset-bottom, 0px))",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "min(100%, 520px)",
+            padding: "10px 16px 12px",
+            background: "var(--void)",
+            borderTop: "0.5px solid var(--glass-border)",
+            zIndex: 200,
+          }}>
+            <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", gap: 8 }}>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="Escribile a Neo..."
+                style={{
+                  flex: 1, padding: "12px 16px", borderRadius: 14, fontSize: 15,
+                  background: "var(--base)", border: "0.5px solid var(--glass-border)",
+                  color: "var(--ink)", outline: "none", boxSizing: "border-box",
+                }}
+              />
+              {!input.trim() ? (
+                <button type="button" onClick={startVoice}
+                  style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: listening ? "var(--accent)" : "var(--raised)", border: listening ? "none" : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: listening ? "0 0 12px var(--accent-glow)" : "none", transition: "background 150ms ease-out" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: listening ? "#FFFFFF" : "var(--ink-muted)" }}>
+                    <rect x="9" y="2" width="6" height="12" rx="3"/>
+                    <path d="M5 10a7 7 0 0 0 14 0"/>
+                    <line x1="12" y1="19" x2="12" y2="22"/>
+                    <line x1="9" y1="22" x2="15" y2="22"/>
+                  </svg>
+                </button>
+              ) : (
+                <button type="submit" disabled={avatarState === "thinking"}
+                  style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: avatarState !== "thinking" ? "var(--accent)" : "var(--raised)", border: "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 150ms ease-out" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "#FFFFFF", transform: "rotate(90deg)" }}>
+                    <line x1="12" y1="19" x2="12" y2="5" />
+                    <polyline points="5 12 12 5 19 12" />
+                  </svg>
+                </button>
+              )}
+            </form>
+          </div>
         </>
       )}
-
-      {/* ── Input — fixed above bottom nav ── */}
-      <div style={{
-        position: "fixed",
-        bottom: "calc(68px + env(safe-area-inset-bottom, 0px))",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "min(100%, 520px)",
-        padding: "10px 16px 12px",
-        background: "var(--void)",
-        borderTop: "0.5px solid var(--glass-border)",
-        zIndex: 200,
-      }}>
-        <form
-          onSubmit={e => { e.preventDefault(); sendMessage(input); }}
-          style={{ display: "flex", gap: 8 }}
-        >
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder={isActive ? "Escribile a Neo..." : "Preguntale algo a Neo..."}
-            style={{
-              flex: 1, padding: "12px 16px", borderRadius: 14, fontSize: 15,
-              background: "var(--base)", border: "0.5px solid var(--glass-border)",
-              color: "var(--ink)", outline: "none", boxSizing: "border-box",
-            }}
-            onFocus={() => { if (!isActive) setIsActive(true); }}
-          />
-          {/* Mic button — voice input via Web Speech API (0 tokens) */}
-          {!input.trim() && (
-            <button
-              type="button"
-              onClick={startVoice}
-              style={{
-                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                background: listening ? "var(--accent)" : "var(--raised)",
-                border: listening ? "none" : "0.5px solid var(--glass-border)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: listening ? "0 0 12px var(--accent-glow)" : "none",
-                transition: "background 150ms ease-out, box-shadow 150ms ease-out",
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                style={{ color: listening ? "#FFFFFF" : "var(--ink-muted)" }}>
-                <rect x="9" y="2" width="6" height="12" rx="3"/>
-                <path d="M5 10a7 7 0 0 0 14 0"/>
-                <line x1="12" y1="19" x2="12" y2="22"/>
-                <line x1="9" y1="22" x2="15" y2="22"/>
-              </svg>
-            </button>
-          )}
-
-          {/* Send button */}
-          <button
-            type="submit"
-            disabled={!input.trim() || avatarState === "thinking"}
-            style={{
-              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-              background: input.trim() && avatarState !== "thinking" ? "var(--accent)" : "var(--raised)",
-              border: "0.5px solid var(--glass-border)",
-              display: input.trim() ? "flex" : "none", alignItems: "center", justifyContent: "center",
-              transition: "background 150ms ease-out",
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: input.trim() && avatarState !== "thinking" ? "#FFFFFF" : "var(--ink-muted)", transform: "rotate(90deg)" }}>
-              <line x1="12" y1="19" x2="12" y2="5" />
-              <polyline points="5 12 12 5 19 12" />
-            </svg>
-          </button>
-        </form>
-      </div>
     </div>
   );
 }
