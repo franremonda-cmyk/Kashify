@@ -11,6 +11,10 @@ type Intent =
   | { type: "installments_query" }
   | { type: "edit_budget"; category: string; amount: number }
   | { type: "delete_tx"; search: string }
+  | { type: "register_tx"; txType: "income" | "expense"; amount: number; description: string; currency: string }
+  | { type: "create_goal"; name: string; amount?: number }
+  | { type: "deposit_goal"; amount: number; goalName: string }
+  | { type: "create_installment"; name: string; installmentAmount: number; nInstallments: number }
   | { type: "unknown" };
 
 interface DeleteCandidate {
@@ -67,6 +71,45 @@ function detectIntent(msg: string): Intent {
   // Delete: "eliminá el gasto de Netflix"
   const deleteMatch = m.match(/elimin[ao]r?\s+(?:el\s+(?:gasto|pago|ingreso)\s+de\s+)?(.+)/);
   if (deleteMatch) return { type: "delete_tx", search: deleteMatch[1].trim() };
+
+  // Register transaction: "registrá un gasto de 500 en pizza" / "anotá un ingreso de 80000"
+  if (/registr[ao]r?|anot[ao]r?|guard[ao]r?/.test(m)) {
+    const amtMatch = m.match(/(\d[\d.,]+)/);
+    if (amtMatch) {
+      const amount = parseFloat(amtMatch[1].replace(/\./g, "").replace(",", "."));
+      if (!isNaN(amount) && amount > 0) {
+        const txType: "income" | "expense" = /ingreso|sueldo|cobr[eé]/.test(m) ? "income" : "expense";
+        const cur = /usd|dolar/.test(m) ? "USD" : /eur/.test(m) ? "EUR" : "ARS";
+        const descMatch = m.match(/(?:en|de|para|por)\s+(?!ars|usd|eur|uyu|brl)(.+)$/);
+        const description = descMatch?.[1]?.replace(/\d[\d.,]*/g, "").trim() ?? "";
+        return { type: "register_tx", txType, amount, description, currency: cur };
+      }
+    }
+  }
+
+  // Create goal: "agrega una meta llamada viaje a la pampa"
+  const goalCreateMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?(?:nueva\s+)?meta(?:\s+(?:llamada|con\s+nombre))?\s+["']?(.+?)["']?\s*(?:(?:de|con\s+objetivo)\s+(\d[\d.,]*))?$/);
+  if (goalCreateMatch) {
+    const name = goalCreateMatch[1].trim();
+    const amount = goalCreateMatch[2] ? parseFloat(goalCreateMatch[2].replace(/\./g, "").replace(",", ".")) : undefined;
+    if (name.length > 0) return { type: "create_goal", name, amount };
+  }
+
+  // Deposit to goal: "depositá 5000 en la meta viaje" / "sumale 1000 a vacaciones"
+  const depositMatch = m.match(/(?:deposit[ao]r?|sum[ao]r?|sumal[eo]|agreg[ao]r?l?[eo]?)\s+(\d[\d.,]+)\s*(?:pesos|ars|usd|eur|uyu)?\s*(?:a|en|para)\s+(?:(?:la\s+)?meta\s+)?["']?(.+?)["']?$/);
+  if (depositMatch) {
+    const amount = parseFloat(depositMatch[1].replace(/\./g, "").replace(",", "."));
+    if (!isNaN(amount) && amount > 0) return { type: "deposit_goal", amount, goalName: depositMatch[2].trim() };
+  }
+
+  // Create installment: "agrega una cuota de Netflix por 6 meses de 5000"
+  const cuotaMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?cuota\s+(?:de\s+|llamada\s+)?(.+?)\s+(?:por\s+|de\s+)(\d+)\s+(?:cuotas?|meses?)\s+(?:de\s+|a\s+)?(\d[\d.,]*)/);
+  if (cuotaMatch) {
+    const installmentAmount = parseFloat(cuotaMatch[3].replace(/\./g, "").replace(",", "."));
+    const nInstallments = parseInt(cuotaMatch[2]);
+    if (!isNaN(installmentAmount) && !isNaN(nInstallments) && nInstallments > 0)
+      return { type: "create_installment", name: cuotaMatch[1].trim(), installmentAmount, nInstallments };
+  }
 
   return { type: "unknown" };
 }
@@ -289,17 +332,118 @@ export async function POST(req: Request) {
     });
   }
 
+  // ── Register transaction ──────────────────────────────────────────────────
+  if (intent.type === "register_tx") {
+    const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
+    const currency = intent.currency !== "ARS" ? intent.currency : (profile?.primary_currency ?? "ARS");
+
+    // Auto-categorize by matching description against category names
+    let categoryId: string | null = null;
+    if (intent.description) {
+      const { data: cats } = await supabase.from("categories").select("id, name").eq("user_id", user.id);
+      const descNorm = normalize(intent.description);
+      const catMatch = cats?.find(c =>
+        descNorm.includes(normalize(c.name)) ||
+        normalize(c.name).split(" ").some((w: string) => w.length > 3 && descNorm.includes(w))
+      );
+      categoryId = catMatch?.id ?? null;
+    }
+
+    const desc = intent.description || (intent.txType === "expense" ? "Gasto" : "Ingreso");
+    const { error } = await supabase.from("transactions").insert({
+      user_id: user.id,
+      type: intent.txType,
+      amount: intent.amount,
+      currency_code: currency,
+      description: desc,
+      date: new Date().toISOString().split("T")[0],
+      category_id: categoryId,
+    });
+
+    if (error) return NextResponse.json({ text: "No pude registrar la transacción. Intentá desde el botón +." });
+    return NextResponse.json({
+      text: `✅ Registré: ${desc} — ${fmt(intent.amount, currency)}.`,
+      action: { type: "refresh" },
+    });
+  }
+
+  // ── Create goal ───────────────────────────────────────────────────────────
+  if (intent.type === "create_goal") {
+    const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
+    const currency = profile?.primary_currency ?? "ARS";
+    const { error } = await supabase.from("savings_goals").insert({
+      user_id: user.id,
+      name: intent.name,
+      target_amount: intent.amount ?? 0,
+      current_amount: 0,
+      currency_code: currency,
+      status: "active",
+    });
+    if (error) return NextResponse.json({ text: "No pude crear la meta. Intentá desde la sección Metas." });
+    return NextResponse.json({
+      text: intent.amount
+        ? `✅ Creé la meta "${intent.name}" con objetivo de ${fmt(intent.amount, currency)}.`
+        : `✅ Creé la meta "${intent.name}". Podés agregarle un objetivo de ahorro desde Metas.`,
+      action: { type: "refresh" },
+    });
+  }
+
+  // ── Deposit to goal ───────────────────────────────────────────────────────
+  if (intent.type === "deposit_goal") {
+    const { data: goals } = await supabase.from("savings_goals")
+      .select("id, name, current_amount, target_amount, currency_code")
+      .eq("user_id", user.id).neq("status", "archived");
+    const goalNorm = normalize(intent.goalName);
+    const match = goals?.find(g =>
+      normalize(g.name).includes(goalNorm) || goalNorm.includes(normalize(g.name))
+    );
+    if (!match) return NextResponse.json({ text: `No encontré una meta llamada "${intent.goalName}". Revisá los nombres en Metas.` });
+
+    const newTotal = Number(match.current_amount) + intent.amount;
+    await supabase.from("savings_goals").update({ current_amount: newTotal }).eq("id", match.id);
+    const pct = match.target_amount > 0 ? Math.round((newTotal / match.target_amount) * 100) : null;
+    const icon = pct !== null ? (pct >= 100 ? "✅" : pct >= 75 ? "🔵" : pct >= 50 ? "⚪" : "🔘") : "💰";
+    return NextResponse.json({
+      text: `${icon} Sumé ${fmt(intent.amount, match.currency_code)} a "${match.name}".\nTotal: ${fmt(newTotal, match.currency_code)}${pct !== null ? ` (${pct}%)` : ""}.`,
+      action: { type: "refresh" },
+    });
+  }
+
+  // ── Create installment ────────────────────────────────────────────────────
+  if (intent.type === "create_installment") {
+    const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
+    const currency = profile?.primary_currency ?? "ARS";
+    const today = new Date().toISOString().split("T")[0];
+    const { error } = await supabase.from("installment_plans").insert({
+      user_id: user.id,
+      name: intent.name,
+      installment_amount: intent.installmentAmount,
+      n_installments: intent.nInstallments,
+      currency_code: currency,
+      status: "active",
+      start_date: today,
+    });
+    if (error) return NextResponse.json({ text: "No pude crear la cuota. Intentá desde la sección Cuotas." });
+    return NextResponse.json({
+      text: `✅ Creé la cuota "${intent.name}": ${intent.nInstallments} cuotas de ${fmt(intent.installmentAmount, currency)}.\nTotal: ${fmt(intent.installmentAmount * intent.nInstallments, currency)}.`,
+      action: { type: "refresh" },
+    });
+  }
+
   // ── Unknown → helpful fallback (0 tokens) ────────────────────────────────
   const hints = [
     "¿Cuánto gasté este mes?",
     "¿Cuál es mi saldo?",
-    "Mis límites",
-    "Mis metas",
-    "Mis cuotas",
+    "Mis límites · Mis metas · Mis cuotas",
+    "Registrá un gasto de 500 en pizza",
+    "Registrá un ingreso de 80000 en sueldo",
+    "Agrega una meta llamada viaje a Europa",
+    "Depositá 5000 en la meta viaje",
     "Eliminá [descripción del gasto]",
     "Editá el límite de [categoría] a [monto]",
+    "Agrega una cuota de Netflix por 12 meses de 3000",
   ];
   return NextResponse.json({
-    text: `No entendí bien. Podés preguntarme cosas como:\n${hints.map(h => `• ${h}`).join("\n")}`,
+    text: `No entendí bien. Podés pedirme:\n${hints.map(h => `• ${h}`).join("\n")}`,
   });
 }
