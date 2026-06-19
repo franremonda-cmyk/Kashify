@@ -101,7 +101,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [isActive, setIsActive] = useState(initialMessages.length > 0);
   const [busyPending, setBusyPending] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  const [keyboardH, setKeyboardH] = useState(0);
+  const [vp, setVp] = useState({ kb: 0, offsetTop: 0, height: 0 });
+  const keyboardH = vp.kb;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -128,16 +129,19 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   useEffect(() => { if (isActive) scrollToBottom(); }, [isActive, scrollToBottom]);
 
   // ── Keyboard tracking (visualViewport) ─────────────────────────────────────
-  // When the on-screen keyboard opens, the visual viewport shrinks. We compute
-  // its height and lift the whole fixed container above the keyboard, so the
-  // input rides on top of the keyboard and covers the app navbar; when the
-  // keyboard closes, the container sits above the navbar (navbar visible again).
+  // iOS Safari, when the keyboard opens, scrolls the layout viewport to reveal
+  // the focused input — which pushes our fixed header off-screen and lets the
+  // navbar float. To counter that, we pin the container to the *visual* viewport
+  // exactly: height = vv.height and a translateY(vv.offsetTop) so it always tracks
+  // the visible area above the keyboard.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const onResize = () => {
-      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setKeyboardH(kb);
+      const height = vv.height;
+      const offsetTop = vv.offsetTop;
+      const kb = Math.max(0, window.innerHeight - height - offsetTop);
+      setVp({ kb, offsetTop, height });
     };
     vv.addEventListener("resize", onResize);
     vv.addEventListener("scroll", onResize);
@@ -269,7 +273,13 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   // (navbar visible); when the keyboard opens it lifts above the keyboard so the
   // input rides on top of it and the navbar is covered by the keyboard.
   const NAV_CLEARANCE = "calc(84px + env(safe-area-inset-bottom, 0px))";
-  const containerBottom = keyboardH > 0 ? `${keyboardH}px` : NAV_CLEARANCE;
+  const kbOpen = keyboardH > 20;
+  // Keyboard open → pin to the visual viewport (height + translateY) so header
+  // stays put and input rides above the keyboard. Keyboard closed → end above
+  // the navbar so it stays visible.
+  const containerStyle: React.CSSProperties = kbOpen
+    ? { top: 0, bottom: "auto", height: `${vp.height}px`, transform: `translateY(${vp.offsetTop}px)` }
+    : { top: 0, bottom: NAV_CLEARANCE, height: "auto", transform: "none" };
 
   // Shared input bar (used by idle + active). No microphone — text only.
   const inputBar = (
@@ -324,12 +334,11 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   return createPortal(
     <div style={{
       position: "fixed",
-      top: 0, left: 0, right: 0,
-      bottom: containerBottom,
+      left: 0, right: 0,
+      ...containerStyle,
       zIndex: 20,
       display: "flex", flexDirection: "column",
       background: "var(--base)",
-      transition: "bottom 180ms ease-out",
     }}>
 
       {/* ── IDLE state — landing sin franja, avatar centrado moviéndose ── */}
