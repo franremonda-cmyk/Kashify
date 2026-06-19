@@ -6,8 +6,14 @@ import { detectPurchaseIntent } from "@/lib/neo-keywords";
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 type Intent =
+  | { type: "greeting" }
+  | { type: "help" }
+  | { type: "cancel_pending" }
   | { type: "balance_query" }
   | { type: "spending_query"; category?: string; period: "month" | "week" | "today" }
+  | { type: "income_query"; period: "month" | "week" | "today" }
+  | { type: "summary_query" }
+  | { type: "recent_tx_query" }
   | { type: "budget_query"; category?: string }
   | { type: "goals_query" }
   | { type: "installments_query" }
@@ -47,42 +53,68 @@ function normalize(s: string) {
 function detectIntent(msg: string): Intent {
   const m = normalize(msg);
 
-  // Balance
-  if (/saldo|cuanto tengo|mis cuentas|mis balances|cuanta plata|cuanto hay/.test(m))
+  // ── Greeting ──────────────────────────────────────────────────────────────
+  if (/^(hola|buen[ao]s?|hey|hi|buenas tardes|buenas noches|buen dia|buen día|que tal|como estas?|como andas?|ola|saludos|buenas)\b/.test(m))
+    return { type: "greeting" };
+
+  // ── Cancel / dismiss ──────────────────────────────────────────────────────
+  if (/^(no|nada|olvida(lo)?|cancela(lo)?|deja(lo)?|no importa|igual|salir|stop|listo gracias|no gracias|dejame)\b/.test(m))
+    return { type: "cancel_pending" };
+
+  // ── Help ──────────────────────────────────────────────────────────────────
+  if (/ayuda|help|que pod[eé]s hacer|que puedes hacer|como te uso|como funciona[s]?|comandos|que hac[eé]s|que se puede|instrucciones|para que sirv[eé]s/.test(m))
+    return { type: "help" };
+
+  // ── Balance ───────────────────────────────────────────────────────────────
+  if (/saldo|cuanto tengo|mis cuentas|mis balances|cuanta plata|cuanto hay|mi balance|ver balance|como estoy financieramente|como ando|como voy de plata|situacion financiera|plata que tengo|cuanto dinero|cuanto efectivo|cuanto me queda en total/.test(m))
     return { type: "balance_query" };
 
-  // Spending query
-  if (/cuanto gaste|cuanto he gastado|mis gastos|gaste esta|gaste hoy|gaste cuanto/.test(m)) {
-    const catMatch = m.match(/en ([a-z\w]+)(?:\s|$)/);
-    const period = /esta semana/.test(m) ? "week" : /hoy/.test(m) ? "today" : "month";
+  // ── Summary ───────────────────────────────────────────────────────────────
+  if (/resumen del mes|resumen mensual|^resumen$|como voy este mes|como voy en el mes|situacion del mes|balance del mes/.test(m))
+    return { type: "summary_query" };
+
+  // ── Income query ──────────────────────────────────────────────────────────
+  if (/cuanto cobr[eé]|mis ingresos|cuanto ingres[eé]|cuanto entro|cuanto entró|cuanto me entro|cuanto entre\b|ingresos del mes|ingresos de esta semana|ingresos de hoy|cuanto gane este mes|cuanto gané este mes/.test(m)) {
+    const period = /esta semana|semana/.test(m) ? "week" : /hoy/.test(m) ? "today" : "month";
+    return { type: "income_query", period };
+  }
+
+  // ── Spending query ────────────────────────────────────────────────────────
+  if (/cuanto gaste|cuanto gasté|cuanto he gastado|mis gastos|gaste esta|gasté esta|gaste hoy|gasté hoy|en que gaste|en que gasté|en qué gasté|que gaste|qué gasté|cuanto se fue|cuanto se gastó|gastos del mes|gastos de hoy|gastos de esta semana|cuanto salio|cuanto salió|mis egresos|gastos totales|cuanto llevo gastado/.test(m)) {
+    const catMatch = m.match(/en\s+([a-záéíóúñ\w]+)(?:\s|$)/);
+    const period = /esta semana|semana/.test(m) ? "week" : /hoy/.test(m) ? "today" : "month";
     return { type: "spending_query", category: catMatch?.[1], period };
   }
 
-  // Budget / limits
-  if (/mis limites|limite|cuanto me queda|cuanto tengo de|me queda en/.test(m))
-    return { type: "budget_query", category: undefined };
+  // ── Recent transactions ───────────────────────────────────────────────────
+  if (/ultimas transacciones|últimas transacciones|mis ultimas|mis últimas|ver transacciones|que registre|qué registré|que anote|qué anoté|ultimos gastos|últimos gastos|que compre\b|qué compré|historial|mis movimientos|movimientos recientes|ver movimientos|que registré hoy|últimos registros/.test(m))
+    return { type: "recent_tx_query" };
 
-  // Goals
-  if (/mis metas|mis ahorros|como van mis metas|como van mis ahorros|ahorro/.test(m))
+  // ── Budget / limits ───────────────────────────────────────────────────────
+  if (/mis limites|mis límites|ver limites|ver límites|cuanto me queda|cuánto me queda|cuanto tengo de|cuánto tengo de|me queda en|cuanto puedo gastar|que puedo gastar|mis presupuestos/.test(m))
+    return { type: "budget_query" };
+
+  // ── Goals ─────────────────────────────────────────────────────────────────
+  if (/mis metas|ver metas|como van mis metas|mis ahorros|como van mis ahorros|cuanto ahorr[eé]|cuánto ahorré|progreso de mis metas|metas de ahorro|cuanto llevo ahorrado|mis objetivos|ahorros/.test(m))
     return { type: "goals_query" };
 
-  // Installments
-  if (/mis cuotas|cuanto debo|mis deudas|cuotas activas/.test(m))
+  // ── Installments ──────────────────────────────────────────────────────────
+  if (/mis cuotas|ver cuotas|cuanto debo|cuánto debo|mis deudas|cuotas activas|cuotas pendientes|cuantas cuotas|cuántas cuotas|que cuotas tengo|mis pagos en cuotas|mis creditos/.test(m))
     return { type: "installments_query" };
 
-  // Edit budget: "editá el límite de comida a 20000"
-  const editMatch = m.match(/edit[ao]?r?\s+(?:el\s+)?l[ií]?mite\s+(?:de\s+)?(.+?)\s+a\s+(\d[\d.,]*)/);
+  // ── Edit budget ───────────────────────────────────────────────────────────
+  const editMatch = m.match(/(?:edit[ao]?r?|cambia[r]?|modifica[r]?|actualiza[r]?|pon[eé]|poner|fija[r]?|subi[r]?|baja[r]?)\s+(?:el\s+)?l[ií]?mite\s+(?:de\s+)?(.+?)\s+a\s+(\d[\d.,]*)/);
   if (editMatch) {
     const amount = parseFloat(editMatch[2].replace(/\./g, "").replace(",", "."));
     if (!isNaN(amount)) return { type: "edit_budget", category: editMatch[1].trim(), amount };
   }
 
-  // Delete: "eliminá el gasto de Netflix"
-  const deleteMatch = m.match(/elimin[ao]r?\s+(?:el\s+(?:gasto|pago|ingreso)\s+de\s+)?(.+)/);
+  // ── Delete transaction ────────────────────────────────────────────────────
+  const deleteMatch = m.match(/(?:elimin[ao]r?|borra[r]?|saca[r]?|quita[r]?|borr[ao]|elimina)\s+(?:el\s+|la\s+)?(?:(?:gasto|pago|ingreso|compra|transaccion)\s+(?:de\s+)?)?(.+)/);
   if (deleteMatch) return { type: "delete_tx", search: deleteMatch[1].trim() };
 
-  // Register transaction: "registrá un gasto de 500 en pizza" / "anotá un ingreso de 80000"
-  if (/registr[ao]r?|anot[ao]r?|guard[ao]r?/.test(m)) {
+  // ── Register transaction (explicit) ──────────────────────────────────────
+  if (/registr[ao]r?|anot[ao]r?|guard[ao]r?|carg[ao]r?|apunt[ao]r?/.test(m)) {
     const amtMatch = m.match(/(\d[\d.,]+)/);
     if (amtMatch) {
       const amount = parseFloat(amtMatch[1].replace(/\./g, "").replace(",", "."));
@@ -96,26 +128,25 @@ function detectIntent(msg: string): Intent {
     }
   }
 
-  // Create goal: "agrega una meta llamada viaje a la pampa" / "agrega una meta" (sin nombre → pedir)
-  const goalCreateMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?(?:nueva\s+)?meta(?:\s+(?:llamada|con\s+nombre))?\s+["']?(.+?)["']?\s*(?:(?:de|con\s+objetivo)\s+(\d[\d.,]*))?$/);
+  // ── Create goal ───────────────────────────────────────────────────────────
+  const goalCreateMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva|nuevo)\s+(?:una?\s+)?(?:nueva?\s+)?(?:meta|objetivo|ahorro)\s+(?:(?:llamad[ao]|con\s+nombre)\s+)?["']?(.+?)["']?\s*(?:(?:de|con\s+objetivo)\s+(\d[\d.,]*))?$/);
   if (goalCreateMatch) {
     const name = goalCreateMatch[1].trim();
     const amount = goalCreateMatch[2] ? parseFloat(goalCreateMatch[2].replace(/\./g, "").replace(",", ".")) : undefined;
     if (name.length > 0) return { type: "create_goal", name, amount };
   }
-  if (/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?(?:nueva\s+)?meta\b/.test(m)) {
+  if (/(?:agrega[r]?|crea[r]?|nueva|nuevo)\s+(?:una?\s+)?(?:nueva?\s+)?(?:meta|objetivo)\b/.test(m))
     return { type: "create_goal_needs_name" };
-  }
 
-  // Deposit to goal: "depositá 5000 en la meta viaje" / "sumale 1000 a vacaciones"
-  const depositMatch = m.match(/(?:deposit[ao]r?|sum[ao]r?|sumal[eo]|agreg[ao]r?l?[eo]?)\s+(\d[\d.,]+)\s*(?:pesos|ars|usd|eur|uyu)?\s*(?:a|en|para)\s+(?:(?:la\s+)?meta\s+)?["']?(.+?)["']?$/);
+  // ── Deposit to goal ───────────────────────────────────────────────────────
+  const depositMatch = m.match(/(?:deposit[ao]r?|sum[ao]r?|sumal[eo]|agreg[ao]r?l?[eo]?|ponel[eo]|cargal[eo]|mandal[eo])\s+(\d[\d.,]+)\s*(?:pesos|ars|usd|eur|uyu)?\s*(?:a|en|para)\s+(?:(?:la\s+)?(?:meta|ahorro)\s+)?["']?(.+?)["']?$/);
   if (depositMatch) {
     const amount = parseFloat(depositMatch[1].replace(/\./g, "").replace(",", "."));
     if (!isNaN(amount) && amount > 0) return { type: "deposit_goal", amount, goalName: depositMatch[2].trim() };
   }
 
-  // Create installment: "agrega una cuota de Netflix por 6 meses de 5000"
-  const cuotaMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?cuota\s+(?:de\s+|llamada\s+)?(.+?)\s+(?:por\s+|de\s+)(\d+)\s+(?:cuotas?|meses?)\s+(?:de\s+|a\s+)?(\d[\d.,]*)/);
+  // ── Create installment ────────────────────────────────────────────────────
+  const cuotaMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?cuota\s+(?:de\s+|llamada\s+|para\s+)?(.+?)\s+(?:por\s+|de\s+|en\s+)(\d+)\s+(?:cuotas?|meses?|pagos?)\s+(?:de\s+|a\s+)?(\d[\d.,]*)/);
   if (cuotaMatch) {
     const installmentAmount = parseFloat(cuotaMatch[3].replace(/\./g, "").replace(",", "."));
     const nInstallments = parseInt(cuotaMatch[2]);
@@ -123,14 +154,13 @@ function detectIntent(msg: string): Intent {
       return { type: "create_installment", name: cuotaMatch[1].trim(), installmentAmount, nInstallments };
   }
 
-  // Natural language purchase/income detection via keyword library
+  // ── Natural language purchase/income (keyword library, 0 tokens) ──────────
   const purchase = detectPurchaseIntent(m);
   if (purchase.found) {
-    if (purchase.amount !== null) {
+    if (purchase.amount !== null)
       return { type: "natural_tx", txType: purchase.txType, description: purchase.item, amount: purchase.amount, suggestedCategory: purchase.suggestedCategory };
-    } else {
+    else
       return { type: "needs_amount", txType: purchase.txType, description: purchase.item, suggestedCategory: purchase.suggestedCategory };
-    }
   }
 
   return { type: "unknown" };
@@ -226,6 +256,28 @@ export async function POST(req: Request) {
 
   const intent = detectIntent(message);
 
+  // ── Greeting (0 tokens, 0 DB) ─────────────────────────────────────────────
+  if (intent.type === "greeting") {
+    const opts = [
+      "¡Hola! ¿En qué te ayudo hoy?",
+      "¡Hola! ¿Registramos algo o querés ver cómo van tus finanzas?",
+      "¡Buenas! ¿Qué necesitás?",
+    ];
+    return NextResponse.json({ text: opts[Math.floor(Math.random() * opts.length)] });
+  }
+
+  // ── Cancel pending (0 tokens, 0 DB) ──────────────────────────────────────
+  if (intent.type === "cancel_pending") {
+    return NextResponse.json({ text: "Dale, cancelado.", action: { type: "cancel_pending" } });
+  }
+
+  // ── Help (0 tokens, 0 DB) ─────────────────────────────────────────────────
+  if (intent.type === "help") {
+    return NextResponse.json({
+      text: `Puedo ayudarte con:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Ver ingresos: "¿cuánto cobré?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n• Ver metas: "mis metas"\n• Ver cuotas: "mis cuotas"\n• Crear meta: "agrega una meta llamada viaje"\n• Crear cuota: "agrega una cuota Netflix por 6 meses de 5000"\n• Eliminar gasto: "borra el gasto de Netflix"`,
+    });
+  }
+
   // ── Balance ──────────────────────────────────────────────────────────────
   if (intent.type === "balance_query") {
     const { data: balances } = await supabase
@@ -283,6 +335,72 @@ export async function POST(req: Request) {
     const cat = intent.category ? ` en ${intent.category}` : "";
     const lines = Object.entries(byCurrency).map(([cur, amt]) => fmt(amt, cur)).join(" · ");
     return NextResponse.json({ text: `Gastaste${cat} ${period}: ${lines} (${txs.length} transacciones).` });
+  }
+
+  // ── Income query ──────────────────────────────────────────────────────────
+  if (intent.type === "income_query") {
+    const range = intent.period === "week" ? weekRange() : intent.period === "today" ? todayRange() : monthRange();
+    const periodLabel = intent.period === "week" ? "esta semana" : intent.period === "today" ? "hoy" : "este mes";
+    const { data: txs } = await supabase
+      .from("transactions")
+      .select("amount, currency_code")
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .eq("type", "income")
+      .gte("date", range.from)
+      .lte("date", range.to);
+    if (!txs?.length) return NextResponse.json({ text: `No registraste ingresos ${periodLabel}.` });
+    const byCurrency: Record<string, number> = {};
+    for (const t of txs) byCurrency[t.currency_code] = (byCurrency[t.currency_code] ?? 0) + Number(t.amount);
+    const lines = Object.entries(byCurrency).map(([cur, amt]) => fmt(amt, cur)).join(" · ");
+    return NextResponse.json({ text: `Ingresaste ${periodLabel}: ${lines} (${txs.length} ${txs.length === 1 ? "ingreso" : "ingresos"}).` });
+  }
+
+  // ── Summary query ─────────────────────────────────────────────────────────
+  if (intent.type === "summary_query") {
+    const { from, to } = monthRange();
+    const { data: txs } = await supabase
+      .from("transactions")
+      .select("amount, currency_code, type")
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .in("type", ["income", "expense", "installment-payment"])
+      .gte("date", from).lte("date", to);
+    if (!txs?.length) return NextResponse.json({ text: "No hay movimientos este mes todavía." });
+    const inc: Record<string, number> = {};
+    const exp: Record<string, number> = {};
+    for (const t of txs) {
+      const n = Number(t.amount);
+      if (t.type === "income") inc[t.currency_code] = (inc[t.currency_code] ?? 0) + n;
+      else exp[t.currency_code] = (exp[t.currency_code] ?? 0) + n;
+    }
+    const currencies = [...new Set([...Object.keys(inc), ...Object.keys(exp)])];
+    const lines = currencies.map(cur => {
+      const i = inc[cur] ?? 0;
+      const e = exp[cur] ?? 0;
+      const net = i - e;
+      return `${cur}:\n  Ingresos: ${fmt(i, cur)}\n  Gastos: ${fmt(e, cur)}\n  Neto: ${net >= 0 ? "+" : ""}${fmt(Math.abs(net), cur)}${net < 0 ? " 🔴" : " 🟢"}`;
+    });
+    return NextResponse.json({ text: `Resumen de este mes:\n${lines.join("\n\n")}` });
+  }
+
+  // ── Recent transactions ───────────────────────────────────────────────────
+  if (intent.type === "recent_tx_query") {
+    const { data: txs } = await supabase
+      .from("transactions")
+      .select("amount, currency_code, type, description, date, categories(name)")
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .order("date", { ascending: false })
+      .limit(7);
+    if (!txs?.length) return NextResponse.json({ text: "No tenés transacciones registradas." });
+    const lines = txs.map(t => {
+      const cat = t.categories as { name?: string } | null;
+      const sign = t.type === "income" ? "+" : "-";
+      const d = new Date(t.date).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+      return `${d} · ${t.description || cat?.name || "Sin descripción"} ${sign}${fmt(Number(t.amount), t.currency_code)}`;
+    });
+    return NextResponse.json({ text: `Últimas transacciones:\n${lines.join("\n")}` });
   }
 
   // ── Budget query ──────────────────────────────────────────────────────────
@@ -550,7 +668,7 @@ export async function POST(req: Request) {
         max_tokens: 120,
         messages: [{
           role: "user",
-          content: `You are a finance assistant. Classify this Spanish message as JSON only (no explanation):\n{"type":"expense"|"income"|"unknown","amount":number|null,"description":"string"}\nCurrency context: ${currency}\nMessage: "${message.trim()}"`,
+          content: `Sos un asistente de finanzas personales. Clasificá este mensaje en español como JSON (sin explicación):\n{"type":"expense"|"income"|"unknown","amount":number|null,"description":"string"}\n- "expense": gasto, compra, pago, salida de dinero\n- "income": cobro, ingreso, depósito, entrada de dinero\n- "unknown": no es claramente un gasto o ingreso\nMoneda: ${currency}\nMensaje: "${message.trim()}"`,
         }],
       });
       const raw = (resp.content[0] as { type: string; text: string }).text.trim();

@@ -192,6 +192,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
         setPendingAction({ type: "needs_amount", txType: data.action.txType, description: data.action.description, suggestedCategory: data.action.suggestedCategory });
       } else if (data.action?.type === "needs_goal_name") {
         setPendingAction({ type: "needs_goal_name" });
+      } else if (data.action?.type === "cancel_pending") {
+        setPendingAction(null);
       } else {
         setPendingAction(null);
       }
