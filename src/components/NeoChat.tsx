@@ -338,7 +338,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       {/* ── ACTIVE state — full-screen fixed overlay, covers app navbar ── */}
       {isActive && (
         <div style={{
-          position: "fixed", inset: 0, zIndex: 60,
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
+          zIndex: 200,
           display: "flex", flexDirection: "column",
           background: "var(--base)",
         }}>
@@ -372,7 +374,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           <div ref={listRef} style={{
             flex: 1, minHeight: 0,
             overflowY: "auto", WebkitOverflowScrolling: "touch",
-            padding: "8px 8px 90px",
+            padding: "8px 8px 80px",
             display: "flex", flexDirection: "column", gap: 2,
           } as React.CSSProperties}>
             {messages.map((msg, i) => {
@@ -413,9 +415,12 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             )}
           </div>
 
-          {/* Input bar — pinned to bottom of overlay, just above system safe area */}
+          {/* Input bar — fixed at bottom, z-index 201 to sit on top of overlay */}
           <div style={{
-            flexShrink: 0,
+            position: "fixed",
+            left: 0, right: 0,
+            bottom: 0,
+            zIndex: 201,
             padding: `8px 12px calc(8px + ${SAFE_BOTTOM})`,
             background: "var(--void)",
             borderTop: "0.5px solid var(--glass-border)",
