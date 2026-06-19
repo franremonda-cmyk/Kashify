@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import Anthropic from "@anthropic-ai/sdk";
+import { detectPurchaseIntent } from "@/lib/neo-keywords";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -15,7 +17,15 @@ type Intent =
   | { type: "create_goal"; name: string; amount?: number }
   | { type: "deposit_goal"; amount: number; goalName: string }
   | { type: "create_installment"; name: string; installmentAmount: number; nInstallments: number }
+  | { type: "natural_tx"; txType: "income" | "expense"; description: string; amount: number; suggestedCategory: string | null }
+  | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
   | { type: "unknown" };
+
+interface PendingContext {
+  txType: "income" | "expense";
+  description: string;
+  suggestedCategory: string | null;
+}
 
 interface DeleteCandidate {
   id: string;
@@ -111,6 +121,16 @@ function detectIntent(msg: string): Intent {
       return { type: "create_installment", name: cuotaMatch[1].trim(), installmentAmount, nInstallments };
   }
 
+  // Natural language purchase/income detection via keyword library
+  const purchase = detectPurchaseIntent(m);
+  if (purchase.found) {
+    if (purchase.amount !== null) {
+      return { type: "natural_tx", txType: purchase.txType, description: purchase.item, amount: purchase.amount, suggestedCategory: purchase.suggestedCategory };
+    } else {
+      return { type: "needs_amount", txType: purchase.txType, description: purchase.item, suggestedCategory: purchase.suggestedCategory };
+    }
+  }
+
   return { type: "unknown" };
 }
 
@@ -143,6 +163,16 @@ function fmt(n: number, currency: string) {
   return `${currency} ${Number(n).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`;
 }
 
+async function resolveCategoryId(
+  supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>,
+  userId: string,
+  categoryName: string
+): Promise<string | null> {
+  const { data: cats } = await supabase.from("categories").select("id, name").eq("user_id", userId);
+  const match = cats?.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+  return match?.id ?? null;
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
@@ -152,7 +182,30 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const message: string = body.message ?? "";
+  const pendingContext: PendingContext | undefined = body.pendingContext;
   if (!message.trim()) return NextResponse.json({ text: "Escribime algo 😊" });
+
+  // If there's pending context (Neo asked "¿Cuánto te salió?") and the reply looks like a number
+  if (pendingContext && /^\d[\d.,]*$/.test(message.trim())) {
+    const amount = parseFloat(message.trim().replace(/\./g, "").replace(",", "."));
+    if (!isNaN(amount) && amount > 0) {
+      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
+      const currency = profile?.primary_currency ?? "ARS";
+      const catId = pendingContext.suggestedCategory ? await resolveCategoryId(supabase, user.id, pendingContext.suggestedCategory) : null;
+      const { error } = await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: pendingContext.txType,
+        amount,
+        currency_code: currency,
+        description: pendingContext.description,
+        date: new Date().toISOString().split("T")[0],
+        category_id: catId,
+      });
+      if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
+      const catLabel = pendingContext.suggestedCategory ? ` · ${pendingContext.suggestedCategory}` : "";
+      return NextResponse.json({ text: `✅ Registré: ${pendingContext.description} — ${fmt(amount, currency)}${catLabel}.`, action: { type: "refresh" } });
+    }
+  }
 
   const intent = detectIntent(message);
 
@@ -430,18 +483,83 @@ export async function POST(req: Request) {
     });
   }
 
-  // ── Unknown → helpful fallback (0 tokens) ────────────────────────────────
+  // ── Natural language transaction (with amount) ────────────────────────────
+  if (intent.type === "natural_tx") {
+    const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
+    const currency = profile?.primary_currency ?? "ARS";
+    const catId = intent.suggestedCategory ? await resolveCategoryId(supabase, user.id, intent.suggestedCategory) : null;
+    const { error } = await supabase.from("transactions").insert({
+      user_id: user.id,
+      type: intent.txType,
+      amount: intent.amount,
+      currency_code: currency,
+      description: intent.description,
+      date: new Date().toISOString().split("T")[0],
+      category_id: catId,
+    });
+    if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
+    const catLabel = intent.suggestedCategory ? ` · ${intent.suggestedCategory}` : "";
+    return NextResponse.json({
+      text: `✅ Registré: ${intent.description} — ${fmt(intent.amount, currency)}${catLabel}.`,
+      action: { type: "refresh" },
+    });
+  }
+
+  // ── Needs amount — ask follow-up (no DB write yet) ────────────────────────
+  if (intent.type === "needs_amount") {
+    const phrase = intent.txType === "income" ? "¿Cuánto cobraste?" : "¿Cuánto te salió?";
+    return NextResponse.json({
+      text: `Entendido, ${intent.description}. ${phrase}`,
+      action: { type: "needs_amount", txType: intent.txType, description: intent.description, suggestedCategory: intent.suggestedCategory },
+    });
+  }
+
+  // ── Unknown → Haiku fallback (if message is long enough to be parseable) ──
+  if (message.trim().split(" ").length >= 4) {
+    try {
+      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
+      const currency = profile?.primary_currency ?? "ARS";
+      const client = new Anthropic();
+      const resp = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 120,
+        messages: [{
+          role: "user",
+          content: `You are a finance assistant. Classify this Spanish message as JSON only (no explanation):\n{"type":"expense"|"income"|"unknown","amount":number|null,"description":"string"}\nCurrency context: ${currency}\nMessage: "${message.trim()}"`,
+        }],
+      });
+      const raw = (resp.content[0] as { type: string; text: string }).text.trim();
+      const parsed = JSON.parse(raw.replace(/```json?|```/g, "").trim());
+      if (parsed.type !== "unknown" && parsed.amount && parsed.description) {
+        const catId = null;
+        const { error } = await supabase.from("transactions").insert({
+          user_id: user.id,
+          type: parsed.type,
+          amount: parsed.amount,
+          currency_code: currency,
+          description: parsed.description,
+          date: new Date().toISOString().split("T")[0],
+          category_id: catId,
+        });
+        if (!error) return NextResponse.json({ text: `✅ Registré: ${parsed.description} — ${fmt(parsed.amount, currency)}.`, action: { type: "refresh" } });
+      }
+    } catch {
+      // fallback to hint list below
+    }
+  }
+
+  // ── Unknown → hint list ───────────────────────────────────────────────────
   const hints = [
     "¿Cuánto gasté este mes?",
     "¿Cuál es mi saldo?",
     "Mis límites · Mis metas · Mis cuotas",
+    "Compré una milanesa por 1500",
+    "Cobré el sueldo de 200000",
     "Registrá un gasto de 500 en pizza",
-    "Registrá un ingreso de 80000 en sueldo",
     "Agrega una meta llamada viaje a Europa",
     "Depositá 5000 en la meta viaje",
     "Eliminá [descripción del gasto]",
     "Editá el límite de [categoría] a [monto]",
-    "Agrega una cuota de Netflix por 12 meses de 3000",
   ];
   return NextResponse.json({
     text: `No entendí bien. Podés pedirme:\n${hints.map(h => `• ${h}`).join("\n")}`,

@@ -117,6 +117,11 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    txType: "income" | "expense";
+    description: string;
+    suggestedCategory: string | null;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then(d => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
@@ -164,21 +169,37 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     setIsActive(true);
     setAvatarState("thinking");
 
+    // If Neo is waiting for an amount and the user sent a number, attach context
+    const body: Record<string, unknown> = { message: text.trim() };
+    if (pendingAction && /^\d[\d.,]*$/.test(text.trim())) {
+      body.pendingContext = pendingAction;
+      setPendingAction(null);
+    }
+
     try {
       const res = await fetch("/api/neo/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text.trim() }),
+        body: JSON.stringify(body),
       });
       const data = res.ok ? await res.json() : { text: "No pude procesar tu mensaje. Intentá de nuevo." };
+
+      // Store pending context if Neo is asking for a follow-up amount
+      if (data.action?.type === "needs_amount") {
+        setPendingAction({ txType: data.action.txType, description: data.action.description, suggestedCategory: data.action.suggestedCategory });
+      } else {
+        setPendingAction(null);
+      }
+
       const neoMsg: ChatMessage = {
         id: uid(),
         role: "neo",
         text: data.text ?? "...",
         ts: new Date(),
-        action: data.action,
+        action: data.action?.type === "confirm_delete" ? data.action : undefined,
       };
       setMessages(prev => [...prev, neoMsg]);
+      if (data.action?.type === "refresh") window.dispatchEvent(new Event("transaction-added"));
     } catch {
       setMessages(prev => [...prev, { id: uid(), role: "neo", text: "Tuve un error de conexión. Intentá de nuevo.", ts: new Date() }]);
     } finally {
@@ -263,9 +284,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     <div style={{
       display: "flex", flexDirection: "column",
       height: "100dvh",
-      /* cancel app layout padding to go truly full-screen */
       marginTop: -24, marginLeft: -16, marginRight: -16, marginBottom: -104,
-      position: "relative", overflow: "hidden",
+      position: "relative",
     }}>
 
       {/* ── IDLE state — avatar from top ── */}
@@ -344,8 +364,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       {/* ── ACTIVE state — chat layout ── */}
       {isActive && (
         <>
-          {/* Header with small avatar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 8, paddingBottom: 12, paddingInline: 16, borderBottom: "0.5px solid var(--glass-border)", flexShrink: 0 }}>
+          {/* Header — sticky so it stays visible while messages scroll */}
+          <div style={{ position: "sticky", top: 0, zIndex: 10, display: "flex", alignItems: "center", gap: 10, paddingTop: 8, paddingBottom: 12, paddingInline: 16, borderBottom: "0.5px solid var(--glass-border)", background: "var(--void)", flexShrink: 0 }}>
             <div
               className={avatarClass}
               style={{ width: 44, height: 44, borderRadius: "50%", background: avatarBg, flexShrink: 0, boxShadow: "0 0 16px var(--accent-glow)" }}
@@ -361,8 +381,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             </div>
           </div>
 
-          {/* Message list — paddingBottom leaves room for the fixed input bar */}
-          <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "12px 16px 120px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Message list — scrolleable, room for fixed input bar */}
+          <div ref={listRef} style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px 16px 120px", display: "flex", flexDirection: "column", gap: 8 } as React.CSSProperties}>
             {messages.map(msg => (
               <MessageBubble
                 key={msg.id}
@@ -396,6 +416,12 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             borderTop: "0.5px solid var(--glass-border)",
             zIndex: 200,
           }}>
+            {/* Pending amount indicator */}
+            {pendingAction && (
+              <p style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, paddingInline: 2 }}>
+                💬 Esperando monto para: {pendingAction.description}
+              </p>
+            )}
             <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", gap: 8 }}>
               <input
                 ref={inputRef}
