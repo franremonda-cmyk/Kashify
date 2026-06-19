@@ -314,6 +314,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
       {/* ② Apariencia */}
       <Accordion label="Apariencia">
+        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)" }}>Tema</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {THEMES.map((t) => {
             const active = theme === t.id;

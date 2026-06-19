@@ -351,7 +351,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3" style={{ width: "100%", overflow: "hidden" }}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3" style={{ width: "100%" }}>
           {/* Tipo */}
           <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--raised)" }}>
             {(["expense", "income"] as const).map((t) => (
