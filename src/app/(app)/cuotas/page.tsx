@@ -20,6 +20,9 @@ export default function CuotasPage() {
     fetch("/api/installments").then((r) => r.json()).then(setPlans).catch(() => {});
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") === "1") { setShowForm(true); setEditingPlan(null); }
+  }, []);
 
   async function handleCreate(data: InstallmentFormData) {
     setCreateError(null);
@@ -71,7 +74,7 @@ export default function CuotasPage() {
   const paid = plans.filter((p) => p.status === "paid");
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between enter-up">
         <div className="flex items-center gap-3">
           <BackButton />

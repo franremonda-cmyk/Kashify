@@ -5,13 +5,45 @@ import CategoryModal from "@/components/CategoryModal";
 import { useIconStyle } from "@/context/IconStyleContext";
 import { BackButton } from "@/components/ui/BackButton";
 
-interface Budget { monthly_limit: number; currency_code: string }
+interface Budget { monthly_limit: number; currency_code: string; period_type?: PeriodType; applies_months?: number[] | null }
 interface Category {
   id: string; name: string; icon: string; color: string; is_default: boolean;
   category_budgets?: Budget[];
 }
 
+type PeriodType = "always" | "specific_months";
 const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP"];
+const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+function MonthGrid({ selected, onToggle }: { selected: number[]; onToggle: (m: number) => void }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+      {MONTHS.map((m, i) => {
+        const month = i + 1;
+        const on = selected.includes(month);
+        return (
+          <button key={m} type="button" onClick={() => onToggle(month)}
+            style={{ padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, background: on ? "var(--accent-soft)" : "var(--base)", border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: on ? "var(--accent)" : "var(--ink-dim)" }}>
+            {m}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PeriodToggle({ value, onChange }: { value: PeriodType; onChange: (p: PeriodType) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      {(["always", "specific_months"] as const).map((pt) => (
+        <button key={pt} type="button" onClick={() => onChange(pt)}
+          style={{ flex: 1, padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: value === pt ? "var(--accent-soft)" : "var(--base)", border: value === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: value === pt ? "var(--accent)" : "var(--ink-muted)" }}>
+          {pt === "always" ? "Siempre" : "Mes específico"}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const inp: React.CSSProperties = {
   background: "var(--raised)",
@@ -30,12 +62,14 @@ export default function CategoriasPage() {
   const [loading, setLoading] = useState(true);
   const [editingCat, setEditingCat] = useState<Category | "new" | null>(null);
   // Límite: state del panel expandido por categoría
-  const [editBudget, setEditBudget] = useState<{ id: string; limit: string; currency: string } | null>(null);
+  const [editBudget, setEditBudget] = useState<{ id: string; limit: string; currency: string; period: PeriodType; months: number[] } | null>(null);
   // Nuevo límite: dropdown para elegir qué categoría
   const [showNewBudget, setShowNewBudget] = useState(false);
   const [newBudgetCatId, setNewBudgetCatId] = useState("");
   const [newBudgetLimit, setNewBudgetLimit] = useState("");
   const [newBudgetCurrency, setNewBudgetCurrency] = useState("ARS");
+  const [newBudgetPeriod, setNewBudgetPeriod] = useState<PeriodType>("always");
+  const [newBudgetMonths, setNewBudgetMonths] = useState<number[]>([]);
   const existingColors = categories.map(c => c.color).filter(Boolean);
 
   async function load() {
@@ -47,12 +81,19 @@ export default function CategoriasPage() {
 
   useEffect(() => { load(); }, []);
 
-  async function saveBudget(catId: string, limit: string, currency: string) {
-    if (!limit || isNaN(parseFloat(limit))) return;
+  function toggleMonth(arr: number[], m: number) {
+    return arr.includes(m) ? arr.filter(x => x !== m) : [...arr, m].sort((a, b) => a - b);
+  }
+
+  async function saveBudget(catId: string, b: { limit: string; currency: string; period: PeriodType; months: number[] }) {
+    if (!b.limit || isNaN(parseFloat(b.limit))) return;
     await fetch("/api/budgets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category_id: catId, monthly_limit: parseFloat(limit), currency_code: currency }),
+      body: JSON.stringify({
+        category_id: catId, monthly_limit: parseFloat(b.limit), currency_code: b.currency,
+        period_type: b.period, applies_months: b.period === "specific_months" ? b.months : null,
+      }),
     });
     setEditBudget(null);
     load();
@@ -63,12 +104,17 @@ export default function CategoriasPage() {
     await fetch("/api/budgets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category_id: newBudgetCatId, monthly_limit: parseFloat(newBudgetLimit), currency_code: newBudgetCurrency }),
+      body: JSON.stringify({
+        category_id: newBudgetCatId, monthly_limit: parseFloat(newBudgetLimit), currency_code: newBudgetCurrency,
+        period_type: newBudgetPeriod, applies_months: newBudgetPeriod === "specific_months" ? newBudgetMonths : null,
+      }),
     });
     setShowNewBudget(false);
     setNewBudgetCatId("");
     setNewBudgetLimit("");
     setNewBudgetCurrency("ARS");
+    setNewBudgetPeriod("always");
+    setNewBudgetMonths([]);
     load();
   }
 
@@ -76,7 +122,7 @@ export default function CategoriasPage() {
   const catsWithoutBudget = categories.filter(c => !c.category_budgets?.length);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between enter-up">
         <div className="flex items-center gap-3">
           <BackButton />
@@ -120,7 +166,7 @@ export default function CategoriasPage() {
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => setEditBudget(isEditing ? null : { id: cat.id, limit: String(budget?.monthly_limit ?? ""), currency: budget?.currency_code ?? "ARS" })}
+                    <button onClick={() => setEditBudget(isEditing ? null : { id: cat.id, limit: String(budget?.monthly_limit ?? ""), currency: budget?.currency_code ?? "ARS", period: budget?.period_type ?? "always", months: budget?.applies_months ?? [] })}
                       style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: budget ? "var(--accent)" : "var(--ink-muted)", fontWeight: 600 }}>
                       {budget ? "Límite" : "+ Límite"}
                     </button>
@@ -133,18 +179,26 @@ export default function CategoriasPage() {
 
                 {/* Inline budget editor */}
                 {isEditing && (
-                  <div style={{ display: "flex", gap: 8, padding: "0 16px 12px" }}>
-                    <select style={{ ...inp, width: 90 }} value={editBudget.currency}
-                      onChange={(e) => setEditBudget(b => b ? { ...b, currency: e.target.value } : b)}>
-                      {CURRENCIES.map(c => <option key={c}>{c}</option>)}
-                    </select>
-                    <input style={{ ...inp, flex: 1 }} type="number" inputMode="decimal" placeholder="Límite mensual"
-                      value={editBudget.limit}
-                      onChange={(e) => setEditBudget(b => b ? { ...b, limit: e.target.value } : b)}
-                      onKeyDown={(e) => e.key === "Enter" && saveBudget(cat.id, editBudget.limit, editBudget.currency)}
-                    />
-                    <button onClick={() => saveBudget(cat.id, editBudget.limit, editBudget.currency)}
-                      style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}>✓</button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 14px" }}>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <select style={{ ...inp, width: 90 }} value={editBudget.currency}
+                        onChange={(e) => setEditBudget(b => b ? { ...b, currency: e.target.value } : b)}>
+                        {CURRENCIES.map(c => <option key={c}>{c}</option>)}
+                      </select>
+                      <input style={{ ...inp, flex: 1 }} type="number" inputMode="decimal" placeholder="Límite mensual"
+                        value={editBudget.limit}
+                        onChange={(e) => setEditBudget(b => b ? { ...b, limit: e.target.value } : b)}
+                      />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                      <PeriodToggle value={editBudget.period} onChange={(p) => setEditBudget(b => b ? { ...b, period: p } : b)} />
+                    </div>
+                    {editBudget.period === "specific_months" && (
+                      <MonthGrid selected={editBudget.months} onToggle={(m) => setEditBudget(b => b ? { ...b, months: toggleMonth(b.months, m) } : b)} />
+                    )}
+                    <button onClick={() => editBudget && saveBudget(cat.id, editBudget)}
+                      style={{ padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF" }}>Guardar límite</button>
                   </div>
                 )}
               </div>
@@ -188,9 +242,15 @@ export default function CategoriasPage() {
                 </select>
                 <input style={{ ...inp, flex: 1 }} type="number" inputMode="decimal" placeholder="Monto mensual"
                   value={newBudgetLimit} onChange={(e) => setNewBudgetLimit(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && saveNewBudget()}
                 />
               </div>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                <PeriodToggle value={newBudgetPeriod} onChange={setNewBudgetPeriod} />
+              </div>
+              {newBudgetPeriod === "specific_months" && (
+                <MonthGrid selected={newBudgetMonths} onToggle={(m) => setNewBudgetMonths(arr => toggleMonth(arr, m))} />
+              )}
               <button onClick={saveNewBudget} disabled={!newBudgetCatId || !newBudgetLimit}
                 style={{ padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: newBudgetCatId && newBudgetLimit ? "var(--accent)" : "var(--raised)", color: newBudgetCatId && newBudgetLimit ? "#FFFFFF" : "var(--ink-dim)" }}>
                 Guardar límite

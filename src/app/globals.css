@@ -32,10 +32,10 @@
   --negative:  #FF3B30;
   --warning:   #FF9500;
 
-  /* Text — iOS label system */
+  /* Text — iOS label system (darkened for WCAG accessibility) */
   --ink:       #000000;
-  --ink-muted: rgba(60, 60, 67, 0.60);
-  --ink-dim:   rgba(60, 60, 67, 0.28);
+  --ink-muted: rgba(60, 60, 67, 0.72);
+  --ink-dim:   rgba(60, 60, 67, 0.50);
 
   /* Shadows — airy, soft */
   --shadow-sm: 0 1px 4px  rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -50,15 +50,18 @@
   --spec:    none;
   --spec-sm: none;
 
-  /* Type scale */
+  /* Type scale (Sprint 4 — bumped ~1px for legibility) */
   --text-2xs:  10px;
   --text-xs:   11px;
-  --text-sm:   12px;
-  --text-base: 14px;
-  --text-md:   15px;
-  --text-lg:   17px;
-  --text-xl:   1.25rem;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   16px;
+  --text-lg:   18px;
+  --text-xl:   1.35rem;
   --text-2xl:  1.5rem;
+
+  /* Spacing */
+  --space-section: 22px;
 
   /* Legacy aliases */
   --bg-primary:       var(--void);

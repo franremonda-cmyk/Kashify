@@ -44,6 +44,9 @@ export default function MetasPage() {
   }
 
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") === "1") setShowNew(true);
+  }, []);
 
   async function contribute(id: string, sign: 1 | -1) {
     const value = parseFloat(addAmount);
@@ -65,7 +68,7 @@ export default function MetasPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between enter-up">
         <div className="flex items-center gap-3">
           <BackButton />

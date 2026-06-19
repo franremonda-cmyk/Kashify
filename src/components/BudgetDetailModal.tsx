@@ -6,12 +6,15 @@ import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 
 interface BudgetEntry {
   id: string;
+  category_id?: string;
   name: string;
   icon?: string;
   color?: string;
   monthly_limit: number;
   currency_code: string;
   spent?: number;
+  period_type?: "always" | "specific_months";
+  applies_months?: number[] | null;
 }
 
 interface Tx {
@@ -25,16 +28,26 @@ interface Tx {
 interface Props {
   budget: BudgetEntry;
   onClose: () => void;
+  onUpdated?: () => void;
 }
+
+const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 function fmt(n: number, currency: string) {
   return `${currency} ${Number(n).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`;
 }
 
-export default function BudgetDetailModal({ budget, onClose }: Props) {
+export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props) {
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
   const [txs, setTxs] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [limitVal, setLimitVal] = useState(String(budget.monthly_limit ?? ""));
+  const [period, setPeriod] = useState<"always" | "specific_months">(budget.period_type ?? "always");
+  const [months, setMonths] = useState<number[]>(budget.applies_months ?? []);
+  const [savingLimit, setSavingLimit] = useState(false);
+
+  const catId = budget.category_id ?? budget.id;
 
   useEffect(() => {
     const now = new Date();
@@ -43,11 +56,28 @@ export default function BudgetDetailModal({ budget, onClose }: Props) {
     const from = `${year}-${String(month).padStart(2, "0")}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const to = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
-    fetch(`/api/transactions?category=${budget.id}&type=expense&from=${from}&to=${to}&sort_by=date&sort_dir=desc&page=1`)
+    fetch(`/api/transactions?category=${catId}&type=expense,installment-payment&from=${from}&to=${to}&sort_by=date&sort_dir=desc&page=1&limit=100`)
       .then(r => r.ok ? r.json() : { data: [] })
       .then(json => { setTxs(json.data ?? []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [budget.id]);
+  }, [catId]);
+
+  async function saveLimit() {
+    if (!limitVal || isNaN(parseFloat(limitVal))) return;
+    setSavingLimit(true);
+    await fetch("/api/budgets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        category_id: catId, monthly_limit: parseFloat(limitVal), currency_code: budget.currency_code,
+        period_type: period, applies_months: period === "specific_months" ? months : null,
+      }),
+    });
+    setSavingLimit(false);
+    setEditing(false);
+    onUpdated?.();
+    onClose();
+  }
 
   const pct = budget.monthly_limit > 0 ? Math.min(100, ((budget.spent ?? 0) / budget.monthly_limit) * 100) : 0;
   const textColor = pct >= 100 ? "var(--negative)" : pct >= 80 ? "var(--warning)" : "var(--positive)";
@@ -123,6 +153,55 @@ export default function BudgetDetailModal({ budget, onClose }: Props) {
               </p>
             )}
           </div>
+
+          {/* Editar límite */}
+          {!editing ? (
+            <button onClick={() => setEditing(true)}
+              style={{ width: "100%", padding: "9px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--accent)", marginBottom: 14 }}>
+              Editar límite
+            </button>
+          ) : (
+            <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)", marginBottom: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>Límite mensual ({budget.currency_code})</p>
+                <input type="number" inputMode="decimal" value={limitVal} onChange={e => setLimitVal(e.target.value)} placeholder="Monto"
+                  style={{ width: "100%", boxSizing: "border-box", background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: 15, outline: "none" }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {(["always", "specific_months"] as const).map(pt => (
+                    <button key={pt} onClick={() => setPeriod(pt)}
+                      style={{ flex: 1, padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: period === pt ? "var(--accent-soft)" : "var(--base)", border: period === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: period === pt ? "var(--accent)" : "var(--ink-muted)" }}>
+                      {pt === "always" ? "Siempre" : "Mes específico"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {period === "specific_months" && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+                  {MONTHS.map((m, i) => {
+                    const month = i + 1;
+                    const on = months.includes(month);
+                    return (
+                      <button key={m} onClick={() => setMonths(arr => arr.includes(month) ? arr.filter(x => x !== month) : [...arr, month].sort((a, b) => a - b))}
+                        style={{ padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, background: on ? "var(--accent-soft)" : "var(--base)", border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: on ? "var(--accent)" : "var(--ink-dim)" }}>
+                        {m}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setEditing(false)}
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>Cancelar</button>
+                <button onClick={saveLimit} disabled={savingLimit}
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: savingLimit ? 0.6 : 1 }}>
+                  {savingLimit ? "Guardando..." : "Guardar"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>
             Gastos este mes

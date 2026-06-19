@@ -29,9 +29,10 @@ interface Props {
   onClose: () => void;
   onDeleted: () => void;
   onSaved: () => void;
+  zIndex?: number;
 }
 
-export default function TransactionSheet({ tx, categories, onClose, onDeleted, onSaved }: Props) {
+export default function TransactionSheet({ tx, categories, onClose, onDeleted, onSaved, zIndex = 9000 }: Props) {
   const { iconStyle } = useIconStyle();
   const [mode, setMode]             = useState<"view" | "edit">("view");
   const [saving, setSaving]         = useState(false);
@@ -99,7 +100,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
         ref={overlayRef}
         style={{
           position: "fixed", top: 0, right: 0, bottom: 0, left: 0,
-          zIndex: 9000,
+          zIndex,
           display: "flex", alignItems: "center", justifyContent: "center",
           background: "rgba(0,0,0,0.72)",
           padding: "20px 16px",

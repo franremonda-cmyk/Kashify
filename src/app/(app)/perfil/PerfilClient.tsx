@@ -115,6 +115,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const [showMisCats, setShowMisCats]   = useState(false);
   const [showLimits, setShowLimits]     = useState(false);
 
+  // Metas y cuotas (vista previa inline)
+  const [goals, setGoals] = useState<import("@/types").SavingsGoal[]>([]);
+  const [plans, setPlans] = useState<(import("@/types").InstallmentPlan & { installment_payments?: { status: string }[] })[]>([]);
+
   const supabase = createClient();
 
   const fetchCategories = useCallback(async () => {
@@ -138,6 +142,11 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   }, []);
 
   useEffect(() => { fetchCategories(); fetchBudgets(); }, [fetchCategories, fetchBudgets]);
+
+  useEffect(() => {
+    fetch("/api/goals").then(r => r.ok ? r.json() : []).then(d => setGoals(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch("/api/installments").then(r => r.ok ? r.json() : []).then(d => setPlans(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
 
   function applyTheme(t: string) {
     setTheme(t);
@@ -222,7 +231,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const existingColors = categories.map(c => c.color).filter(Boolean) as string[];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {/* Avatar header */}
       <div className="flex items-center gap-4 enter-up">
         <div style={{ width: 56, height: 56, borderRadius: 18, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#FFFFFF", boxShadow: "0 4px 20px var(--accent-glow)", flexShrink: 0 }}>
@@ -458,14 +467,32 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
       {/* ④ Metas de ahorro */}
       <Accordion label="Metas de ahorro">
-        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Seguí el progreso de tus objetivos de ahorro.</p>
-        <Link href="/metas"
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Ver mis metas</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)" }}>
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </Link>
+        <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Seguí el progreso de tus objetivos de ahorro.</p>
+        {goals.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {goals.map((g) => {
+              const pct = g.target_amount > 0 ? Math.min(100, (g.current_amount / g.target_amount) * 100) : 0;
+              const reached = g.status === "reached" || g.current_amount >= g.target_amount;
+              return (
+                <Link key={g.id} href="/metas"
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (g.color ?? "var(--accent)") + "22", border: `1px solid ${g.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: g.color ?? "var(--accent)" }}>
+                    <CategoryIcon icon={g.icon} name={g.name} color={g.color} size={15} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>{reached ? "✓ Lograda" : `${pct.toFixed(0)}%`}</span>
+                    </div>
+                    <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--base)", overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : (g.color ?? "var(--accent)") }} />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
         <Link href="/metas?new=1"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva meta
@@ -474,14 +501,28 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
       {/* ⑤ Cuotas */}
       <Accordion label="Cuotas">
-        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Administrá tus compras en cuotas.</p>
-        <Link href="/cuotas"
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Ver mis cuotas</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)" }}>
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </Link>
+        <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Administrá tus compras en cuotas.</p>
+        {plans.filter(p => p.status === "active").length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {plans.filter(p => p.status === "active").map((plan) => {
+              const payments = plan.installment_payments ?? [];
+              const paidCount = payments.filter(p => p.status === "paid").length;
+              const pct = plan.n_installments > 0 ? (paidCount / plan.n_installments) * 100 : 0;
+              return (
+                <Link key={plan.id} href="/cuotas"
+                  style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>{plan.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>cuota {Math.min(paidCount + 1, plan.n_installments)}/{plan.n_installments}</span>
+                  </div>
+                  <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--base)", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "var(--accent)" }} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
         <Link href="/cuotas?new=1"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva cuota

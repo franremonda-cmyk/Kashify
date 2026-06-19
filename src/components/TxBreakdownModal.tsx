@@ -1,8 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import CategoryIcon from "@/components/CategoryIcon";
+import TransactionSheet from "@/components/TransactionSheet";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
+import type { Transaction } from "@/types";
 
 interface Tx {
   id: string;
@@ -11,8 +13,11 @@ interface Tx {
   currency_code: string;
   date: string;
   type: string;
+  category_id?: string | null;
   categories?: { name?: string; icon?: string; color?: string } | null;
 }
+
+interface Category { id: string; name: string; icon?: string; color?: string; }
 
 interface Props {
   type: "income" | "expense";
@@ -30,6 +35,8 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
   const [txs, setTxs] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [editTx, setEditTx] = useState<Tx | null>(null);
 
   const now = new Date();
   const year = now.getFullYear();
@@ -46,13 +53,19 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
   const bg = isIncome ? "rgba(52,199,89,0.07)" : "rgba(255,59,48,0.06)";
   const border = isIncome ? "0.5px solid rgba(52,199,89,0.18)" : "0.5px solid rgba(255,59,48,0.16)";
 
-  useEffect(() => {
+  const loadTxs = useCallback(() => {
     const typeParam = type === "expense" ? "expense,installment-payment" : "income";
     fetch(`/api/transactions?type=${typeParam}&from=${from}&to=${to}&currency=${currency}&sort_by=date&sort_dir=desc&page=1&limit=100`)
       .then(r => r.ok ? r.json() : { data: [] })
       .then(json => { setTxs(json.data ?? []); setLoading(false); })
       .catch(() => setLoading(false));
   }, [type, from, to, currency]);
+
+  useEffect(() => { loadTxs(); }, [loadTxs]);
+
+  useEffect(() => {
+    fetch("/api/categories").then(r => r.ok ? r.json() : []).then(d => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
 
   const total = txs.reduce((s, t) => s + Number(t.amount), 0);
 
@@ -125,22 +138,23 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
               {txs.map(tx => {
                 const cat = tx.categories as { name?: string; icon?: string; color?: string } | null;
                 return (
-                  <div key={tx.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
+                  <button key={tx.id} onClick={() => setEditTx(tx)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textAlign: "left", width: "100%", cursor: "pointer" }}>
                     {cat && (
                       <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (cat.color ?? "#7B61FF") + "22", display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "#7B61FF" }}>
                         <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={14} />
                       </div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</p>
-                      <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 2 }}>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</p>
+                      <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>
                         {cat?.name ? `${cat.name} · ` : ""}{new Date(tx.date).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
                       </p>
                     </div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", flexShrink: 0, marginLeft: 6 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", flexShrink: 0, marginLeft: 6 }}>
                       {isIncome ? "+" : "−"}{tx.currency_code} {Number(tx.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                     </p>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -150,7 +164,7 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
         {/* Footer: add button */}
         <div style={{ padding: "12px 18px 16px", flexShrink: 0, borderTop: "0.5px solid var(--glass-border-dim)" }}>
           <button onClick={handleAdd} style={{
-            width: "100%", padding: "12px", borderRadius: 12, fontSize: 14, fontWeight: 600,
+            width: "100%", padding: "12px", borderRadius: 12, fontSize: 15, fontWeight: 600,
             background: "var(--accent)", color: "#FFFFFF",
             boxShadow: "0 0 20px var(--accent-glow)",
           }}>
@@ -158,6 +172,17 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
           </button>
         </div>
       </div>
+
+      {editTx && (
+        <TransactionSheet
+          tx={editTx as unknown as Transaction & { categories?: { name?: string; icon?: string; color?: string } | null }}
+          categories={categories}
+          zIndex={9400}
+          onClose={() => setEditTx(null)}
+          onDeleted={() => { setEditTx(null); loadTxs(); }}
+          onSaved={() => { setEditTx(null); loadTxs(); }}
+        />
+      )}
     </div>,
     document.body
   );

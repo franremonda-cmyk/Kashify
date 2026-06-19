@@ -94,12 +94,15 @@ export default async function DashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const budgets = (budgetsRaw as any[]).map((b) => ({
     id: b.id,
+    category_id: b.category_id,
     name: b.categories?.name ?? "Sin nombre",
     color: b.categories?.color,
     icon: b.categories?.icon,
     monthly_limit: b.monthly_limit,
     currency_code: b.currency_code,
     spent: spentByCategory[b.category_id] ?? 0,
+    period_type: b.period_type,
+    applies_months: b.applies_months,
   }));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

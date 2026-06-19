@@ -10,7 +10,14 @@ const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: f
 import TransactionSheet from "@/components/TransactionSheet";
 import BudgetDetailModal from "@/components/BudgetDetailModal";
 import TxBreakdownModal from "@/components/TxBreakdownModal";
+import SpendingChart, { type ChartMonth } from "@/components/SpendingChart";
 import type { Transaction } from "@/types";
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  ARS: "$", USD: "US$", EUR: "€", CHF: "Fr", BRL: "R$",
+  GBP: "£", UYU: "$U", CLP: "$", COP: "$", PEN: "S/", PYG: "₲", BOB: "Bs",
+};
+const CHART_MONTH_LABELS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 // Import modal usando el overlay estándar
 function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
@@ -375,25 +382,32 @@ export default function ActividadPage() {
   const [showAllTx, setShowAllTx]           = useState(false);
   const [viewYear, setViewYear]             = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth]           = useState(() => new Date().getMonth() + 1);
-  const [selectedBudget, setSelectedBudget] = useState<{ id: string; name: string; icon?: string; color?: string; monthly_limit: number; currency_code: string; spent?: number } | null>(null);
+  const [selectedBudget, setSelectedBudget] = useState<{ id: string; category_id?: string; name: string; icon?: string; color?: string; monthly_limit: number; currency_code: string; spent?: number; period_type?: "always" | "specific_months"; applies_months?: number[] | null } | null>(null);
   const [breakdownType, setBreakdownType] = useState<"income" | "expense" | null>(null);
   // Extra data for detailed widgets
   const [goals, setGoals]         = useState<import("@/types").SavingsGoal[]>([]);
   const [installmentPlans, setInstallmentPlans] = useState<import("@/types").InstallmentPlan[]>([]);
-  const [catsWithBudget, setCatsWithBudget] = useState<{ id: string; name: string; color?: string; icon?: string; monthly_limit: number; currency_code: string }[]>([]);
+  const [catsWithBudget, setCatsWithBudget] = useState<{ id: string; category_id: string; name: string; color?: string; icon?: string; monthly_limit: number; currency_code: string; period_type?: "always" | "specific_months"; applies_months?: number[] | null }[]>([]);
+  const [chartMonths, setChartMonths] = useState<ChartMonth[]>([]);
   const currencyInitialized = useRef(false);
+
+  const loadCatsWithBudget = useCallback(() => {
+    fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string; category_budgets?: { monthly_limit: number; currency_code: string; period_type?: "always" | "specific_months"; applies_months?: number[] | null }[] }[]) => {
+      setCatsWithBudget(cats.filter(c => c.category_budgets && c.category_budgets.length > 0).map(c => ({
+        id: c.id, category_id: c.id, name: c.name, color: c.color, icon: c.icon,
+        monthly_limit: c.category_budgets![0].monthly_limit,
+        currency_code: c.category_budgets![0].currency_code,
+        period_type: c.category_budgets![0].period_type,
+        applies_months: c.category_budgets![0].applies_months,
+      })));
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Extra widgets data
     fetch("/api/goals").then(r => r.ok ? r.json() : []).then(setGoals).catch(() => {});
     fetch("/api/installments").then(r => r.ok ? r.json() : []).then(setInstallmentPlans).catch(() => {});
-    fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string; category_budgets?: { monthly_limit: number; currency_code: string }[] }[]) => {
-      setCatsWithBudget(cats.filter(c => c.category_budgets && c.category_budgets.length > 0).map(c => ({
-        id: c.id, name: c.name, color: c.color, icon: c.icon,
-        monthly_limit: c.category_budgets![0].monthly_limit,
-        currency_code: c.category_budgets![0].currency_code,
-      })));
-    }).catch(() => {});
+    loadCatsWithBudget();
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
@@ -406,7 +420,36 @@ export default function ActividadPage() {
           }
         });
     });
-  }, []);
+  }, [loadCatsWithBudget]);
+
+  // Tendencia mensual (12 meses) para la moneda seleccionada
+  useEffect(() => {
+    if (!selectedCurrency) return;
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const from = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
+    fetch(`/api/transactions?currency=${selectedCurrency}&from=${from}&sort_by=date&sort_dir=asc&page=1&limit=1000`)
+      .then(r => r.ok ? r.json() : { data: [] })
+      .then((json: { data?: { amount: number; type: string; date: string }[] }) => {
+        const txs = json.data ?? [];
+        const months: ChartMonth[] = [];
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const y = d.getFullYear(), mo = d.getMonth();
+          const monthTxs = txs.filter(t => {
+            const td = new Date(t.date);
+            return td.getFullYear() === y && td.getMonth() === mo;
+          });
+          months.push({
+            label: CHART_MONTH_LABELS[mo],
+            income: monthTxs.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0),
+            expense: monthTxs.filter(t => t.type === "expense" || t.type === "installment-payment").reduce((s, t) => s + Number(t.amount), 0),
+          });
+        }
+        setChartMonths(months);
+      })
+      .catch(() => setChartMonths([]));
+  }, [selectedCurrency]);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -473,7 +516,7 @@ export default function ActividadPage() {
   const activeSort      = filters.sort !== "date_desc";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {showFilter && (
         <FilterSheet categories={categories} filters={filters}
           onApply={(f) => { setFilters(f); setPage(1); }}
@@ -709,7 +752,79 @@ export default function ActividadPage() {
         </div>
       )}
 
-      {/* ── Sección de gráficos detallados ─────────────────────── */}
+      {/* ── Secciones de seguimiento ─────────────────────── */}
+
+      {/* Límites de categorías — cards rectangulares */}
+      {(() => {
+        const spendByCat: Record<string, number> = {};
+        filtered.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
+          const catId = t.category_id ?? "";
+          spendByCat[catId] = (spendByCat[catId] ?? 0) + Number(t.amount);
+        });
+        return (
+          <section className="flex flex-col gap-2">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 2 }}>Límites este mes</p>
+                <p style={{ fontSize: 11, color: "var(--ink-dim)", paddingLeft: 2, marginTop: 1 }}>Cuánto llevás gastado de cada techo. Tocá uno para ver el detalle.</p>
+              </div>
+              <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>+ Agregar límite</Link>
+            </div>
+            {catsWithBudget.length === 0 ? (
+              <div style={{ padding: "16px", borderRadius: 14, border: "0.5px dashed var(--glass-border-hover)", background: "var(--base)", textAlign: "center" }}>
+                <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Sin límites configurados</p>
+                <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Agregar uno →</Link>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
+                {catsWithBudget.slice(0, 5).map((cat) => {
+                  const spent = spendByCat[cat.id] ?? 0;
+                  const pct = Math.min(100, cat.monthly_limit > 0 ? (spent / cat.monthly_limit) * 100 : 0);
+                  const over = pct >= 100;
+                  const warn = pct >= 80;
+                  const gradientColor = pct < 50
+                    ? `hsl(${120 - pct * 0.6}, 72%, 50%)`
+                    : pct < 80
+                    ? `hsl(${90 - (pct - 50) * 2.4}, 80%, 48%)`
+                    : `hsl(${16 - Math.max(0, pct - 80) * 0.4}, 88%, 52%)`;
+                  const labelColor = over ? "var(--negative)" : warn ? "var(--warning)" : "var(--positive)";
+                  return (
+                    <button key={cat.id}
+                      onClick={() => setSelectedBudget({ ...cat, spent })}
+                      style={{
+                        flexShrink: 0, width: 80, padding: "10px 8px 8px",
+                        borderRadius: 14, background: "var(--base)",
+                        border: `0.5px solid ${over ? "rgba(255,69,58,0.3)" : "var(--glass-border)"}`,
+                        boxShadow: "var(--shadow-sm)",
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                        cursor: "pointer",
+                      }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 9, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
+                        <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={15} />
+                      </div>
+                      <p style={{ fontSize: 10, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
+                      <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
+                      </div>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: labelColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
+                    </button>
+                  );
+                })}
+                <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
+                  <div style={{
+                    width: 80, borderRadius: 14, background: "var(--raised)",
+                    border: "0.5px dashed var(--glass-border-hover)",
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 100,
+                  }}>
+                    <span style={{ fontSize: 20, color: "var(--accent)", fontWeight: 300 }}>+</span>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Agregar límite</p>
+                  </div>
+                </Link>
+              </div>
+            )}
+          </section>
+        );
+      })()}
 
       {/* Metas de ahorro */}
       {goals.length > 0 && (
@@ -780,79 +895,22 @@ export default function ActividadPage() {
         </section>
       )}
 
-      {/* Límites de categorías — cards rectangulares */}
-      {(() => {
-        const spendByCat: Record<string, number> = {};
-        filtered.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
-          const catId = t.category_id ?? "";
-          spendByCat[catId] = (spendByCat[catId] ?? 0) + Number(t.amount);
-        });
-        return (
-          <section className="flex flex-col gap-2">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Límites este mes</p>
-              <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar límite</Link>
-            </div>
-            {catsWithBudget.length === 0 ? (
-              <div style={{ padding: "16px", borderRadius: 14, border: "0.5px dashed var(--glass-border-hover)", background: "var(--base)", textAlign: "center" }}>
-                <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Sin límites configurados</p>
-                <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Agregar uno →</Link>
-              </div>
-            ) : (
-              <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
-                {catsWithBudget.slice(0, 5).map((cat) => {
-                  const spent = spendByCat[cat.id] ?? 0;
-                  const pct = Math.min(100, cat.monthly_limit > 0 ? (spent / cat.monthly_limit) * 100 : 0);
-                  const over = pct >= 100;
-                  const warn = pct >= 80;
-                  const gradientColor = pct < 50
-                    ? `hsl(${120 - pct * 0.6}, 72%, 50%)`
-                    : pct < 80
-                    ? `hsl(${90 - (pct - 50) * 2.4}, 80%, 48%)`
-                    : `hsl(${16 - Math.max(0, pct - 80) * 0.4}, 88%, 52%)`;
-                  const labelColor = over ? "var(--negative)" : warn ? "var(--warning)" : "var(--positive)";
-                  return (
-                    <button key={cat.id}
-                      onClick={() => setSelectedBudget({ ...cat, spent })}
-                      style={{
-                        flexShrink: 0, width: 80, padding: "10px 8px 8px",
-                        borderRadius: 14, background: "var(--base)",
-                        border: `0.5px solid ${over ? "rgba(255,69,58,0.3)" : "var(--glass-border)"}`,
-                        boxShadow: "var(--shadow-sm)",
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                        cursor: "pointer",
-                      }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
-                        <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={15} />
-                      </div>
-                      <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
-                      <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
-                      </div>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: labelColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
-                    </button>
-                  );
-                })}
-                <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
-                  <div style={{
-                    width: 80, borderRadius: 14, background: "var(--raised)",
-                    border: "0.5px dashed var(--glass-border-hover)",
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 100,
-                  }}>
-                    <span style={{ fontSize: 20, color: "var(--accent)", fontWeight: 300 }}>+</span>
-                    <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Agregar límite</p>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </section>
-        );
-      })()}
+      {/* Gráfico mensual — tendencia ingresos/gastos */}
+      {chartMonths.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 2 }}>Tendencia mensual</p>
+            <p style={{ fontSize: 11, color: "var(--ink-dim)", paddingLeft: 2, marginTop: 1 }}>Ingresos y gastos de los últimos 12 meses en {selectedCurrency}.</p>
+          </div>
+          <SpendingChart data={chartMonths} currencySymbol={CURRENCY_SYMBOLS[selectedCurrency] ?? selectedCurrency} />
+        </section>
+      )}
 
       {selectedBudget && (
         <BudgetDetailModal
           budget={selectedBudget}
           onClose={() => setSelectedBudget(null)}
+          onUpdated={loadCatsWithBudget}
         />
       )}
 

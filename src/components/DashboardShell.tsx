@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import HeroBalanceCard from "./HeroBalanceCard";
 import CategoryIcon from "./CategoryIcon";
@@ -31,12 +32,15 @@ function catColorOrFallback(color: string | undefined | null, name: string): str
 
 interface BudgetEntry {
   id: string;
+  category_id?: string;
   name: string;
   color?: string;
   icon?: string;
   monthly_limit: number;
   currency_code: string;
   spent?: number;
+  period_type?: "always" | "specific_months";
+  applies_months?: number[] | null;
 }
 
 interface Props {
@@ -236,11 +240,14 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   if (relevant.length === 0) return null;
   return (
     <section className="enter-up" data-delay="4">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
-          Límites este mes
-        </p>
-        <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todos →</Link>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+        <div>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>
+            Límites este mes
+          </p>
+          <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 1 }}>Tocá una categoría para ver el detalle y editar su techo.</p>
+        </div>
+        <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none", flexShrink: 0, marginTop: 2 }}>Ver todos →</Link>
       </div>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
         {relevant.map((b) => {
@@ -289,6 +296,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
 }
 
 export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent, goals = [], budgets = [] }: Props) {
+  const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
   const [selectedBudget, setSelectedBudget] = useState<BudgetEntry | null>(null);
@@ -321,7 +329,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
   const visibleTx = showAllTx ? recent : recent.slice(0, 5);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <HeroBalanceCard
         balances={balances}
         primaryCurrency={primaryCurrency}
@@ -413,6 +421,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         <BudgetDetailModal
           budget={selectedBudget}
           onClose={() => setSelectedBudget(null)}
+          onUpdated={() => router.refresh()}
         />
       )}
 
