@@ -436,11 +436,12 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             </div>
           </div>
 
-          {/* Message list — room for fixed input bar below */}
+          {/* Message list — flex:1 + minHeight:0 is required for scroll to work inside a flex container */}
           <div
             ref={listRef}
             style={{
               flex: 1,
+              minHeight: 0,
               overflowY: "auto",
               WebkitOverflowScrolling: "touch",
               padding: "12px 16px 130px",
