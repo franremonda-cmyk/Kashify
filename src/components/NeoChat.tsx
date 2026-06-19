@@ -288,8 +288,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   return (
     <div style={{
       display: "flex", flexDirection: "column",
-      position: "fixed", inset: 0, zIndex: 50,
-      background: "var(--void)",
+      height: "100dvh", overflow: "hidden",
+      marginTop: -24, marginLeft: -16, marginRight: -16, marginBottom: -104,
     }}>
 
       {/* ── IDLE state — avatar from top ── */}
