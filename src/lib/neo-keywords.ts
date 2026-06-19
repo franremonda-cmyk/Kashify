@@ -59,13 +59,16 @@ export const INCOME_VERBS = [
   "recibi", "recibí", "recibir",
   // Me pagaron / depositaron
   "me pagaron", "me deposito", "me depositó", "me transfirieron",
+  // Me dieron / me regalaron
+  "me dieron", "me dio",
+  "me regalaron", "me regalo", "me regaló",
+  "me prestaron", "me presto", "me prestó",
   // Entró
-  "entre", "entré", "entro plata", "entró plata", "cuanto entro", "cuanto entró",
-  "me entraron",
+  "entre", "entré", "entro plata", "entró plata", "me entraron",
   // Gané / vendí / facturé
-  "gane", "gané", "ganar", "gane por", "gané por",
+  "gane", "gané", "ganar",
   "me acreditaron",
-  "vendí", "vendi", "vendi por", "vendí por",
+  "vendí", "vendi",
   "facture", "facturé",
   // Deposité / transferí
   "deposite", "deposité", "depositar",
@@ -75,10 +78,12 @@ export const INCOME_VERBS = [
   // Liquidé / junte
   "liquide", "liquidé", "liquidar",
   "junte", "junté", "juntar",
-  // Saqué del banco (ingreso de ahorro)
+  // Saqué del banco
   "saque del banco", "saqué del banco",
   // Retiré
   "retiro", "retiré", "retire",
+  // Ingresé
+  "ingrese", "ingresé",
   // Me cobré
   "me deposito el", "me depositó el",
 ];
@@ -313,17 +318,32 @@ export function detectPurchaseIntent(normalized: string): PurchaseIntent {
     .replace(/^(un|una|unos|unas|el|la|los|las|mi|mis|al|del|este|esta|ese|esa)\s+/, "")
     .trim();
 
-  // Extract amount if present: "nafta por 8000", "nafta de 5000 pesos", "nafta 8000"
+  // Extract amount — try multiple patterns in order
   let amount: number | null = null;
-  const amtMatch = rest.match(/(?:por|de|a|x|\s)\s*(\d[\d.,]*)\s*(?:pesos?|ars|usd|eur|uyu)?/i);
-  if (amtMatch) {
-    const parsed = parseFloat(amtMatch[1].replace(/\./g, "").replace(",", "."));
+
+  // 1. Number at very start of rest: "gaste 10" → rest="10", "recibi 500" → rest="500"
+  const leadNum = rest.match(/^(\d[\d.,]*)\s*(?:pesos?|ars|usd|eur|uyu)?(?:\s|$)/i);
+  if (leadNum) {
+    const parsed = parseFloat(leadNum[1].replace(/\./g, "").replace(",", "."));
     if (!isNaN(parsed) && parsed > 0) {
       amount = parsed;
-      rest = rest.replace(amtMatch[0], "").trim();
+      rest = rest.slice(leadNum[0].length).trim();
     }
   }
-  // Also check standalone number at end: "milanesa 1500"
+
+  // 2. Number after preposition: "nafta por 8000", "nafta de 5000 pesos"
+  if (amount === null) {
+    const amtMatch = rest.match(/(?:por|de|a|x)\s+(\d[\d.,]*)\s*(?:pesos?|ars|usd|eur|uyu)?/i);
+    if (amtMatch) {
+      const parsed = parseFloat(amtMatch[1].replace(/\./g, "").replace(",", "."));
+      if (!isNaN(parsed) && parsed > 0) {
+        amount = parsed;
+        rest = rest.replace(amtMatch[0], "").trim();
+      }
+    }
+  }
+
+  // 3. Standalone number at end: "milanesa 1500"
   if (amount === null) {
     const trailNum = rest.match(/\s(\d[\d.,]+)$/);
     if (trailNum) {

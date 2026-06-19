@@ -28,6 +28,7 @@ type Intent =
   | { type: "deposit_goal"; amount: number; goalName: string }
   | { type: "pay_installment"; name: string }
   | { type: "cancel_installment"; name: string }
+  | { type: "create_installment_needs_info" }
   | { type: "create_installment"; name: string; installmentAmount: number; nInstallments: number }
   | { type: "natural_tx"; txType: "income" | "expense"; description: string; amount: number; suggestedCategory: string | null }
   | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
@@ -177,6 +178,10 @@ function detectIntent(msg: string): Intent {
     const amount = parseFloat(depositMatch[1].replace(/\./g, "").replace(",", "."));
     if (!isNaN(amount) && amount > 0) return { type: "deposit_goal", amount, goalName: depositMatch[2].trim() };
   }
+
+  // ── Create installment — without details (ask for info) ──────────────────
+  if (/(?:nueva\s+cuota|cuota\s+nueva|quiero\s+(?:una?\s+)?cuota|agrega[r]?\s+(?:una?\s+)?cuota\s*$|nueva\s+cuota\s*$)/.test(m))
+    return { type: "create_installment_needs_info" };
 
   // ── Create installment ────────────────────────────────────────────────────
   const cuotaMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?cuota\s+(?:de\s+|llamada\s+|para\s+)?(.+?)\s+(?:por\s+|de\s+|en\s+)(\d+)\s+(?:cuotas?|meses?|pagos?)\s+(?:de\s+|a\s+)?(\d[\d.,]*)/);
@@ -718,6 +723,13 @@ export async function POST(req: Request) {
     });
   }
 
+  // ── Create installment needs info ────────────────────────────────────────
+  if (intent.type === "create_installment_needs_info") {
+    return NextResponse.json({
+      text: "Para crear la cuota necesito un poco más:\n• Nombre (ej: Netflix, iPhone 15)\n• Cuántas cuotas\n• Monto por cuota\n\nEjemplo: \"agrega cuota iPhone por 12 cuotas de 45000\"",
+    });
+  }
+
   // ── Create installment ────────────────────────────────────────────────────
   if (intent.type === "create_installment") {
     const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
@@ -744,19 +756,20 @@ export async function POST(req: Request) {
     const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
     const currency = profile?.primary_currency ?? "ARS";
     const catId = intent.suggestedCategory ? await resolveCategoryId(supabase, user.id, intent.suggestedCategory) : null;
+    const desc = intent.description || (intent.txType === "income" ? "Ingreso" : "Gasto");
     const { error } = await supabase.from("transactions").insert({
       user_id: user.id,
       type: intent.txType,
       amount: intent.amount,
       currency_code: currency,
-      description: intent.description,
+      description: desc,
       date: new Date().toISOString().split("T")[0],
       category_id: catId,
     });
     if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
     const catLabel = intent.suggestedCategory ? ` · ${intent.suggestedCategory}` : "";
     return NextResponse.json({
-      text: `✅ Registré: ${intent.description} — ${fmt(intent.amount, currency)}${catLabel}.`,
+      text: `✅ Registré: ${desc} — ${fmt(intent.amount, currency)}${catLabel}.`,
       action: { type: "refresh" },
     });
   }
