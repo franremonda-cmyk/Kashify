@@ -825,21 +825,34 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Unknown → hint list ───────────────────────────────────────────────────
-  const hints = [
-    "¿Cuánto gasté este mes?",
-    "¿Cuál es mi saldo?",
-    "Mis límites · Mis metas · Mis cuotas",
-    "Compré una milanesa por 1500",
-    "Cobré el sueldo de 200000",
-    "Agrega una meta llamada viaje",
-    "Depositá 5000 en la meta viaje",
-    "Pagué la cuota de Netflix",
-    "Cancelá la cuota de iPhone",
-    "Borrá el gasto de [descripción]",
-    "Escribí 'ayuda' para ver todo lo que puedo hacer",
-  ];
+  // ── Unknown → respuesta contextual según lo que intentaba hacer ──────────
+  const mn = normalize(message);
+
+  if (/gast|compra|pagu[eé]|sali[oó]|cost[oó]|me.?cobrar|me.?debitar/.test(mn))
+    return NextResponse.json({ text: `No entendí bien el gasto. Probá así:\n• "compré una milanesa por 1500"\n• "gasté 500 en nafta"\n• "pagué el alquiler de 80000"` });
+
+  if (/cobr|ingres|recibi|sueldo|me.?pag|me.?dio|me.?regal|me.?deposit|factur|gané/.test(mn))
+    return NextResponse.json({ text: `No entendí bien el ingreso. Probá así:\n• "cobré 150000"\n• "me pagaron 50000"\n• "me regalaron 20000"` });
+
+  if (/meta|ahorro|objetivo/.test(mn))
+    return NextResponse.json({ text: `Para metas puedo:\n• Crear: "agrega una meta viaje"\n• Ver: "mis metas"\n• Depositar: "depositá 5000 en viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Eliminar: "eliminá la meta viaje"` });
+
+  if (/cuota|deuda|mensualidad/.test(mn))
+    return NextResponse.json({ text: `Para cuotas puedo:\n• Crear: "agrega cuota iPhone por 12 cuotas de 45000"\n• Ver: "mis cuotas"\n• Registrar pago: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"` });
+
+  if (/l[ií]mite|presupuesto/.test(mn))
+    return NextResponse.json({ text: `Para límites puedo:\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"` });
+
+  if (/borr|elimin|sac[aá]|quit/.test(mn))
+    return NextResponse.json({ text: `Para eliminar, decime qué querés borrar:\n• Gasto: "borrá el gasto de Netflix"\n• Meta: "eliminá la meta viaje"\n• Cuota: "cancelá la cuota de iPhone"\n• Límite: "eliminá el límite de Comida"` });
+
+  if (/edit|cambi|modific|actualiz|renombr/.test(mn))
+    return NextResponse.json({ text: `Para editar, decime qué querés cambiar:\n• Meta (nombre): "renombrá la meta viaje a vacaciones"\n• Meta (objetivo): "cambiá el objetivo de viaje a 50000"\n• Límite: "editá el límite de Comida a 30000"` });
+
+  if (/agrega|crea|nueva|nuevo|registra|anota/.test(mn))
+    return NextResponse.json({ text: `¿Qué querés agregar?\n• Gasto: "compré una milanesa por 1500"\n• Ingreso: "cobré 150000"\n• Meta: "agrega una meta viaje"\n• Cuota: "agrega cuota Netflix por 6 cuotas de 5000"` });
+
   return NextResponse.json({
-    text: `No entendí bien. Podés pedirme:\n${hints.map(h => `• ${h}`).join("\n")}`,
+    text: `No entendí bien. Podés decirme:\n• "compré [algo] por [monto]" — para registrar un gasto\n• "cobré [monto]" — para registrar un ingreso\n• "mis metas / mis cuotas / mis límites" — para consultar\n\nO escribí "ayuda" para ver todo lo que puedo hacer.`,
   });
 }
