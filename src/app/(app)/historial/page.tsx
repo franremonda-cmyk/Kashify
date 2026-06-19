@@ -827,8 +827,8 @@ export default function ActividadPage() {
       {goals.length > 0 && (
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Metas de ahorro</p>
-            <Link href="/metas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar meta</Link>
+            <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 4 }}>Metas de ahorro</p>
+            <Link href="/metas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Agregar meta</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
             {goals.map((g, i) => {
@@ -836,7 +836,7 @@ export default function ActividadPage() {
               const reached = g.status === "reached" || g.current_amount >= g.target_amount;
               function fmtG(n: number) { return Number(n).toLocaleString("es-AR", { maximumFractionDigits: 0 }); }
               return (
-                <div key={g.id} style={{ padding: "12px 16px", borderBottom: i < goals.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
+                <Link key={g.id} href="/metas" style={{ display: "block", textDecoration: "none", padding: "12px 16px", borderBottom: i < goals.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ width: 28, height: 28, borderRadius: 8, background: g.color + "22", border: `1px solid ${g.color}33`, display: "flex", alignItems: "center", justifyContent: "center", color: g.color, flexShrink: 0 }}>
@@ -855,7 +855,7 @@ export default function ActividadPage() {
                     {g.currency_code} {fmtG(g.current_amount)} de {fmtG(g.target_amount)}
                     {g.target_date ? ` · ${new Date(g.target_date).toLocaleDateString("es-AR", { month: "short", year: "numeric" })}` : ""}
                   </p>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -866,8 +866,8 @@ export default function ActividadPage() {
       {installmentPlans.filter(p => p.status === "active").length > 0 && (
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Cuotas activas</p>
-            <a href="/cuotas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todas →</a>
+            <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 4 }}>Cuotas activas</p>
+            <Link href="/cuotas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Agregar cuota</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
             {installmentPlans.filter(p => p.status === "active").map((plan, i, arr) => {
@@ -875,7 +875,7 @@ export default function ActividadPage() {
               const paidCount = payments.filter((p: { status: string }) => p.status === "paid").length;
               const pct = (paidCount / plan.n_installments) * 100;
               return (
-                <div key={plan.id} style={{ padding: "12px 16px", borderBottom: i < arr.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
+                <Link key={plan.id} href="/cuotas" style={{ display: "block", textDecoration: "none", padding: "12px 16px", borderBottom: i < arr.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{plan.name}</span>
                     <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", fontVariantNumeric: "tabular-nums" }}>
@@ -885,7 +885,7 @@ export default function ActividadPage() {
                   <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
                     <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "var(--accent)", transition: "width 500ms ease-out" }} />
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

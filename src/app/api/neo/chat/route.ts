@@ -19,13 +19,12 @@ type Intent =
   | { type: "create_installment"; name: string; installmentAmount: number; nInstallments: number }
   | { type: "natural_tx"; txType: "income" | "expense"; description: string; amount: number; suggestedCategory: string | null }
   | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
+  | { type: "create_goal_needs_name" }
   | { type: "unknown" };
 
-interface PendingContext {
-  txType: "income" | "expense";
-  description: string;
-  suggestedCategory: string | null;
-}
+type PendingContext =
+  | { type?: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
+  | { type: "create_goal_name" };
 
 interface DeleteCandidate {
   id: string;
@@ -97,12 +96,15 @@ function detectIntent(msg: string): Intent {
     }
   }
 
-  // Create goal: "agrega una meta llamada viaje a la pampa"
+  // Create goal: "agrega una meta llamada viaje a la pampa" / "agrega una meta" (sin nombre → pedir)
   const goalCreateMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?(?:nueva\s+)?meta(?:\s+(?:llamada|con\s+nombre))?\s+["']?(.+?)["']?\s*(?:(?:de|con\s+objetivo)\s+(\d[\d.,]*))?$/);
   if (goalCreateMatch) {
     const name = goalCreateMatch[1].trim();
     const amount = goalCreateMatch[2] ? parseFloat(goalCreateMatch[2].replace(/\./g, "").replace(",", ".")) : undefined;
     if (name.length > 0) return { type: "create_goal", name, amount };
+  }
+  if (/(?:agrega[r]?|crea[r]?|nueva)\s+(?:una\s+)?(?:nueva\s+)?meta\b/.test(m)) {
+    return { type: "create_goal_needs_name" };
   }
 
   // Deposit to goal: "depositá 5000 en la meta viaje" / "sumale 1000 a vacaciones"
@@ -185,25 +187,40 @@ export async function POST(req: Request) {
   const pendingContext: PendingContext | undefined = body.pendingContext;
   if (!message.trim()) return NextResponse.json({ text: "Escribime algo 😊" });
 
-  // If there's pending context (Neo asked "¿Cuánto te salió?") and the reply looks like a number
-  if (pendingContext && /^\d[\d.,]*$/.test(message.trim())) {
-    const amount = parseFloat(message.trim().replace(/\./g, "").replace(",", "."));
-    if (!isNaN(amount) && amount > 0) {
-      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
-      const currency = profile?.primary_currency ?? "ARS";
-      const catId = pendingContext.suggestedCategory ? await resolveCategoryId(supabase, user.id, pendingContext.suggestedCategory) : null;
-      const { error } = await supabase.from("transactions").insert({
-        user_id: user.id,
-        type: pendingContext.txType,
-        amount,
-        currency_code: currency,
-        description: pendingContext.description,
-        date: new Date().toISOString().split("T")[0],
-        category_id: catId,
-      });
-      if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
-      const catLabel = pendingContext.suggestedCategory ? ` · ${pendingContext.suggestedCategory}` : "";
-      return NextResponse.json({ text: `✅ Registré: ${pendingContext.description} — ${fmt(amount, currency)}${catLabel}.`, action: { type: "refresh" } });
+  // If there's pending context from a previous Neo question
+  if (pendingContext) {
+    if (pendingContext.type === "create_goal_name") {
+      // User replied with the goal name
+      const name = message.trim();
+      if (name.length > 0) {
+        const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
+        const currency = profile?.primary_currency ?? "ARS";
+        const { error } = await supabase.from("savings_goals").insert({
+          user_id: user.id, name, currency_code: currency, target_amount: 0, current_amount: 0,
+        });
+        if (error) return NextResponse.json({ text: "No pude crear la meta. Intentá desde la sección Metas." });
+        return NextResponse.json({ text: `✅ Meta "${name}" creada. ¡A ahorrar!`, action: { type: "refresh" } });
+      }
+    } else if (/^\d[\d.,]*$/.test(message.trim())) {
+      // User replied with an amount (needs_amount flow)
+      const amount = parseFloat(message.trim().replace(/\./g, "").replace(",", "."));
+      if (!isNaN(amount) && amount > 0) {
+        const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single();
+        const currency = profile?.primary_currency ?? "ARS";
+        const catId = pendingContext.suggestedCategory ? await resolveCategoryId(supabase, user.id, pendingContext.suggestedCategory) : null;
+        const { error } = await supabase.from("transactions").insert({
+          user_id: user.id,
+          type: pendingContext.txType,
+          amount,
+          currency_code: currency,
+          description: pendingContext.description,
+          date: new Date().toISOString().split("T")[0],
+          category_id: catId,
+        });
+        if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
+        const catLabel = pendingContext.suggestedCategory ? ` · ${pendingContext.suggestedCategory}` : "";
+        return NextResponse.json({ text: `✅ Registré: ${pendingContext.description} — ${fmt(amount, currency)}${catLabel}.`, action: { type: "refresh" } });
+      }
     }
   }
 
@@ -502,6 +519,14 @@ export async function POST(req: Request) {
     return NextResponse.json({
       text: `✅ Registré: ${intent.description} — ${fmt(intent.amount, currency)}${catLabel}.`,
       action: { type: "refresh" },
+    });
+  }
+
+  // ── Create goal needs name — ask for it ──────────────────────────────────
+  if (intent.type === "create_goal_needs_name") {
+    return NextResponse.json({
+      text: "¿Cómo querés llamarla?",
+      action: { type: "needs_goal_name" },
     });
   }
 

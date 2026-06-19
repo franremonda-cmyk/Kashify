@@ -1,9 +1,11 @@
 import BottomNav from "@/components/BottomNav";
 import DesktopSidebar from "@/components/DesktopSidebar";
+import NeoBanner from "@/components/NeoBanner";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-layout" style={{ display: "flex", minHeight: "100dvh" }}>
+      <NeoBanner />
       {/* Desktop sidebar — hidden on mobile via CSS */}
       <DesktopSidebar />
 

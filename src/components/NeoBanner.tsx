@@ -62,7 +62,7 @@ export default function NeoBanner() {
             Neo está activo
           </p>
           <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 2 }}>
-            Mandame un mensaje por WhatsApp para empezar
+            Enviame un mensaje para empezar
           </p>
         </Link>
 

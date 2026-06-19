@@ -117,11 +117,11 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{
-    txType: "income" | "expense";
-    description: string;
-    suggestedCategory: string | null;
-  } | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
+    | { type: "needs_goal_name" }
+    | null
+  >(null);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then(d => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
@@ -169,10 +169,13 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     setIsActive(true);
     setAvatarState("thinking");
 
-    // If Neo is waiting for an amount and the user sent a number, attach context
+    // If Neo is waiting for an amount or a goal name, attach context
     const body: Record<string, unknown> = { message: text.trim() };
-    if (pendingAction && /^\d[\d.,]*$/.test(text.trim())) {
+    if (pendingAction?.type === "needs_amount" && /^\d[\d.,]*$/.test(text.trim())) {
       body.pendingContext = pendingAction;
+      setPendingAction(null);
+    } else if (pendingAction?.type === "needs_goal_name") {
+      body.pendingContext = { type: "create_goal_name" };
       setPendingAction(null);
     }
 
@@ -184,9 +187,11 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       });
       const data = res.ok ? await res.json() : { text: "No pude procesar tu mensaje. Intentá de nuevo." };
 
-      // Store pending context if Neo is asking for a follow-up amount
+      // Store pending context if Neo is asking for a follow-up
       if (data.action?.type === "needs_amount") {
-        setPendingAction({ txType: data.action.txType, description: data.action.description, suggestedCategory: data.action.suggestedCategory });
+        setPendingAction({ type: "needs_amount", txType: data.action.txType, description: data.action.description, suggestedCategory: data.action.suggestedCategory });
+      } else if (data.action?.type === "needs_goal_name") {
+        setPendingAction({ type: "needs_goal_name" });
       } else {
         setPendingAction(null);
       }
@@ -283,9 +288,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   return (
     <div style={{
       display: "flex", flexDirection: "column",
-      height: "100dvh",
-      marginTop: -24, marginLeft: -16, marginRight: -16, marginBottom: -104,
-      position: "relative",
+      position: "fixed", inset: 0, zIndex: 50,
+      background: "var(--void)",
     }}>
 
       {/* ── IDLE state — avatar from top ── */}
@@ -416,10 +420,15 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             borderTop: "0.5px solid var(--glass-border)",
             zIndex: 200,
           }}>
-            {/* Pending amount indicator */}
-            {pendingAction && (
+            {/* Pending context indicator */}
+            {pendingAction?.type === "needs_amount" && (
               <p style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, paddingInline: 2 }}>
                 💬 Esperando monto para: {pendingAction.description}
+              </p>
+            )}
+            {pendingAction?.type === "needs_goal_name" && (
+              <p style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, paddingInline: 2 }}>
+                💬 Esperando nombre de la meta...
               </p>
             )}
             <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", gap: 8 }}>

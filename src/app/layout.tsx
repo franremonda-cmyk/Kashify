@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SplashScreen from "@/components/SplashScreen";
-import NeoBanner from "@/components/NeoBanner";
 import ThemeLoader from "@/components/ThemeLoader";
 import { IconStyleProvider } from "@/context/IconStyleContext";
 
@@ -47,7 +46,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeLoader />
         <SplashScreen />
-        <NeoBanner />
         <IconStyleProvider>
           {children}
         </IconStyleProvider>
