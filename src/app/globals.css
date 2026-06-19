@@ -346,11 +346,15 @@ button, a, input, select, textarea {
   animation: neo-think 0.65s ease-in-out infinite, neo-blob 1.2s ease-in-out infinite;
 }
 .neo-avatar-active {
-  animation: neo-pulse 3s ease-in-out infinite;
+  animation: neo-pulse 2.4s ease-in-out infinite, neo-blob 4s ease-in-out infinite;
 }
 /* Navbar Neo avatar animates while a conversation is active */
 body.neo-chatting .neo-nav-avatar {
   animation: neo-pulse 1.6s ease-in-out infinite, neo-blob 2.4s ease-in-out infinite;
+}
+/* Hide the app navbar while the keyboard is open (sits behind the keyboard) */
+body.neo-keyboard-open .app-bottom-nav {
+  display: none !important;
 }
 
 /* ─── Desktop sidebar layout ─────────────── */

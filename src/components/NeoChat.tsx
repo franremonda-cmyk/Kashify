@@ -150,6 +150,13 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   useEffect(() => { scrollToBottom(); }, [keyboardH, scrollToBottom]);
 
+  // Hide the app navbar while the keyboard is open so it sits behind the keyboard
+  // and only the input shows above it. CSS rule lives in globals.css.
+  useEffect(() => {
+    document.body.classList.toggle("neo-keyboard-open", keyboardH > 0);
+    return () => { document.body.classList.remove("neo-keyboard-open"); };
+  }, [keyboardH]);
+
   // Tell the navbar a conversation is active (via body class) so it can animate
   // its Neo avatar while chatting. CSS rule lives in globals.css.
   useEffect(() => {
