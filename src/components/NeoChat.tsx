@@ -117,7 +117,6 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     | null
   >(null);
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -125,25 +124,6 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then(d => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
-  }, []);
-
-  // ── Visual viewport — tracks keyboard height on iOS ──────────────────────
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      if (!containerRef.current) return;
-      containerRef.current.style.height = `${vv.height}px`;
-      containerRef.current.style.top = `${vv.offsetTop}px`;
-    };
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    update();
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-    };
   }, []);
 
   const scrollToBottom = useCallback(() => {
@@ -398,27 +378,17 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const avatarClass = avatarState === "thinking" ? "neo-avatar-thinking" : isActive ? "neo-avatar-active" : "neo-avatar-idle";
   const avatarBg = "var(--accent)";
 
-  // NAV_SAFE: bottom padding so content clears the fixed bottom nav pill
-  // Nav is at bottom: calc(16px + safe-area), height 60px → total ~76px + safe-area
-  const NAV_SAFE = "calc(82px + env(safe-area-inset-bottom, 0px))";
+  // Nav pill: bottom: 16px + safe-area, height: 60px → top edge at 76px + safe-area from screen bottom
+  // Input bar sits just above the nav with a small gap
+  const INPUT_BOTTOM = "calc(80px + env(safe-area-inset-bottom, 0px))";
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "100dvh",
-        zIndex: 39,
-        display: "flex",
-        flexDirection: "column",
-        background: "var(--void)",
-        overflow: "hidden",
-      }}
-    >
-      {/* ── IDLE state ── */}
+    <div style={{
+      display: "flex", flexDirection: "column",
+      height: "100dvh", overflow: "hidden",
+      marginTop: -24, marginLeft: -16, marginRight: -16, marginBottom: -104,
+    }}>
+      {/* ── IDLE state — avatar + input + suggestions ── */}
       {!isActive && (
         <div style={{
           flex: 1,
@@ -428,8 +398,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           flexDirection: "column",
           alignItems: "center",
           gap: 16,
-          padding: "64px 16px",
-          paddingBottom: NAV_SAFE,
+          padding: "64px 16px 180px",
         }}>
           <div
             className={avatarClass}
@@ -464,20 +433,16 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
         </div>
       )}
 
-      {/* ── ACTIVE state ── */}
+      {/* ── ACTIVE state — header + messages + fixed input bar ── */}
       {isActive && (
         <>
-          {/* Header */}
+          {/* Header — sticky */}
           <div style={{
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            paddingTop: 8,
-            paddingBottom: 12,
-            paddingInline: 16,
+            position: "sticky", top: 0, zIndex: 10,
+            display: "flex", alignItems: "center", gap: 10,
+            paddingTop: 8, paddingBottom: 12, paddingInline: 16,
             borderBottom: "0.5px solid var(--glass-border)",
-            background: "var(--void)",
+            background: "var(--void)", flexShrink: 0,
           }}>
             <div
               className={avatarClass}
@@ -494,14 +459,14 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             </div>
           </div>
 
-          {/* Message list */}
+          {/* Message list — room for fixed input bar below */}
           <div
             ref={listRef}
             style={{
               flex: 1,
               overflowY: "auto",
               WebkitOverflowScrolling: "touch",
-              padding: "12px 16px",
+              padding: "12px 16px 130px",
               display: "flex",
               flexDirection: "column",
               gap: 8,
@@ -530,11 +495,14 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             )}
           </div>
 
-          {/* Input bar — in flow, not fixed, clears nav pill with bottom padding */}
+          {/* Input bar — fixed above nav pill, z-index above nav (40) so iOS lifts it with keyboard */}
           <div style={{
-            flexShrink: 0,
-            padding: "10px 16px",
-            paddingBottom: NAV_SAFE,
+            position: "fixed",
+            bottom: INPUT_BOTTOM,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            padding: "10px 16px 12px",
             background: "var(--void)",
             borderTop: "0.5px solid var(--glass-border)",
           }}>
