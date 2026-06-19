@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import type { PendingTransaction } from "@/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -101,6 +102,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [busyPending, setBusyPending] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [keyboardH, setKeyboardH] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
   const [pendingAction, setPendingAction] = useState<
     | { type: "needs_amount"; txType: "income" | "expense"; description: string; suggestedCategory: string | null }
     | { type: "needs_goal_name" }
@@ -301,7 +305,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     </div>
   );
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div style={{
       position: "fixed",
       top: 0, left: 0, right: 0,
@@ -438,7 +444,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           {inputBar}
         </>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
