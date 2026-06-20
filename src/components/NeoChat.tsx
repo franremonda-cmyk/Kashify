@@ -103,8 +103,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [busyPending, setBusyPending] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [kbOpen, setKbOpen] = useState(false);
-  const [vpH, setVpH] = useState(0);
-  const [kbH, setKbH] = useState(0);   // keyboard height, only grows while keyboard is open
+  const [vpH, setVpH] = useState(0);   // visualViewport.height — real visible area above keyboard
   const [noKbH, setNoKbH] = useState(0); // actual rendered container height when keyboard is closed
   const [mounted, setMounted] = useState(false);
 
@@ -159,16 +158,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       const h = vv.height;
       if (h > maxVpHeight.current) maxVpHeight.current = h;
       const kb = Math.max(0, maxVpHeight.current - h);
-      const newKbOpen = kb > 80;
-      setKbOpen(newKbOpen);
+      setKbOpen(kb > 80);
       setVpH(prev => Math.abs(prev - h) < 1 ? prev : h);
-      if (!newKbOpen) {
-        setKbH(0);
-      } else {
-        // Only allow kbH to grow — prevents URL bar retraction (which shrinks kb)
-        // from growing the container while the keyboard is still open.
-        setKbH(prev => kb > prev ? kb : prev);
-      }
     };
     const onResize = () => { if (!raf) raf = requestAnimationFrame(apply); };
     vv.addEventListener("resize", onResize);
@@ -382,17 +373,17 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   // Container sizing:
   // - No keyboard: CSS calc(100svh - 84px - safe-area-bottom). svh is stable (URL bar retraction
-  //   does not change it). Never needs JS.
-  // - Keyboard open: Math.min(noKbH, svhFallback - kbH).
-  //     noKbH = actual rendered container height (measured from DOM when keyboard is closed).
-  //       This already accounts for safe-area-inset-bottom and the CSS formula precisely.
-  //       It is the hard cap — the keyboard-open height can NEVER exceed the no-keyboard height.
-  //     svhFallback - kbH = approx visible area above the keyboard (shrinks as keyboard opens).
-  //     kbH only grows while keyboard is open, so this value only DECREASES over time.
-  //     Combined, the height can only decrease from the moment kbOpen becomes true. No growth.
-  const svhFallback = maxVpHeight.current || (typeof window !== "undefined" ? window.innerHeight : 812);
+  //   does not change it). Reserves space for the navbar at the bottom.
+  // - Keyboard open: Math.min(noKbH, vpH).
+  //     noKbH = the actual rendered no-keyboard container height (measured from the DOM).
+  //       It's the hard ceiling: the container can NEVER be taller than it was without a keyboard,
+  //       so reclaiming the navbar's 84px the instant the keyboard starts opening can't grow it.
+  //     vpH = visualViewport.height = the real visible area above the keyboard, shrinks as the
+  //       keyboard slides up. Once vpH drops below noKbH, the container follows it down.
+  //     min() => the height can only DECREASE from the moment the keyboard opens. No growth.
+  const vpFallback = vpH || maxVpHeight.current || (typeof window !== "undefined" ? window.innerHeight : 812);
   const containerStyle: React.CSSProperties = kbOpen
-    ? { top: 0, height: `${Math.max(100, Math.min(noKbH || svhFallback - 130, svhFallback - kbH))}px` }
+    ? { top: 0, height: `${Math.max(100, Math.min(noKbH || vpFallback, vpFallback))}px` }
     : { top: 0, height: "calc(100svh - 84px - env(safe-area-inset-bottom, 0px))" };
 
   // Shared input bar (used by idle + active). No microphone — text only.
