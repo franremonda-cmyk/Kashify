@@ -173,6 +173,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   }, []);
 
   useEffect(() => {
+    // iOS scrolls the layout viewport when keyboard opens/closes.
+    // Reset immediately so fixed elements don't appear shifted.
+    window.scrollTo(0, 0);
     scrollToBottom();
     // Keyboard open/close animation takes ~300ms; RAF alone fires too early.
     const t = setTimeout(() => scrollToBottom(), 300);
@@ -193,6 +196,17 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     return () => { document.body.classList.remove("neo-chatting"); };
   }, [isActive]);
 
+
+  // When the chat is active, iOS Safari may scroll the layout viewport when
+  // the input is focused (to bring it into view). Intercept every scroll event
+  // and reset immediately so fixed elements don't appear shifted.
+  useEffect(() => {
+    if (!isActive || !mounted) return;
+    const reset = () => { if (window.scrollY !== 0) window.scrollTo(0, 0); };
+    window.addEventListener("scroll", reset);
+    reset(); // reset on activation
+    return () => window.removeEventListener("scroll", reset);
+  }, [isActive, mounted]);
 
   // Prevent touchmove on the NeoChat container so iOS can't scroll the page,
   // but allow it inside the message list (listRef).
@@ -347,13 +361,18 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Container sizing strategy:
-  // - No keyboard: anchor top:0 + bottom:84px+safe-area. CSS handles the height
-  //   automatically — no JS height → no jarring jump when the URL bar retracts.
-  // - Keyboard open: switch to explicit height = vv.height (the actual visual
-  //   viewport height which already excludes the keyboard on all iOS versions).
+  // - No keyboard: height:100svh minus navbar space. svh = small viewport unit
+  //   (iOS 15.4+), which is computed once with the URL bar visible and stays
+  //   stable — the container does NOT grow when the URL bar retracts.
+  //   On older iOS (svh = vh) the URL bar retraction still causes a slight
+  //   grow, but that's unavoidable without locking the body.
+  // - Keyboard open: explicit height = vv.height (visualViewport.height already
+  //   excludes the keyboard on all iOS versions). Using height (not bottom:0)
+  //   because on iOS < 15.4, bottom:0 on fixed elements tracks layout viewport
+  //   (behind the keyboard), not the visual viewport.
   const containerStyle: React.CSSProperties = kbOpen
     ? { top: 0, height: `${vpH || (typeof window !== "undefined" ? window.innerHeight : 812)}px` }
-    : { top: 0, bottom: "calc(84px + env(safe-area-inset-bottom, 0px))" };
+    : { top: 0, height: "calc(100svh - 84px - env(safe-area-inset-bottom, 0px))" };
 
   // Shared input bar (used by idle + active). No microphone — text only.
   const inputBar = (
@@ -379,6 +398,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
+            onFocus={() => window.scrollTo(0, 0)}
             onBlur={handleInputBlur}
             placeholder="Escribir mensaje a Neo…"
             style={{ flex: 1, fontSize: 15.5, background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "6px 0" }}
