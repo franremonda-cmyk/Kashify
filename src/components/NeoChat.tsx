@@ -413,7 +413,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             onFocus={() => window.scrollTo(0, 0)}
             onBlur={handleInputBlur}
             placeholder="Escribir mensaje a Neo…"
-            style={{ flex: 1, fontSize: 15.5, background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "6px 0" }}
+            // fontSize must be >= 16px: iOS Safari auto-zooms the page when focusing
+            // an input smaller than 16px, which makes everything look bigger and shifted.
+            style={{ flex: 1, fontSize: 16, background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "6px 0" }}
           />
         </div>
         <button
@@ -735,7 +737,7 @@ function InstallmentFormCard({ prefill, busy, onSubmit, onDismiss }: {
   const total = canSubmit ? (nInt * amt).toLocaleString("es-AR", { maximumFractionDigits: 0 }) : null;
 
   const inp: React.CSSProperties = {
-    padding: "9px 12px", borderRadius: 10, fontSize: 13,
+    padding: "9px 12px", borderRadius: 10, fontSize: 16, // >=16px avoids iOS focus auto-zoom
     background: "var(--base)", border: "0.5px solid var(--glass-border)",
     color: "var(--ink)", outline: "none", width: "100%",
   };

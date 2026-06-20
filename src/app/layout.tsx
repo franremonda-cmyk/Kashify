@@ -37,6 +37,8 @@ export const viewport: Viewport = {
   themeColor: "#F2F2F7",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1, // evita el auto-zoom de iOS Safari al enfocar inputs (se ve "más grande y corrido")
+  userScalable: false,
   viewportFit: "cover", // habilita env(safe-area-inset-*) en notch/Dynamic Island
 };
 
