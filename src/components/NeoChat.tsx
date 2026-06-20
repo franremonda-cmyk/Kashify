@@ -23,7 +23,8 @@ interface DeleteCandidate {
 type ChatAction =
   | { type: "confirm_delete"; candidates: DeleteCandidate[]; resolved?: boolean }
   | { type: "confirm_delete_goal"; goalId: string; goalName: string; resolved?: boolean }
-  | { type: "confirm_cancel_installment"; planId: string; planName: string; resolved?: boolean };
+  | { type: "confirm_cancel_installment"; planId: string; planName: string; resolved?: boolean }
+  | { type: "installment_form"; prefill?: { name?: string; nInstallments?: number; installmentAmount?: number }; resolved?: boolean };
 
 interface ChatMessage {
   id: string;
@@ -102,6 +103,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [busyPending, setBusyPending] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [kbOpen, setKbOpen] = useState(false);
+  const [vpH, setVpH] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -146,6 +148,10 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       if (h > maxVpHeight.current) maxVpHeight.current = h;
       const kb = Math.max(0, maxVpHeight.current - h);
       setKbOpen(kb > 80);
+      // Track actual visual viewport height so we can size the container correctly.
+      // Using vv.height (not dvh) because dvh = vh on iOS < 15.4 and doesn't
+      // shrink with the keyboard, making the container grow 84px when kbOpen switches.
+      setVpH(prev => Math.abs(prev - h) < 1 ? prev : h);
     };
     const onResize = () => { if (!raf) raf = requestAnimationFrame(apply); };
     vv.addEventListener("resize", onResize);
@@ -194,7 +200,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       setQuickReplies(Array.isArray(data.options) ? data.options : null);
       if (data.action?.type === "cancel_pending") { pendingCtxRef.current = null; setQuickReplies(null); }
 
-      const actionTypes = ["confirm_delete", "confirm_delete_goal", "confirm_cancel_installment"];
+      const actionTypes = ["confirm_delete", "confirm_delete_goal", "confirm_cancel_installment", "installment_form"];
       setMessages(prev => [...prev, {
         id: uid(), role: "neo", text: data.text ?? "...", ts: new Date(),
         action: data.action && actionTypes.includes(data.action.type) ? data.action : undefined,
@@ -249,6 +255,35 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     setBusyPending(null);
   }
 
+  async function createInstallment(msgId: string, data: { name: string; nInstallments: number; installmentAmount: number; firstPaymentDate: string }) {
+    setBusyPending(msgId);
+    const res = await fetch("/api/installments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: data.name,
+        total_amount: data.nInstallments * data.installmentAmount,
+        currency_code: "ARS",
+        n_installments: data.nInstallments,
+        installment_amount: data.installmentAmount,
+        interest_type: "none",
+        first_payment_date: data.firstPaymentDate,
+      }),
+    }).catch(() => null);
+    if (res?.ok) {
+      window.dispatchEvent(new Event("transaction-added"));
+      const totalFmt = (data.nInstallments * data.installmentAmount).toLocaleString("es-AR", { maximumFractionDigits: 0 });
+      const eachFmt = data.installmentAmount.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+      setMessages(prev =>
+        prev.map(m => m.id === msgId ? { ...m, action: { ...m.action!, resolved: true } } : m)
+          .concat({ id: uid(), role: "neo", text: `✅ Creé la cuota "${data.name}": ${data.nInstallments} cuotas de ARS ${eachFmt}.\nTotal: ARS ${totalFmt}.`, ts: new Date() })
+      );
+    } else {
+      setMessages(prev => [...prev, { id: uid(), role: "neo", text: "No pude crear la cuota. Intentá desde la sección Cuotas.", ts: new Date() }]);
+    }
+    setBusyPending(null);
+  }
+
   async function confirmPending(pendingTx: PendingTransaction) {
     if (!pendingTx.neo_interpretation) return;
     setBusyPending(pendingTx.id);
@@ -270,15 +305,17 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // Single fixed flex-column container (WhatsApp ".phone"). Its bottom edge is
-  // dynamic: when the keyboard is closed it sits just above the app navbar
-  // (navbar visible); when the keyboard opens it fills the full visual viewport
-  // (100dvh auto-shrinks for the keyboard on modern iOS/Android, no translateY needed).
+  // Single fixed flex-column container. Height is driven by the actual visual
+  // viewport height (vv.height) so it correctly shrinks when the keyboard opens.
+  // 100dvh is NOT used because on iOS < 15.4, dvh = vh (doesn't shrink with
+  // keyboard), causing the container to grow 84px when kbOpen switches from false
+  // to true (it removes the -84px without actually shrinking for the keyboard).
+  const vh = vpH || (typeof window !== "undefined" ? window.innerHeight : 812);
   const containerStyle: React.CSSProperties = {
     top: 0,
     height: kbOpen
-      ? "100dvh"
-      : "calc(100dvh - 84px - env(safe-area-inset-bottom, 0px))",
+      ? `${vh}px`
+      : `calc(${vh}px - 84px - env(safe-area-inset-bottom, 0px))`,
   };
 
   // Shared input bar (used by idle + active). No microphone — text only.
@@ -432,6 +469,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
                     onDelete={deleteTransaction}
                     onDeleteGoal={deleteGoal}
                     onCancelInstallment={cancelInstallment}
+                    onCreateInstallment={createInstallment}
                     onDismissAction={dismissAction}
                   />
                 </div>
@@ -472,7 +510,7 @@ function SendIcon({ color = "#fff" }: { color?: string }) {
 
 function WaBubble({
   msg, busyPending,
-  onConfirmPending, onDismissPending, onDelete, onDeleteGoal, onCancelInstallment, onDismissAction,
+  onConfirmPending, onDismissPending, onDelete, onDeleteGoal, onCancelInstallment, onCreateInstallment, onDismissAction,
 }: {
   msg: ChatMessage;
   busyPending: string | null;
@@ -481,6 +519,7 @@ function WaBubble({
   onDelete: (msgId: string, txId: string, txDesc: string) => void;
   onDeleteGoal: (msgId: string, goalId: string, goalName: string) => void;
   onCancelInstallment: (msgId: string, planId: string, planName: string) => void;
+  onCreateInstallment: (msgId: string, data: { name: string; nInstallments: number; installmentAmount: number; firstPaymentDate: string }) => void;
   onDismissAction: (msgId: string) => void;
 }) {
   const isUser = msg.role === "user";
@@ -585,6 +624,69 @@ function WaBubble({
             </button>
           </div>
         )}
+
+        {/* Installment form card */}
+        {msg.action?.type === "installment_form" && !msg.action.resolved && (
+          <InstallmentFormCard
+            prefill={(msg.action as Extract<ChatAction, { type: "installment_form" }>).prefill}
+            busy={!!busyPending}
+            onSubmit={(data) => onCreateInstallment(msg.id, data)}
+            onDismiss={() => onDismissAction(msg.id)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Installment form ─────────────────────────────────────────────────────────
+
+function InstallmentFormCard({ prefill, busy, onSubmit, onDismiss }: {
+  prefill?: { name?: string; nInstallments?: number; installmentAmount?: number };
+  busy: boolean;
+  onSubmit: (data: { name: string; nInstallments: number; installmentAmount: number; firstPaymentDate: string }) => void;
+  onDismiss: () => void;
+}) {
+  const [name, setName] = useState(prefill?.name ?? "");
+  const [n, setN] = useState(prefill?.nInstallments ? String(prefill.nInstallments) : "");
+  const [amount, setAmount] = useState(prefill?.installmentAmount ? String(prefill.installmentAmount) : "");
+
+  const nextMonth = new Date();
+  nextMonth.setDate(1);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+  const [date, setDate] = useState(nextMonth.toISOString().split("T")[0]);
+
+  const nInt = parseInt(n);
+  const amt = parseFloat(amount.replace(/\./g, "").replace(",", "."));
+  const canSubmit = name.trim().length > 0 && !isNaN(nInt) && nInt > 0 && !isNaN(amt) && amt > 0;
+  const total = canSubmit ? (nInt * amt).toLocaleString("es-AR", { maximumFractionDigits: 0 }) : null;
+
+  const inp: React.CSSProperties = {
+    padding: "9px 12px", borderRadius: 10, fontSize: 13,
+    background: "var(--base)", border: "0.5px solid var(--glass-border)",
+    color: "var(--ink)", outline: "none", width: "100%",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="Nombre (ej: iPhone)" style={inp} />
+      <div style={{ display: "flex", gap: 8 }}>
+        <input value={n} onChange={e => setN(e.target.value)} placeholder="Cuotas" type="number" min="1" style={{ ...inp, flex: "0 0 80px" }} />
+        <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="Monto c/u" type="number" style={{ ...inp, flex: 1 }} />
+      </div>
+      <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} />
+      {total && (
+        <p style={{ fontSize: 11, color: "var(--ink-muted)", textAlign: "right" }}>Total: ARS {total}</p>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <button onClick={onDismiss} style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "transparent", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
+          Cancelar
+        </button>
+        <button onClick={() => canSubmit && onSubmit({ name: name.trim(), nInstallments: nInt, installmentAmount: amt, firstPaymentDate: date })}
+          disabled={!canSubmit || busy}
+          style={{ flex: 2, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: canSubmit && !busy ? "var(--accent)" : "var(--raised)", color: canSubmit && !busy ? "#fff" : "var(--ink-muted)", border: "none", transition: "background 140ms" }}>
+          {busy ? "Creando..." : "Crear cuota"}
+        </button>
       </div>
     </div>
   );

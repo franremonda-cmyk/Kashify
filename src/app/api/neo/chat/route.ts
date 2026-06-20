@@ -247,6 +247,7 @@ function missingSlot(ctx: FlowContext): string | null {
       if (ctx.amount == null) return "amount";
       return null;
     case "income":
+      if (!ctx.description) return "description";
       if (ctx.amount == null) return "amount";
       return null;
     case "installment":
@@ -301,7 +302,7 @@ function fillSlot(ctx: FlowContext, message: string): FlowContext {
 
 function slotQuestion(ctx: FlowContext, slot: string): { text: string; options?: string[] } {
   switch (slot) {
-    case "description": return { text: "¿En qué lo gastaste?" };
+    case "description": return { text: ctx.flow === "income" ? "¿Qué cobraste?" : "¿En qué lo gastaste?" };
     case "amount": return { text: ctx.flow === "income" ? "¿Cuánto cobraste?" : "¿Cuánto te salió?" };
     case "iname": return { text: "¿Qué compraste en cuotas?" };
     case "icount": return { text: "¿En cuántas cuotas?" };
@@ -318,6 +319,15 @@ type SupabaseClient = Awaited<ReturnType<typeof import("@/lib/supabase/server").
 
 // Either ask for the next missing slot, or execute the completed action.
 async function respondFlow(supabase: SupabaseClient, userId: string, ctx: FlowContext): Promise<NextResponse> {
+  // Installments always open a form — avoid multi-question back-and-forth.
+  if (ctx.flow === "installment") {
+    const ic = ctx as Extract<FlowContext, { flow: "installment" }>;
+    return NextResponse.json({
+      text: "Completá los datos de la cuota:",
+      action: { type: "installment_form", prefill: { name: ic.name, nInstallments: ic.nInstallments, installmentAmount: ic.installmentAmount } },
+    });
+  }
+
   const slot = missingSlot(ctx);
   if (slot) {
     const q = slotQuestion(ctx, slot);
@@ -340,20 +350,6 @@ async function respondFlow(supabase: SupabaseClient, userId: string, ctx: FlowCo
       if (error) return NextResponse.json({ text: "No pude registrarlo. Intentá desde el botón +." });
       const catLabel = catName ? ` · ${catName}` : "";
       return NextResponse.json({ text: `✅ Registré: ${desc} — ${fmt(ctx.amount!, currency)}${catLabel}.`, action: { type: "refresh" } });
-    }
-    case "installment": {
-      const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
-      const currency = profile?.primary_currency ?? "ARS";
-      const today = new Date().toISOString().split("T")[0];
-      const { error } = await supabase.from("installment_plans").insert({
-        user_id: userId, name: ctx.name, installment_amount: ctx.installmentAmount,
-        n_installments: ctx.nInstallments, currency_code: currency, status: "active", start_date: today,
-      });
-      if (error) return NextResponse.json({ text: "No pude crear la cuota. Intentá desde la sección Cuotas." });
-      return NextResponse.json({
-        text: `✅ Creé la cuota "${ctx.name}": ${ctx.nInstallments} cuotas de ${fmt(ctx.installmentAmount!, currency)}.\nTotal: ${fmt(ctx.installmentAmount! * ctx.nInstallments!, currency)}.`,
-        action: { type: "refresh" },
-      });
     }
     case "goal": {
       const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
@@ -456,10 +452,9 @@ export async function POST(req: Request) {
       const filled = fillSlot(pendingContext, message);
       const changed = JSON.stringify(filled) !== JSON.stringify(pendingContext);
       if (changed) return respondFlow(supabase, user.id, filled);
-      // Couldn't fill (e.g. user changed topic): try a fresh detection below,
-      // and if that's unknown we re-ask the same slot.
-      const reIntent = detectIntent(message);
-      if (reIntent.type === "unknown") return respondFlow(supabase, user.id, pendingContext);
+      // Couldn't fill the current slot → re-ask it. Don't fall through to fresh
+      // intent detection: that hijacks the flow (e.g. "agregar cuota" resets context).
+      return respondFlow(supabase, user.id, pendingContext);
     }
   }
 
