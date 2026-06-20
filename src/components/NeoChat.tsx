@@ -106,7 +106,17 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [vpH, setVpH] = useState(0);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    // Clean slate on mount — previous instance may have left these if it unmounted
+    // while the keyboard was open or the user was chatting.
+    document.body.classList.remove("neo-keyboard-open");
+    document.body.classList.remove("neo-chatting");
+    setMounted(true);
+    return () => {
+      document.body.classList.remove("neo-keyboard-open");
+      document.body.classList.remove("neo-chatting");
+    };
+  }, []);
   // Generic slot-filling context echoed back to the server (opaque to the client).
   // useRef instead of useState: sendMessage must always read the *current* value,
   // not a value captured in a stale closure from a previous render (iOS Safari
@@ -162,7 +172,12 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     };
   }, []);
 
-  useEffect(() => { scrollToBottom(); }, [kbOpen, scrollToBottom]);
+  useEffect(() => {
+    scrollToBottom();
+    // Keyboard open/close animation takes ~300ms; RAF alone fires too early.
+    const t = setTimeout(() => scrollToBottom(), 300);
+    return () => clearTimeout(t);
+  }, [kbOpen, scrollToBottom]);
 
   // Hide the app navbar while the keyboard is open so it sits behind the keyboard
   // and only the input shows above it. CSS rule lives in globals.css.
@@ -177,6 +192,39 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     document.body.classList.toggle("neo-chatting", isActive);
     return () => { document.body.classList.remove("neo-chatting"); };
   }, [isActive]);
+
+  // Lock body scroll when the chat is active so iOS doesn't scroll the layout
+  // viewport when the input is focused (which makes the content jump up).
+  // Same technique as useModalTouchLock.
+  useEffect(() => {
+    if (!isActive || !mounted) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      window.scrollTo(0, scrollY);
+    };
+  }, [isActive, mounted]);
+
+  // Prevent touchmove on the NeoChat container so iOS can't scroll the page,
+  // but allow it inside the message list (listRef).
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const prevent = (e: TouchEvent) => {
+      if (listRef.current && e.target instanceof Node && listRef.current.contains(e.target)) return;
+      e.preventDefault();
+    };
+    el.addEventListener("touchmove", prevent, { passive: false });
+    return () => el.removeEventListener("touchmove", prevent);
+  }, [mounted]);
 
   // ── Send ─────────────────────────────────────────────────────────────────
 
@@ -212,6 +260,17 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       setThinking(false);
     }
   }
+
+  // Safety net: if visualViewport resize doesn't fire when keyboard closes,
+  // remove the navbar-hide class after the input loses focus.
+  const handleInputBlur = () => {
+    setTimeout(() => {
+      if (document.activeElement !== inputRef.current) {
+        setKbOpen(false);
+        document.body.classList.remove("neo-keyboard-open");
+      }
+    }, 150);
+  };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -342,6 +401,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
+            onBlur={handleInputBlur}
             placeholder="Escribir mensaje a Neo…"
             style={{ flex: 1, fontSize: 15.5, background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "6px 0" }}
           />
@@ -369,7 +429,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   if (!mounted) return null;
 
   return createPortal(
-    <div style={{
+    <div ref={containerRef} style={{
       position: "fixed",
       left: 0, right: 0,
       ...containerStyle,
