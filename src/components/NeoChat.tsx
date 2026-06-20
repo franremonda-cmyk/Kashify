@@ -145,10 +145,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   // ── Keyboard detection (visualViewport) ────────────────────────────────────
   // Track whether the soft keyboard is open by comparing the current visual
-  // viewport height against the largest height ever seen (= no keyboard).
-  // We use 100dvh for sizing — it adjusts automatically for the keyboard and
-  // URL bar on modern iOS/Android — so we only need kbOpen to toggle the
-  // navbar-visible vs keyboard-visible height formula.
+  // viewport height (vv.height) against the largest height ever seen (= no
+  // keyboard). kbOpen toggles the navbar and the container height formula;
+  // vpH feeds the keyboard-open height (see containerStyle below).
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -195,11 +194,11 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   }, [isActive]);
 
 
-  // Measure the actual rendered container height when the keyboard is not open.
-  // This is used to cap the keyboard-open height so the container never GROWS
-  // when the keyboard opens — even at the initial kbOpen threshold where the
-  // JS formula (svh - kbH) can briefly exceed the CSS no-keyboard height
-  // (which also subtracts safe-area-inset-bottom that we don't have in JS).
+  // Measure the actual rendered container height while the keyboard is closed.
+  // noKbH is the hard ceiling for the keyboard-open height (see containerStyle):
+  // it guarantees the container can never grow when the keyboard opens, even at
+  // the instant the navbar's 84px is reclaimed before the keyboard finishes
+  // sliding up. Measuring from the DOM also captures safe-area-inset-bottom exactly.
   useEffect(() => {
     if (!mounted || kbOpen) return;
     if (containerRef.current) {
