@@ -104,6 +104,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [kbOpen, setKbOpen] = useState(false);
   const [vpH, setVpH] = useState(0);
+  const [kbH, setKbH] = useState(0);       // keyboard height (only grows while open)
+  const [minVpH, setMinVpH] = useState(0); // min viewport height when kb not open ≈ svh in px
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -157,11 +159,18 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       const h = vv.height;
       if (h > maxVpHeight.current) maxVpHeight.current = h;
       const kb = Math.max(0, maxVpHeight.current - h);
-      setKbOpen(kb > 80);
-      // Track actual visual viewport height so we can size the container correctly.
-      // Using vv.height (not dvh) because dvh = vh on iOS < 15.4 and doesn't
-      // shrink with the keyboard, making the container grow 84px when kbOpen switches.
+      const newKbOpen = kb > 80;
+      setKbOpen(newKbOpen);
       setVpH(prev => Math.abs(prev - h) < 1 ? prev : h);
+      if (!newKbOpen) {
+        // Track minimum no-keyboard height (≈ svh in px, stable even if URL bar retracts).
+        setMinVpH(prev => prev === 0 || h < prev ? h : prev);
+        setKbH(0);
+      } else {
+        // Keyboard height only grows — prevents URL bar retraction from shrinking kbH
+        // and making the container appear to grow while the keyboard is still open.
+        setKbH(prev => kb > prev ? kb : prev);
+      }
     };
     const onResize = () => { if (!raf) raf = requestAnimationFrame(apply); };
     vv.addEventListener("resize", onResize);
@@ -361,17 +370,14 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Container sizing strategy:
-  // - No keyboard: height:100svh minus navbar space. svh = small viewport unit
-  //   (iOS 15.4+), which is computed once with the URL bar visible and stays
-  //   stable — the container does NOT grow when the URL bar retracts.
-  //   On older iOS (svh = vh) the URL bar retraction still causes a slight
-  //   grow, but that's unavoidable without locking the body.
-  // - Keyboard open: explicit height = vv.height (visualViewport.height already
-  //   excludes the keyboard on all iOS versions). Using height (not bottom:0)
-  //   because on iOS < 15.4, bottom:0 on fixed elements tracks layout viewport
-  //   (behind the keyboard), not the visual viewport.
+  // - No keyboard: 100svh minus navbar. svh is stable (doesn't change when URL bar retracts).
+  // - Keyboard open: (svhPx - kbH) where svhPx = min vv.height seen without keyboard (≈ svh
+  //   in real px) and kbH = max keyboard height seen (only grows). This ensures the container
+  //   can only SHRINK when the keyboard opens, never grow — even if the URL bar retracts mid-
+  //   session or the keyboard height changes during the opening animation.
+  const svhPx = minVpH || maxVpHeight.current || (typeof window !== "undefined" ? window.innerHeight : 812);
   const containerStyle: React.CSSProperties = kbOpen
-    ? { top: 0, height: `${vpH || (typeof window !== "undefined" ? window.innerHeight : 812)}px` }
+    ? { top: 0, height: `${Math.max(100, svhPx - kbH)}px` }
     : { top: 0, height: "calc(100svh - 84px - env(safe-area-inset-bottom, 0px))" };
 
   // Shared input bar (used by idle + active). No microphone — text only.
