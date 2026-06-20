@@ -193,24 +193,6 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     return () => { document.body.classList.remove("neo-chatting"); };
   }, [isActive]);
 
-  // Lock body scroll when the chat is active so iOS doesn't scroll the layout
-  // viewport when the input is focused (which makes the content jump up).
-  // Same technique as useModalTouchLock.
-  useEffect(() => {
-    if (!isActive || !mounted) return;
-    const scrollY = window.scrollY;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      document.body.style.overflow = "";
-      window.scrollTo(0, scrollY);
-    };
-  }, [isActive, mounted]);
 
   // Prevent touchmove on the NeoChat container so iOS can't scroll the page,
   // but allow it inside the message list (listRef).
@@ -364,18 +346,14 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // Single fixed flex-column container. Height is driven by the actual visual
-  // viewport height (vv.height) so it correctly shrinks when the keyboard opens.
-  // 100dvh is NOT used because on iOS < 15.4, dvh = vh (doesn't shrink with
-  // keyboard), causing the container to grow 84px when kbOpen switches from false
-  // to true (it removes the -84px without actually shrinking for the keyboard).
-  const vh = vpH || (typeof window !== "undefined" ? window.innerHeight : 812);
-  const containerStyle: React.CSSProperties = {
-    top: 0,
-    height: kbOpen
-      ? `${vh}px`
-      : `calc(${vh}px - 84px - env(safe-area-inset-bottom, 0px))`,
-  };
+  // Container sizing strategy:
+  // - No keyboard: anchor top:0 + bottom:84px+safe-area. CSS handles the height
+  //   automatically — no JS height → no jarring jump when the URL bar retracts.
+  // - Keyboard open: switch to explicit height = vv.height (the actual visual
+  //   viewport height which already excludes the keyboard on all iOS versions).
+  const containerStyle: React.CSSProperties = kbOpen
+    ? { top: 0, height: `${vpH || (typeof window !== "undefined" ? window.innerHeight : 812)}px` }
+    : { top: 0, bottom: "calc(84px + env(safe-area-inset-bottom, 0px))" };
 
   // Shared input bar (used by idle + active). No microphone — text only.
   const inputBar = (
