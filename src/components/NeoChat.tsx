@@ -378,12 +378,12 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   const inputBar = (
     <div style={{
       flexShrink: 0,
-      padding: "6px 8px 8px",
+      padding: "8px 16px 12px",
       background: "var(--base)",
       display: "flex", flexDirection: "column", gap: 4,
     }}>
       {quickReplies && quickReplies.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingInline: 6, paddingBottom: 2 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingBottom: 2 }}>
           {quickReplies.map(q => (
             <button key={q} type="button" onClick={() => sendMessage(q)}
               style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--glass-border)" }}>
@@ -392,8 +392,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           ))}
         </div>
       )}
-      <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", background: "var(--raised)", borderRadius: 24, padding: "4px 6px 4px 16px", border: "0.5px solid var(--glass-border)", minHeight: 44 }}>
+      <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", background: "var(--raised)", borderRadius: 24, padding: "4px 14px 4px 16px", border: "0.5px solid var(--glass-border)", minHeight: 44 }}>
           <input
             ref={inputRef}
             value={input}
@@ -433,7 +433,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       ...containerStyle,
       zIndex: 20,
       display: "flex", flexDirection: "column",
-      background: "var(--base)",
+      // When active, the accent color fills the safe-area-inset-top region
+      // (the area above the header strip content but within the container).
+      background: isActive ? "var(--accent)" : "var(--base)",
     }}>
 
       {/* ── IDLE state — landing sin franja, avatar centrado moviéndose ── */}
@@ -477,7 +479,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           <div style={{
             flexShrink: 0,
             display: "flex", alignItems: "center", gap: 10,
-            padding: "calc(10px + env(safe-area-inset-top, 0px)) 16px 10px 6px",
+            padding: "calc(10px + env(safe-area-inset-top, 0px)) 16px 10px 8px",
             background: "var(--accent)",
           }}>
             <button
@@ -504,7 +506,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           <div ref={listRef} style={{
             flex: 1, minHeight: 0,
             overflowY: "auto", WebkitOverflowScrolling: "touch",
-            padding: "8px 8px 12px",
+            background: "var(--base)",
+            padding: "8px 16px 12px",
             display: "flex", flexDirection: "column", gap: 2,
           } as React.CSSProperties}>
             {messages.map((msg, i) => {
