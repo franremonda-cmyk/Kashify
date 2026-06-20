@@ -96,6 +96,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [savedName, setSavedName]           = useState(false);
   const [savedCurrency, setSavedCurrency]   = useState(false);
+  const [inviteCopied, setInviteCopied]     = useState(false);
   const [theme, setTheme] = useState<string>(() =>
     typeof window !== "undefined" ? (localStorage.getItem("kashify-theme") ?? "arctic") : "arctic"
   );
@@ -182,6 +183,22 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   async function signOut() {
     await supabase.auth.signOut();
     window.location.href = "/login";
+  }
+
+  async function inviteFriend() {
+    const url = typeof window !== "undefined" ? window.location.origin : "https://kashify.vercel.app";
+    const text = "Manejá tus finanzas por WhatsApp con Neo. Probá Kashify 👇";
+    // Web Share API → menú nativo de compartir (WhatsApp, Mensajes, etc.) en mobile.
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try { await navigator.share({ title: "Kashify", text, url }); } catch { /* usuario canceló */ }
+      return;
+    }
+    // Fallback: copiar el link al portapapeles.
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    } catch { /* sin clipboard disponible */ }
   }
 
   async function saveCategory(catId: string | null, patch: Partial<Category>) {
@@ -533,10 +550,23 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         </Link>
       </Accordion>
 
+      {/* Invitar amigo — arriba de cerrar sesión */}
+      <button
+        onClick={inviteFriend}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--accent-glow)", marginTop: 4 }}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <line x1="19" y1="8" x2="19" y2="14" />
+          <line x1="22" y1="11" x2="16" y2="11" />
+        </svg>
+        {inviteCopied ? "¡Link copiado!" : "Invitar amigo"}
+      </button>
+
       {/* Botón cerrar sesión — fuera de acordeones */}
       <button
         onClick={signOut}
-        style={{ padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "rgba(255,59,48,0.07)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)", marginTop: 4 }}>
+        style={{ padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "rgba(255,59,48,0.07)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
         Cerrar sesión
       </button>
 
