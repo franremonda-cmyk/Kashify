@@ -1,13 +1,18 @@
 export interface Env {
   WHATSAPP_VERIFY_TOKEN: string;
   WHATSAPP_APP_SECRET: string;
+  WHATSAPP_PHONE_NUMBER_ID: string;
+  WHATSAPP_ACCESS_TOKEN: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   APP_URL: string;
+  // Secreto compartido con el backend para autorizar el disparo inmediato
+  // del procesador. Debe coincidir con CRON_SECRET en Vercel.
+  PROCESS_WEBHOOK_SECRET: string;
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (request.method === "GET") {
@@ -15,7 +20,7 @@ export default {
     }
 
     if (request.method === "POST") {
-      return handleIncomingMessage(request, env);
+      return handleIncomingMessage(request, env, ctx);
     }
 
     return new Response("Method not allowed", { status: 405 });
@@ -33,7 +38,11 @@ function handleVerification(url: URL, env: Env): Response {
   return new Response("Forbidden", { status: 403 });
 }
 
-async function handleIncomingMessage(request: Request, env: Env): Promise<Response> {
+async function handleIncomingMessage(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
   const signature = request.headers.get("x-hub-signature-256") ?? "";
   const body = await request.text();
 
@@ -52,9 +61,15 @@ async function handleIncomingMessage(request: Request, env: Env): Promise<Respon
   }
 
   const fromPhone = message.from;
+  const messageId = message.id as string | undefined;
 
-  // Encolar en Supabase sin esperar resultado (responde 200 a Meta inmediatamente)
-  enqueueMessage(fromPhone, payload, env).catch(console.error);
+  // Encolar y disparar el procesamiento inmediato. Usamos ctx.waitUntil para
+  // que el runtime no mate el trabajo async después de responder 200 a Meta.
+  ctx.waitUntil(
+    enqueueAndProcess(fromPhone, messageId, payload, env).catch((err) =>
+      console.error("enqueueAndProcess failed", err)
+    )
+  );
 
   return new Response("OK", { status: 200 });
 }
@@ -75,7 +90,7 @@ async function verifySignature(body: string, signature: string, secret: string):
   return hex === signature;
 }
 
-async function enqueueMessage(fromPhone: string, payload: unknown, env: Env): Promise<void> {
+async function enqueueAndProcess(fromPhone: string, messageId: string | undefined, payload: unknown, env: Env): Promise<void> {
   // Buscar user_id por número de teléfono
   const lookupRes = await fetch(
     `${env.SUPABASE_URL}/rest/v1/user_phones?phone_number=eq.${fromPhone}&verified=eq.true&select=user_id`,
@@ -89,6 +104,19 @@ async function enqueueMessage(fromPhone: string, payload: unknown, env: Env): Pr
 
   const phones = await lookupRes.json() as { user_id: string }[];
   const userId = phones[0]?.user_id ?? null;
+
+  // Si el número no está registrado, avisar y no encolar trabajo de parseo.
+  if (!userId) {
+    await sendWhatsAppMessage(
+      fromPhone,
+      "Hola! Para usar Neo, primero necesitás registrarte en " + env.APP_URL,
+      env
+    );
+    return;
+  }
+
+  // Reaccionar 👀 al instante para que el usuario vea que Neo recibió el mensaje.
+  if (messageId) await reactToMessage(fromPhone, messageId, "👀", env);
 
   // Insertar en webhook_events
   await fetch(`${env.SUPABASE_URL}/rest/v1/webhook_events`, {
@@ -106,28 +134,64 @@ async function enqueueMessage(fromPhone: string, payload: unknown, env: Env): Pr
     }),
   });
 
-  // Si el número no está registrado, notificar al usuario
-  if (!userId) {
-    await sendWhatsAppMessage(
-      fromPhone,
-      "Hola! Para usar Neo, primero necesitás registrarte en " + env.APP_URL,
-      env
-    );
+  // Disparar el procesamiento inmediato. El cron de Vercel queda como red de
+  // seguridad por si esta llamada falla.
+  await triggerProcessing(env);
+}
+
+async function triggerProcessing(env: Env): Promise<void> {
+  const res = await fetch(`${env.APP_URL}/api/process-webhook`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.PROCESS_WEBHOOK_SECRET}`,
+    },
+  });
+  if (!res.ok) {
+    console.error(`process-webhook trigger failed: ${res.status}`);
   }
 }
 
-async function sendWhatsAppMessage(to: string, text: string, env: Env): Promise<void> {
-  // Esta función se usa solo para el mensaje de "no registrado"
-  // Las alertas proactivas usan templates (send-template.ts en el backend)
-  const phoneNumberId = env.APP_URL; // se configura via variable
-  await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+// WhatsApp manda los celulares argentinos con "9" tras el código de país (549...),
+// pero la Cloud API exige enviar SIN ese 9 (54...).
+function normalizeRecipient(to: string): string {
+  const digits = to.replace(/\D/g, "");
+  if (digits.startsWith("549") && digits.length === 13) return "54" + digits.slice(3);
+  return digits;
+}
+
+async function reactToMessage(to: string, messageId: string, emoji: string, env: Env): Promise<void> {
+  await fetch(`https://graph.facebook.com/v22.0/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.WHATSAPP_ACCESS_TOKEN}` },
     body: JSON.stringify({
       messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: text },
+      to: normalizeRecipient(to),
+      type: "reaction",
+      reaction: { message_id: messageId, emoji },
     }),
-  });
+  }).catch(() => {});
+}
+
+async function sendWhatsAppMessage(to: string, text: string, env: Env): Promise<void> {
+  // Se usa solo para el mensaje de "no registrado".
+  // Las alertas proactivas usan templates (send-template.ts en el backend).
+  const res = await fetch(
+    `https://graph.facebook.com/v22.0/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.WHATSAPP_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: normalizeRecipient(to),
+        type: "text",
+        text: { body: text },
+      }),
+    }
+  );
+  if (!res.ok) {
+    console.error(`WhatsApp send failed: ${res.status} ${await res.text()}`);
+  }
 }

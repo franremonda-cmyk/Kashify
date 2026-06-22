@@ -78,8 +78,13 @@ export default function OnboardingPage() {
       primary_currency: currency,
     });
 
-    if (phone.trim()) {
-      await supabase.from("user_phones").insert({ phone_number: phone.trim(), verified: false });
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phoneDigits) {
+      await supabase.from("user_phones").insert({
+        user_id: user.id,
+        phone_number: phoneDigits,
+        verified: true,
+      });
     }
 
     router.push("/dashboard");

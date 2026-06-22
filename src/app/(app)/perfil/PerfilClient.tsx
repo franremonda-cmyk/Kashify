@@ -174,8 +174,14 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   }
 
   async function addPhone() {
-    if (!newPhone.trim()) return;
-    await supabase.from("user_phones").insert({ phone_number: newPhone.trim(), verified: false });
+    // Normalizar al formato que manda WhatsApp: solo dígitos, sin "+", espacios ni guiones.
+    const digits = newPhone.replace(/\D/g, "");
+    if (!digits || !profile?.user_id) return;
+    await supabase.from("user_phones").insert({
+      user_id: profile.user_id,
+      phone_number: digits,
+      verified: true,
+    });
     setNewPhone("");
     window.location.reload();
   }
