@@ -93,17 +93,17 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
   return (
     <button onClick={onClick} style={{ flex: 1, padding: "14px 16px", borderRadius: 14, background: bg, border, boxShadow: "var(--shadow-sm)", textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
       <p style={{
-        fontSize: 10, fontWeight: 600, textTransform: "uppercase",
-        letterSpacing: "0.08em", color: "var(--ink-muted)", marginBottom: 8,
+        fontSize: 12, fontWeight: 600, textTransform: "uppercase",
+        letterSpacing: "0.06em", color: "var(--ink-muted)", marginBottom: 8,
       }}>{label}</p>
       <p className="display" style={{
-        fontSize: "clamp(0.85rem, 3.2vw, 1.1rem)",
+        fontSize: "clamp(1rem, 3.4vw, 1.2rem)",
         fontWeight: 700, color, letterSpacing: "-0.02em",
         fontVariantNumeric: "tabular-nums", lineHeight: 1,
       }}>
         {sym} {full}
       </p>
-      {onClick && <p style={{ fontSize: 9, color: "var(--ink-dim)", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>ver desglose →</p>}
+      {onClick && <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>ver desglose →</p>}
     </button>
   );
 }
@@ -147,20 +147,20 @@ function MiniDonut({ data, income, sym }: { data: { name: string; amount: number
           <text x={CX} y={CY + 9} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--negative)" fontFamily="monospace">{sym}{fmt(totalExp)}</text>
         </svg>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 8 }}>Gastos por categoría</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 8 }}>Gastos por categoría</p>
           {/* Top 2 categorías siempre visibles */}
           {slices.slice(0, 2).map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
               <div style={{ width: 3, height: 12, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
-              <span style={{ fontSize: 11, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-              <span style={{ fontSize: 10, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: 13, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+              <span style={{ fontSize: 12, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums" }}>
                 {income > 0 ? `${Math.round(s.pct * 100)}%` : fmt(s.amount)}
               </span>
             </div>
           ))}
           {slices.length > 2 && (
             <button onClick={() => setExpanded(v => !v)}
-              style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)", background: "transparent", marginTop: 2 }}>
+              style={{ fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "transparent", marginTop: 2 }}>
               {expanded ? "Ver menos ↑" : `+${slices.length - 2} más ↓`}
             </button>
           )}
@@ -172,8 +172,8 @@ function MiniDonut({ data, income, sym }: { data: { name: string; amount: number
           {slices.slice(2).map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: i === 0 ? 10 : 0 }}>
               <div style={{ width: 3, height: 12, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
-              <span style={{ fontSize: 11, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-              <span style={{ fontSize: 10, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: 13, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+              <span style={{ fontSize: 12, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums" }}>
                 {income > 0 ? `${Math.round(s.pct * 100)}%` : fmt(s.amount)}
               </span>
             </div>
@@ -195,11 +195,9 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
   }
   return (
     <section className="flex flex-col gap-2 enter-up" data-delay="3">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          Metas de ahorro
-        </p>
-        <Link href="/metas" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todo →</Link>
+      <div className="section-head" style={{ marginBottom: 0 }}>
+        <p className="section-title">Metas de ahorro</p>
+        <Link href="/metas" className="section-link">Ver todo →</Link>
       </div>
       <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
         {visible.map((g, i) => {
@@ -216,15 +214,15 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>
                     {reached ? "✓ Lograda" : `${pct.toFixed(0)}%`}
                   </span>
                 </div>
-                <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
                   <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "width 400ms ease-out" }} />
                 </div>
-                <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 4 }}>
+                <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
                   {fmt(g.current_amount, g.currency_code)} de {fmt(g.target_amount, g.currency_code)}
                 </p>
               </div>
@@ -242,11 +240,9 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   if (relevant.length === 0) return null;
   return (
     <section className="enter-up" data-delay="4">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)" }}>
-          Límites por categoría
-        </p>
-        <Link href="/categorias" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todo →</Link>
+      <div className="section-head">
+        <p className="section-title">Límites por categoría</p>
+        <Link href="/categorias" className="section-link">Ver todo →</Link>
       </div>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
         {relevant.map((b) => {
@@ -262,7 +258,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             <button key={b.id} style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer" }}
               onClick={() => onSelect(b)}>
               <div style={{
-                width: 76, padding: "10px 8px 8px",
+                width: 86, padding: "10px 8px 8px",
                 borderRadius: 14, background: "var(--base)",
                 border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
@@ -270,23 +266,23 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
                 <div style={{ width: 32, height: 32, borderRadius: 9, background: (b.color ?? "#7B61FF") + "22", border: `1px solid ${b.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#7B61FF" }}>
                   <CategoryIcon icon={b.icon} name={b.name} color={b.color} size={15} />
                 </div>
-                <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
-                <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
+                <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
                   <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
                 </div>
-                <p style={{ fontSize: 10, fontWeight: 700, color: textColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: textColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
               </div>
             </button>
           );
         })}
         <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
           <div style={{
-            width: 76, padding: "10px 8px 8px", borderRadius: 14,
+            width: 86, padding: "10px 8px 8px", borderRadius: 14,
             background: "var(--raised)", border: "0.5px dashed var(--glass-border-hover)",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 92,
           }}>
-            <span style={{ fontSize: 18, color: "var(--ink-dim)" }}>+</span>
-            <p style={{ fontSize: 9, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Ver todos</p>
+            <span style={{ fontSize: 20, color: "var(--ink-dim)" }}>+</span>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Ver todos</p>
           </div>
         </Link>
       </div>
@@ -347,11 +343,9 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
       {/* Últimas transacciones — máx 5 con botón ver todas */}
       {recent.length > 0 && (
         <section className="flex flex-col gap-2 enter-up" data-delay="4">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Últimas transacciones
-            </p>
-            <Link href="/historial" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Ver todo →</Link>
+          <div className="section-head" style={{ marginBottom: 0 }}>
+            <p className="section-title">Últimas transacciones</p>
+            <Link href="/historial" className="section-link">Ver todo →</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
             {visibleTx.map((t, i) => {
@@ -371,14 +365,14 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
                     <CategoryIcon name={cat?.name} icon={cat?.icon} color={cat?.color} size={16} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {t.description}
                     </p>
-                    <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 2 }}>
+                    <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
                       {cat?.name ?? "Sin categoría"} · {t.date}
                     </p>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                     {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                   </span>
                 </button>

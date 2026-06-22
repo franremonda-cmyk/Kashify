@@ -88,7 +88,7 @@ export default function DesktopSidebar() {
       </nav>
 
       <div style={{ padding: "0 20px" }}>
-        <p style={{ fontSize: 9.5, color: "var(--ink-dim)", letterSpacing: "0.06em", fontWeight: 600 }}>
+        <p style={{ fontSize: 12.5, color: "var(--ink-dim)", letterSpacing: "0.06em", fontWeight: 600 }}>
           KASHIFY · BETA
         </p>
       </div>

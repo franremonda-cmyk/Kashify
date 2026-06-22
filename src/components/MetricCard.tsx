@@ -35,7 +35,7 @@ export default function MetricCard({ label, value, currencyCode, variant, delay 
       data-delay={delay}
       style={{ background: `linear-gradient(135deg, ${glow}, var(--glass-1))` }}
     >
-      <span className="text-[11px] font-medium" style={{ color: "var(--ink-dim)" }}>
+      <span className="text-[12px] font-medium" style={{ color: "var(--ink-dim)" }}>
         {label}
       </span>
       <span

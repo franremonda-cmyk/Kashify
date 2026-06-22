@@ -530,7 +530,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
                 <div key={msg.id}>
                   {showDate && (
                     <div style={{ display: "flex", justifyContent: "center", margin: "8px 0" }}>
-                      <span style={{ fontSize: 11, color: "var(--ink-muted)", background: "var(--raised)", padding: "3px 10px", borderRadius: 8, border: "0.5px solid var(--glass-border)" }}>
+                      <span style={{ fontSize: 13, color: "var(--ink-muted)", background: "var(--raised)", padding: "3px 10px", borderRadius: 8, border: "0.5px solid var(--glass-border)" }}>
                         {dateSeparator(msg.ts)}
                       </span>
                     </div>
@@ -622,7 +622,7 @@ function WaBubble({
       }}>
         {/* Notification label */}
         {msg.isNotification && (
-          <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", marginBottom: 3 }}>Neo</p>
+          <p style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", marginBottom: 3 }}>Neo</p>
         )}
 
         {/* Text */}
@@ -631,7 +631,7 @@ function WaBubble({
         </p>
 
         {/* Timestamp — inline at bottom right like WhatsApp */}
-        <p style={{ fontSize: 10.5, color: timeColor, textAlign: "right", marginTop: 2, lineHeight: 1 }}>
+        <p style={{ fontSize: 12.5, color: timeColor, textAlign: "right", marginTop: 2, lineHeight: 1 }}>
           {fmtTime(msg.ts)}
         </p>
 
@@ -656,16 +656,16 @@ function WaBubble({
               <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: 10, background: "var(--base)", border: "0.5px solid var(--glass-border)" }}>
                 <div>
                   <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{c.description}</p>
-                  <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{fmt(c.amount, c.currency_code)} · {fmtDate(c.date)}</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>{fmt(c.amount, c.currency_code)} · {fmtDate(c.date)}</p>
                 </div>
                 <button onClick={() => onDelete(msg.id, c.id, c.description)} disabled={busyPending === c.id}
-                  style={{ padding: "6px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)", flexShrink: 0 }}>
+                  style={{ padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)", flexShrink: 0 }}>
                   {busyPending === c.id ? "..." : "Eliminar"}
                 </button>
               </div>
             ))}
             <button onClick={() => onDismissAction(msg.id)}
-              style={{ padding: "7px", borderRadius: 10, fontSize: 11, color: "var(--ink-dim)", background: "transparent", border: "none" }}>
+              style={{ padding: "7px", borderRadius: 10, fontSize: 13, color: "var(--ink-dim)", background: "transparent", border: "none" }}>
               Cancelar
             </button>
           </div>
@@ -745,12 +745,12 @@ function InstallmentFormCard({ prefill, busy, onSubmit, onDismiss }: {
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Nombre (ej: iPhone)" style={inp} />
       <div style={{ display: "flex", gap: 8 }}>
-        <input value={n} onChange={e => setN(e.target.value)} placeholder="Cuotas" type="number" min="1" style={{ ...inp, flex: "0 0 80px" }} />
-        <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="Monto c/u" type="number" style={{ ...inp, flex: 1 }} />
+        <input value={n} onChange={e => setN(e.target.value)} placeholder="Cuotas" type="number" inputMode="numeric" min="1" style={{ ...inp, flex: "0 0 80px" }} />
+        <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="Monto c/u" type="number" inputMode="decimal" style={{ ...inp, flex: 1 }} />
       </div>
       <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} />
       {total && (
-        <p style={{ fontSize: 11, color: "var(--ink-muted)", textAlign: "right" }}>Total: ARS {total}</p>
+        <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "right" }}>Total: ARS {total}</p>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
         <button onClick={onDismiss} style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "transparent", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>

@@ -126,7 +126,8 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "var(--ink-dim)" }}>
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ícono..."
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ícono…"
+                type="search" aria-label="Buscar ícono" autoComplete="off"
                 style={{ width: "100%", paddingLeft: 32, paddingRight: 12, paddingTop: 9, paddingBottom: 9, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 12, fontSize: 13, color: "var(--ink)", outline: "none" }}
               />
             </div>
@@ -134,7 +135,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
 
           {/* Color palette */}
           <div style={{ padding: "10px 18px 0" }}>
-            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Color</p>
+            <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Color</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {CATEGORY_COLORS.map(c => (
                 <button key={c} onClick={() => setPickedColor(c)}
@@ -155,7 +156,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           )}
           {filteredGroups.map(g => (
             <div key={g.group} style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>{g.group}</p>
+              <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>{g.group}</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6 }}>
                 {g.icons.map(icon => {
                   const isSelected = pickedIcon === icon.id;

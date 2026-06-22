@@ -86,13 +86,13 @@ export default function LoginPage() {
             Continuar con Google
           </button>
 
-          <p className="text-[11px] text-center" style={{ color: "var(--ink-dim)" }}>
+          <p className="text-[12px] text-center" style={{ color: "var(--ink-dim)" }}>
             Al continuar, aceptás los términos de uso
           </p>
         </div>
 
         {/* Bottom accent */}
-        <p className="text-center text-[11px]" style={{ color: "var(--ink-dim)" }}>
+        <p className="text-center text-[12px]" style={{ color: "var(--ink-dim)" }}>
           Neo, tu asistente personal, te espera
         </p>
       </div>

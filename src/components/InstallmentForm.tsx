@@ -51,7 +51,7 @@ const section: React.CSSProperties = {
 };
 
 const label: React.CSSProperties = {
-  fontSize: 10,
+  fontSize: 12,
   fontWeight: 600,
   textTransform: "uppercase",
   letterSpacing: "0.07em",
@@ -143,7 +143,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
         <p style={label}>¿Qué compraste? <span style={required}>*</span></p>
         <input
           style={fieldBorder(form.name.trim() !== "")}
-          placeholder="Ej. TV Samsung, viaje a México..."
+          placeholder="Ej. TV Samsung, viaje a México…"
           value={form.name}
           onChange={setStr("name")}
         />
@@ -158,8 +158,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
           </select>
           <input
             style={fieldBorder(form.total_amount > 0)}
-            type="number"
-            inputMode="decimal"
+            type="number" inputMode="decimal"
             placeholder="0"
             value={form.total_amount || ""}
             onChange={(e) => setForm((f) => ({ ...f, total_amount: parseFloat(e.target.value) || 0 }))}
@@ -169,10 +168,10 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
 
       {/* ③ Tarjeta / banco */}
       <div style={section}>
-        <p style={label}>Tarjeta / banco <span style={{ ...required, color: "var(--ink-dim)", fontSize: 9 }}>(opcional)</span></p>
+        <p style={label}>Tarjeta / banco <span style={{ ...required, color: "var(--ink-dim)", fontSize: 12 }}>(opcional)</span></p>
         <input
           style={inp}
-          placeholder="Ej. Galicia Visa, Mercado Pago..."
+          placeholder="Ej. Galicia Visa, Mercado Pago…"
           value={form.card_name}
           onChange={setStr("card_name")}
         />
@@ -198,7 +197,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
           <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
             <input style={inp} type="number" inputMode="decimal" placeholder="TNA % (ej: 94.9)"
               value={form.tna ?? ""} onChange={setNum("tna")} />
-            <p style={{ fontSize: 10, color: "var(--ink-dim)", textAlign: "center" }}>— o si sabés el monto de cuota —</p>
+            <p style={{ fontSize: 12, color: "var(--ink-dim)", textAlign: "center" }}>— o si sabés el monto de cuota —</p>
             <input style={inp} type="number" inputMode="decimal" placeholder="Monto de cuota conocido"
               value={form.known_installment ?? ""} onChange={setNum("known_installment")} />
           </div>
@@ -224,7 +223,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
       )}
 
       {attempted && !isValid && (
-        <p style={{ fontSize: 11, color: "var(--negative)", textAlign: "center" }}>
+        <p style={{ fontSize: 13, color: "var(--negative)", textAlign: "center" }}>
           Completá los campos obligatorios (marcados con *)
         </p>
       )}
@@ -244,7 +243,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
 function Row({ label: l, value, bold, color }: { label: string; value: string; bold?: boolean; color?: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>{l}</span>
+      <span style={{ fontSize: 13, color: "var(--ink-muted)" }}>{l}</span>
       <span style={{ fontSize: 13, fontWeight: bold ? 700 : 400, color: color ?? "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{value}</span>
     </div>
   );

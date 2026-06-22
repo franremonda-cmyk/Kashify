@@ -73,8 +73,8 @@ export default function MetasPage() {
         <div className="flex items-center gap-3">
           <BackButton />
           <div>
-            <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>Metas de ahorro</h1>
-            <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Objetivos y tu progreso hacia ellos</p>
+            <h1 className="page-title">Metas de ahorro</h1>
+            <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>Objetivos y tu progreso hacia ellos</p>
           </div>
         </div>
         <button
@@ -115,12 +115,12 @@ export default function MetasPage() {
                     <div className="flex items-center gap-2">
                       <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{g.name}</p>
                       {reached && (
-                        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 999, background: "rgba(52,199,89,0.12)", color: "var(--positive)" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 7px", borderRadius: 999, background: "rgba(52,199,89,0.12)", color: "var(--positive)" }}>
                           ¡LOGRADA!
                         </span>
                       )}
                     </div>
-                    <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>
+                    <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
                       {fmt(g.current_amount, g.currency_code)} de {fmt(g.target_amount, g.currency_code)}
                       {g.target_date && ` · para ${new Date(g.target_date).toLocaleDateString("es-AR", { month: "short", year: "numeric" })}`}
                     </p>
@@ -128,7 +128,7 @@ export default function MetasPage() {
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button onClick={() => setEditingGoal(g)}
                       aria-label="Editar meta"
-                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-dim)", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-dim)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       ✏️
                     </button>
                     <button onClick={() => remove(g.id)}
@@ -144,8 +144,8 @@ export default function MetasPage() {
                     <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "width 300ms ease-out" }} />
                   </div>
                   <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: reached ? "var(--positive)" : g.color }}>{pct.toFixed(0)}%</span>
-                    <span style={{ fontSize: 11, color: "var(--ink-dim)" }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : g.color }}>{pct.toFixed(0)}%</span>
+                    <span style={{ fontSize: 13, color: "var(--ink-dim)" }}>
                       {reached ? "Meta alcanzada" : `Faltan ${fmt(remaining, g.currency_code)}`}
                     </span>
                   </div>
@@ -155,8 +155,7 @@ export default function MetasPage() {
                   <div className="flex gap-2">
                     <input
                       style={{ ...inp, flex: 1 }}
-                      type="number"
-                      inputMode="decimal"
+                      type="number" inputMode="decimal"
                       placeholder="Monto"
                       value={addAmount}
                       autoFocus
@@ -293,7 +292,7 @@ function GoalModal({
                 <CategoryIcon icon={icon} color={color} size={28} style={iconStyle} />
               </button>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6 }}>Toca para cambiar el ícono</p>
+                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6 }}>Toca para cambiar el ícono</p>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {CATEGORY_COLORS.map((c) => (
                     <button key={c} onClick={() => setColor(c)}
@@ -317,7 +316,7 @@ function GoalModal({
             )}
 
             <div>
-              <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6 }}>Fecha objetivo (opcional)</p>
+              <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6 }}>Fecha objetivo (opcional)</p>
               <input style={inp} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
 

@@ -62,10 +62,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
       /* NO overflow:hidden — lets filter:drop-shadow escape */
     }}>
       <div style={{ padding: "18px 20px 0" }}>
-        <p style={{
-          fontSize: 10, fontWeight: 600, textTransform: "uppercase",
-          letterSpacing: "0.12em", color: "var(--ink-muted)", marginBottom: 16,
-        }}>Balance</p>
+        <p className="section-title" style={{ letterSpacing: "0.12em", marginBottom: 16 }}>Balance</p>
 
         {balances.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--ink-muted)", paddingBottom: 18 }}>
@@ -81,9 +78,11 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
               const isActive = selected === b.currency_code;
               return (
                 <button key={b.currency_code} onClick={() => setSelected(b.currency_code)}
+                  aria-pressed={isActive}
+                  aria-label={`Mostrar balance en ${NAMES[b.currency_code] ?? b.currency_code}`}
                   style={{
-                    flex: "0 0 auto", minWidth: 60,
-                    padding: "9px 14px", borderRadius: 12,
+                    flex: "0 0 auto", minWidth: 60, minHeight: 44,
+                    padding: "10px 16px", borderRadius: 12,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: isActive ? "var(--accent)" : "var(--raised)",
                     border: isActive ? "none" : "0.5px solid var(--glass-border)",
@@ -93,7 +92,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
                     cursor: "pointer", outline: "none",
                   }}>
                   <span style={{
-                    fontSize: 11, fontWeight: 700, letterSpacing: "0.04em",
+                    fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
                     color: isActive ? "#FFFFFF" : "var(--ink-muted)",
                     transition: "color 180ms ease-out",
                   }}>{b.currency_code}</span>

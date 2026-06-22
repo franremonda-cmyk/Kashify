@@ -34,8 +34,8 @@
 
   /* Text — iOS label system (darkened for WCAG accessibility) */
   --ink:       #000000;
-  --ink-muted: rgba(60, 60, 67, 0.72);
-  --ink-dim:   rgba(60, 60, 67, 0.50);
+  --ink-muted: rgba(60, 60, 67, 0.78);
+  --ink-dim:   rgba(60, 60, 67, 0.62);
 
   /* Shadows — airy, soft */
   --shadow-sm: 0 1px 4px  rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -50,15 +50,15 @@
   --spec:    none;
   --spec-sm: none;
 
-  /* Type scale (Sprint 4 — bumped ~1px for legibility) */
-  --text-2xs:  10px;
-  --text-xs:   11px;
-  --text-sm:   13px;
-  --text-base: 15px;
-  --text-md:   16px;
-  --text-lg:   18px;
-  --text-xl:   1.35rem;
-  --text-2xl:  1.5rem;
+  /* Type scale (Sprint 5 — legibility floor: nothing below 12px) */
+  --text-2xs:  12px;   /* was 10 — micro-labels, captions */
+  --text-xs:   13px;   /* was 11 — section labels, meta */
+  --text-sm:   14px;   /* was 13 — secondary body */
+  --text-base: 16px;   /* was 15 — body (WCAG comfortable floor) */
+  --text-md:   17px;
+  --text-lg:   19px;
+  --text-xl:   1.4rem;
+  --text-2xl:  1.6rem;
 
   /* Spacing */
   --space-section: 22px;
@@ -143,6 +143,58 @@ body {
   font-family: var(--font-mono, 'DM Mono'), monospace;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
+}
+
+/* ─── Section titles ─────────────────────────
+   Single source of truth for the label that sits
+   above every section. Use .section-title for the
+   text and .section-head for the row that holds it
+   plus an optional "Ver todo →" link.
+   ─────────────────────────────────────────── */
+
+/* Top-level page heading — one size across every screen */
+.page-title {
+  font-family: var(--font-display, 'Space Grotesk'), sans-serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+}
+
+.section-title {
+  font-size: var(--text-xs);          /* 13px — readable, was 11 */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.section-link {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ─── Touch targets ──────────────────────────
+   Apply to text/icon controls that would otherwise
+   be smaller than the 44×44px comfortable minimum. */
+
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ─── Lift interaction ───────────────────── */

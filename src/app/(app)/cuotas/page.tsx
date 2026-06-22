@@ -79,8 +79,8 @@ export default function CuotasPage() {
         <div className="flex items-center gap-3">
           <BackButton />
           <div>
-            <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>Cuotas</h1>
-            <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Tus compras financiadas y su progreso</p>
+            <h1 className="page-title">Cuotas</h1>
+            <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>Tus compras financiadas y su progreso</p>
           </div>
         </div>
         <button
@@ -125,7 +125,7 @@ export default function CuotasPage() {
 
       {active.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Activas</p>
+          <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 4 }}>Activas</p>
           {active.map((plan) => (
             <PlanCard key={plan.id} plan={plan} onCancel={handleCancel} onPay={handlePay} onEdit={setEditingPlan} />
           ))}
@@ -134,7 +134,7 @@ export default function CuotasPage() {
 
       {paid.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-dim)", paddingLeft: 4 }}>Saldadas</p>
+          <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 4 }}>Saldadas</p>
           {paid.map((plan) => (
             <PlanCard key={plan.id} plan={plan} onCancel={handleCancel} onPay={handlePay} onEdit={setEditingPlan} />
           ))}
@@ -170,7 +170,7 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
       <div className="flex items-start justify-between gap-3">
         <div style={{ minWidth: 0 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{plan.name}</p>
-          <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>
+          <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
             {plan.card_name ? `${plan.card_name} · ` : ""}
             {plan.interest_type === "french" ? `TNA ${plan.tna}%` : "Sin interés"}
           </p>
@@ -179,7 +179,7 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-mono, monospace)" }}>
             {plan.currency_code} {Number(plan.installment_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
           </p>
-          <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>
+          <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
             cuota {Math.min(paidCount + 1, plan.n_installments)}/{plan.n_installments}
           </p>
         </div>
@@ -190,7 +190,7 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
           <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: plan.status === "paid" ? "var(--positive)" : "var(--accent)", transition: "width 300ms ease-out" }} />
         </div>
         {isActive && nextDue && (
-          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 6 }}>
+          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6 }}>
             Próximo vencimiento: {new Date(nextDue.due_date).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
           </p>
         )}

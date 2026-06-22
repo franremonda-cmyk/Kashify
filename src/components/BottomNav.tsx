@@ -380,13 +380,14 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
             <input
               style={inp}
               placeholder={form.type === "expense" ? "¿En qué gastaste?" : "¿Qué te ingresó?"}
+              aria-label={form.type === "expense" ? "Descripción del gasto" : "Descripción del ingreso"}
               value={form.description}
               autoFocus
               onChange={(e) => handleDescriptionChange(e.target.value)}
             />
             {/* Neo auto-eligió */}
             {suggestedCat && form.category_id === suggestion && (
-              <div className="flex items-center gap-1.5 mt-1.5 px-1" style={{ fontSize: 11 }}>
+              <div className="flex items-center gap-1.5 mt-1.5 px-1" style={{ fontSize: 13 }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "var(--accent)", flexShrink: 0 }}>
                   <circle cx="12" cy="12" r="9"/><path d="M9 8v8M15 8v8"/>
                 </svg>
@@ -402,7 +403,8 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
             <input
               style={{ ...inp, width: "60%" }}
               placeholder="0.00"
-              type="number"
+              aria-label="Monto"
+              type="number" inputMode="decimal"
               step="0.01"
               min="0"
               value={form.amount}
@@ -410,6 +412,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
             />
             <select
               style={{ ...inp, width: "40%" }}
+              aria-label="Moneda"
               value={form.currency_code}
               onChange={(e) => setForm((f) => ({ ...f, currency_code: e.target.value }))}
             >
@@ -633,6 +636,7 @@ function NavItem({ href, label, Icon, active, badge = 0 }: {
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       style={{
         flex: 1,
         display: "flex",
@@ -651,14 +655,14 @@ function NavItem({ href, label, Icon, active, badge = 0 }: {
         {badge > 0 && (
           <span style={{
             position: "absolute",
-            top: -3,
-            right: -4,
-            minWidth: 15,
-            height: 15,
+            top: -4,
+            right: -5,
+            minWidth: 17,
+            height: 17,
             borderRadius: 999,
             background: "var(--negative)",
             border: "1.5px solid var(--base)",
-            fontSize: 8,
+            fontSize: 10,
             fontWeight: 700,
             color: "white",
             display: "flex",
@@ -670,7 +674,7 @@ function NavItem({ href, label, Icon, active, badge = 0 }: {
           </span>
         )}
       </div>
-      <span style={{ fontSize: 9.5, fontWeight: 500, letterSpacing: "0.01em" }}>{label}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 500, letterSpacing: "0.01em" }}>{label}</span>
     </Link>
   );
 }
@@ -713,7 +717,7 @@ function NeoIcon({ active }: { active: boolean }) {
       }}
     >
       <span style={{
-        fontSize: 11,
+        fontSize: 13,
         fontWeight: 800,
         color: active ? "#FFFFFF" : "var(--ink-muted)",
         lineHeight: 1,

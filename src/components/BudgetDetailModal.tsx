@@ -121,7 +121,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
               </div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>{budget.name}</p>
-                <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 1 }}>Límite del mes</p>
+                <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 1 }}>Límite del mes</p>
               </div>
             </div>
             <button onClick={onClose} aria-label="Cerrar"
@@ -136,7 +136,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
               <p style={{ fontSize: 22, fontWeight: 800, color: textColor, fontVariantNumeric: "tabular-nums" }}>
                 {Math.round(pct)}%
               </p>
-              <p style={{ fontSize: 11, color: "var(--ink-dim)" }}>
+              <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>
                 {fmt(budget.spent ?? 0, budget.currency_code)} / {fmt(budget.monthly_limit, budget.currency_code)}
               </p>
             </div>
@@ -144,11 +144,11 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
               <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
             </div>
             {budget.monthly_limit > (budget.spent ?? 0) ? (
-              <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 6 }}>
+              <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6 }}>
                 Quedan {fmt(budget.monthly_limit - (budget.spent ?? 0), budget.currency_code)} disponibles
               </p>
             ) : (
-              <p style={{ fontSize: 10, color: "var(--negative)", marginTop: 6, fontWeight: 600 }}>
+              <p style={{ fontSize: 12, color: "var(--negative)", marginTop: 6, fontWeight: 600 }}>
                 Límite superado por {fmt((budget.spent ?? 0) - budget.monthly_limit, budget.currency_code)}
               </p>
             )}
@@ -163,12 +163,12 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
           ) : (
             <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)", marginBottom: 14, display: "flex", flexDirection: "column", gap: 10 }}>
               <div>
-                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>Límite mensual ({budget.currency_code})</p>
+                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>Límite mensual ({budget.currency_code})</p>
                 <input type="number" inputMode="decimal" value={limitVal} onChange={e => setLimitVal(e.target.value)} placeholder="Monto"
                   style={{ width: "100%", boxSizing: "border-box", background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: 15, outline: "none" }} />
               </div>
               <div>
-                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
                 <div style={{ display: "flex", gap: 6 }}>
                   {(["always", "specific_months"] as const).map(pt => (
                     <button key={pt} onClick={() => setPeriod(pt)}
@@ -203,7 +203,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
             </div>
           )}
 
-          <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>
             Gastos este mes
           </p>
         </div>
@@ -220,7 +220,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
                 <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</p>
-                    <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 2 }}>
+                    <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 2 }}>
                       {new Date(tx.date).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
                     </p>
                   </div>

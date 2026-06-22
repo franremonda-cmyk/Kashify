@@ -125,7 +125,7 @@ export default function OnboardingPage() {
           />
 
           <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
               {CURRENCIES.map((c) => (
                 <button key={c} onClick={() => setCurrency(c)}
@@ -182,7 +182,7 @@ export default function OnboardingPage() {
           <p style={{ fontSize: 12, color: "var(--accent)", fontFamily: "var(--font-mono, monospace)" }}>
             "Almuerzo 1500"
           </p>
-          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 4 }}>
+          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
             Así de fácil — Neo lo categoriza y registra solo.
           </p>
         </div>
@@ -303,7 +303,7 @@ export default function OnboardingPage() {
             background: "var(--base)", border: "0.5px solid var(--glass-border)",
             boxShadow: "var(--shadow-sm)", textAlign: "left",
           }}>
-            <p style={{ fontSize: 10, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Empezá con</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Empezá con</p>
             {["Almuerzo 850", "Netflix 2990 ocio", "Sueldo 500000 ingreso"].map((msg) => (
               <div key={msg} style={{
                 fontSize: 12, padding: "7px 12px", borderRadius: 10, marginBottom: 5,

@@ -261,10 +261,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           {initials}
         </div>
         <div>
-          <h1 className="display font-semibold" style={{ fontSize: "1.2rem", color: "var(--ink)" }}>
+          <h1 className="page-title">
             {displayName || "Sin nombre"}
           </h1>
-          <p style={{ fontSize: 12, marginTop: 2, color: "var(--ink-dim)" }}>{email}</p>
+          <p style={{ fontSize: 13, marginTop: 2, color: "var(--ink-dim)" }}>{email}</p>
         </div>
       </div>
 
@@ -272,9 +272,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       <Accordion label="Datos personales">
         {/* Nombre */}
         <div>
-          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 8 }}>Nombre y apellido</p>
+          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>Nombre y apellido</p>
           <div className="flex gap-2">
             <input style={{ ...inp, flex: 1 }} placeholder="Tu nombre"
+              aria-label="Nombre y apellido" autoComplete="name"
               value={displayName} onChange={(e) => setDisplayName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && saveName()} />
             <SaveButton onClick={saveName} saving={savingName} label={savedName ? "✓" : "Guardar"} />
@@ -285,7 +286,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
         {/* Moneda */}
         <div>
-          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
+          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
           <div className="flex gap-2">
             <select style={{ ...inp, flex: 1 }} value={primaryCurrency} onChange={(e) => setPrimaryCurrency(e.target.value)}>
               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -298,21 +299,22 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
         {/* WhatsApp */}
         <div>
-          <p style={{ fontSize: 10, color: "var(--ink-dim)", marginBottom: 8 }}>WhatsApp vinculado</p>
+          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>WhatsApp vinculado</p>
           {phones.length > 0 ? phones.map((p) => (
             <div key={p.id} className="flex items-center justify-between" style={{ marginBottom: 8 }}>
               <div className="flex items-center gap-2">
                 <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: p.verified ? "var(--positive)" : "var(--warning)" }} />
                 <span style={{ fontSize: 13, color: "var(--ink)" }}>{p.phone_number}</span>
               </div>
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, fontWeight: 600, background: p.verified ? "rgba(52,199,89,0.10)" : "rgba(255,149,0,0.10)", color: p.verified ? "var(--positive)" : "var(--warning)", border: `0.5px solid ${p.verified ? "rgba(52,199,89,0.25)" : "rgba(255,149,0,0.25)"}` }}>
+              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, fontWeight: 600, background: p.verified ? "rgba(52,199,89,0.10)" : "rgba(255,149,0,0.10)", color: p.verified ? "var(--positive)" : "var(--warning)", border: `0.5px solid ${p.verified ? "rgba(52,199,89,0.25)" : "rgba(255,149,0,0.25)"}` }}>
                 {p.verified ? "verificado" : "pendiente"}
               </span>
             </div>
           )) : <p style={{ fontSize: 13, color: "var(--ink-dim)", marginBottom: 8 }}>Ningún número vinculado</p>}
           <div className="flex gap-2">
             <input style={{ ...inp, flex: 1 }} placeholder="+54 9 11 0000-0000" value={newPhone}
-              onChange={(e) => setNewPhone(e.target.value)} type="tel" />
+              aria-label="Número de WhatsApp" type="tel" inputMode="tel" autoComplete="tel"
+              onChange={(e) => setNewPhone(e.target.value)} />
             <button onClick={addPhone}
               style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", flexShrink: 0 }}>
               Agregar
@@ -325,19 +327,19 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         {/* Cuenta (email + badge) */}
         <div className="flex items-center justify-between">
           <div>
-            <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>Cuenta</p>
+            <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Cuenta</p>
             <p style={{ fontSize: 13, marginTop: 2, color: "var(--ink)" }}>{email}</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--positive)", boxShadow: "0 0 6px rgba(52,199,89,0.35)" }} />
-            <span style={{ fontSize: 10, color: "var(--positive)", fontWeight: 600 }}>activa</span>
+            <span style={{ fontSize: 12, color: "var(--positive)", fontWeight: 600 }}>activa</span>
           </div>
         </div>
       </Accordion>
 
       {/* ② Apariencia */}
       <Accordion label="Apariencia">
-        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)" }}>Tema</p>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Tema</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {THEMES.map((t) => {
             const active = theme === t.id;
@@ -347,15 +349,15 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                 <div style={{ width: 12, height: 12, borderRadius: "50%", background: t.preview, flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{t.label}</p>
-                  <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{t.desc}</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>{t.desc}</p>
                 </div>
-                {active && <div style={{ marginLeft: "auto", fontSize: 11, color: "var(--accent)" }}>✓</div>}
+                {active && <div style={{ marginLeft: "auto", fontSize: 13, color: "var(--accent)" }}>✓</div>}
               </button>
             );
           })}
         </div>
         <Divider />
-        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)" }}>Estilo de íconos</p>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Estilo de íconos</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {ICON_STYLES.map((s) => {
             const active = iconStyle === s.id;
@@ -364,9 +366,9 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                 style={{ padding: "10px 12px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{s.label}</p>
-                  <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
                 </div>
-                {active && <div style={{ fontSize: 11, color: "var(--accent)", flexShrink: 0 }}>✓</div>}
+                {active && <div style={{ fontSize: 13, color: "var(--accent)", flexShrink: 0 }}>✓</div>}
               </button>
             );
           })}
@@ -448,7 +450,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{b.categories?.name ?? "—"}</p>
-                            <p style={{ fontSize: 10, color: "var(--ink-dim)" }}>{b.currency_code} {b.monthly_limit.toLocaleString("es-AR")}</p>
+                            <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>{b.currency_code} {b.monthly_limit.toLocaleString("es-AR")}</p>
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: 6 }}>
@@ -467,7 +469,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                               const selected = edit.applies_months.includes(month);
                               return (
                                 <button key={m} onClick={() => toggleMonth(b.id, month)}
-                                  style={{ padding: "6px 0", borderRadius: 8, fontSize: 11, fontWeight: 600, background: selected ? "var(--accent-soft)" : "var(--raised)", border: selected ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: selected ? "var(--accent)" : "var(--ink-dim)" }}>
+                                  style={{ padding: "6px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, background: selected ? "var(--accent-soft)" : "var(--raised)", border: selected ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: selected ? "var(--accent)" : "var(--ink-dim)" }}>
                                   {m}
                                 </button>
                               );
@@ -509,7 +511,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
                       <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>{reached ? "✓ Lograda" : `${pct.toFixed(0)}%`}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>{reached ? "✓ Lograda" : `${pct.toFixed(0)}%`}</span>
                     </div>
                     <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--base)", overflow: "hidden" }}>
                       <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : (g.color ?? "var(--accent)") }} />
@@ -540,7 +542,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                   style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>{plan.name}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>cuota {Math.min(paidCount + 1, plan.n_installments)}/{plan.n_installments}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>cuota {Math.min(paidCount + 1, plan.n_installments)}/{plan.n_installments}</span>
                   </div>
                   <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--base)", overflow: "hidden" }}>
                     <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "var(--accent)" }} />

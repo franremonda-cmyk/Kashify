@@ -104,7 +104,7 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div>
               <p style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>{title}</p>
-              <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 1 }}>{monthLabel}</p>
+              <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 1 }}>{monthLabel}</p>
             </div>
             <button onClick={onClose} aria-label="Cerrar"
               style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -114,7 +114,7 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
 
           {/* Total */}
           <div style={{ padding: "12px 14px", borderRadius: 14, background: bg, border, marginBottom: 14 }}>
-            <p style={{ fontSize: 11, color, fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <p style={{ fontSize: 13, color, fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Total {title.toLowerCase()}
             </p>
             <p style={{ fontSize: 24, fontWeight: 800, color, fontVariantNumeric: "tabular-nums" }}>
@@ -122,7 +122,7 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
             </p>
           </div>
 
-          <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>
             {txs.length} transacciones
           </p>
         </div>
@@ -147,7 +147,7 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</p>
-                      <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>
+                      <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
                         {cat?.name ? `${cat.name} · ` : ""}{new Date(tx.date).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
                       </p>
                     </div>

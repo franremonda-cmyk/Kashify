@@ -79,7 +79,7 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
     <div className="glass" style={{ borderRadius: 16, padding: "16px 16px 12px" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)" }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>
           Evolución mensual
         </p>
         {/* Period selector */}
@@ -91,7 +91,7 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
               style={{
                 padding: "3px 8px",
                 borderRadius: 6,
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: 600,
                 background: period === p ? "rgba(0,230,118,0.18)" : "transparent",
                 color: period === p ? "var(--accent)" : "var(--ink-dim)",
@@ -108,11 +108,11 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
       <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--positive)" }} />
-          <span style={{ fontSize: 10, color: "var(--ink-dim)" }}>Ingresos</span>
+          <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>Ingresos</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--negative)" }} />
-          <span style={{ fontSize: 10, color: "var(--ink-dim)" }}>Gastos</span>
+          <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>Gastos</span>
         </div>
       </div>
 

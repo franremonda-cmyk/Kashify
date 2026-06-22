@@ -110,7 +110,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
                 {icon ? <CategoryIcon icon={icon} color={color} size={28} style={currentStyle} /> : <span style={{ fontSize: 22 }}>＋</span>}
               </button>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 4 }}>
+                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 4 }}>
                   {icon ? "Toca para cambiar el ícono" : "Toca para elegir un ícono"}
                 </p>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

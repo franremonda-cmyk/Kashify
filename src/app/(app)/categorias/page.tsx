@@ -127,8 +127,8 @@ export default function CategoriasPage() {
         <div className="flex items-center gap-3">
           <BackButton />
           <div>
-            <h1 className="display font-semibold" style={{ fontSize: "1.25rem", color: "var(--ink)" }}>Categorías</h1>
-            <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Organizá y controlá tus gastos</p>
+            <h1 className="page-title">Categorías</h1>
+            <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>Organizá y controlá tus gastos</p>
           </div>
         </div>
         <button onClick={() => setEditingCat("new")}
@@ -156,22 +156,22 @@ export default function CategoriasPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{cat.name}</span>
                       {cat.is_default && (
-                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 999, background: "var(--raised)", color: "var(--ink-dim)", border: "0.5px solid var(--glass-border)" }}>default</span>
+                        <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 999, background: "var(--raised)", color: "var(--ink-dim)", border: "0.5px solid var(--glass-border)" }}>default</span>
                       )}
                     </div>
                     {budget && (
-                      <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>
+                      <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
                         Límite: {budget.currency_code} {Number(budget.monthly_limit).toLocaleString("es-AR")}
                       </p>
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button onClick={() => setEditBudget(isEditing ? null : { id: cat.id, limit: String(budget?.monthly_limit ?? ""), currency: budget?.currency_code ?? "ARS", period: budget?.period_type ?? "always", months: budget?.applies_months ?? [] })}
-                      style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: budget ? "var(--accent)" : "var(--ink-muted)", fontWeight: 600 }}>
+                      style={{ fontSize: 13, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: budget ? "var(--accent)" : "var(--ink-muted)", fontWeight: 600 }}>
                       {budget ? "Límite" : "+ Límite"}
                     </button>
                     <button onClick={() => setEditingCat(cat)}
-                      style={{ fontSize: 11, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 600 }}>
+                      style={{ fontSize: 13, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 600 }}>
                       Editar
                     </button>
                   </div>
@@ -191,7 +191,7 @@ export default function CategoriasPage() {
                       />
                     </div>
                     <div>
-                      <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                      <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
                       <PeriodToggle value={editBudget.period} onChange={(p) => setEditBudget(b => b ? { ...b, period: p } : b)} />
                     </div>
                     {editBudget.period === "specific_months" && (
@@ -214,7 +214,7 @@ export default function CategoriasPage() {
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "transparent" }}>
             <div>
               <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Agregar límite mensual</p>
-              <p style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 2 }}>Asignale un techo de gasto a una categoría</p>
+              <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>Asignale un techo de gasto a una categoría</p>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
               style={{ color: "var(--ink-dim)", transition: "transform 200ms ease-out", transform: showNewBudget ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
@@ -245,7 +245,7 @@ export default function CategoriasPage() {
                 />
               </div>
               <div>
-                <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
                 <PeriodToggle value={newBudgetPeriod} onChange={setNewBudgetPeriod} />
               </div>
               {newBudgetPeriod === "specific_months" && (

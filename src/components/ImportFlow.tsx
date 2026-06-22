@@ -86,7 +86,7 @@ function UploadStep({ onParsed, onCancel }: {
               {dragging ? "Soltá el archivo" : "Arrastrá tu archivo aquí"}
             </p>
             <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>o tocá para elegir</p>
-            <p style={{ fontSize: 10, color: "var(--ink-dim)", marginTop: 10, letterSpacing: "0.04em" }}>CSV · XLSX · XLS</p>
+            <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 10, letterSpacing: "0.04em" }}>CSV · XLSX · XLS</p>
           </>
         )}
       </div>
@@ -99,7 +99,7 @@ function UploadStep({ onParsed, onCancel }: {
         </div>
       )}
 
-      <p style={{ fontSize: 11, color: "var(--ink-dim)", textAlign: "center" }}>
+      <p style={{ fontSize: 13, color: "var(--ink-dim)", textAlign: "center" }}>
         El archivo se procesa en tu dispositivo — nunca se sube al servidor.
       </p>
 
@@ -149,10 +149,10 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
         {KASHIFY_FIELDS.map(f => (
           <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 90, flexShrink: 0 }}>
-              <p style={{ fontSize: 11, fontWeight: 600, color: f.required ? "var(--ink)" : "var(--ink-muted)" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: f.required ? "var(--ink)" : "var(--ink-muted)" }}>
                 {f.label}{f.required ? " *" : ""}
               </p>
-              <p style={{ fontSize: 9, color: "var(--ink-dim)", marginTop: 1 }}>{f.desc}</p>
+              <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>{f.desc}</p>
             </div>
             <select
               style={selStyle}
@@ -169,16 +169,16 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
       {/* Live preview */}
       {preview.length > 0 && mapping.date && mapping.description && (
         <div style={{ borderRadius: 10, background: "var(--raised)", border: "0.5px solid var(--glass-border)", overflow: "hidden" }}>
-          <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", padding: "8px 12px 4px" }}>
+          <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", padding: "8px 12px 4px" }}>
             Vista previa ({preview.length} filas)
           </p>
           {preview.map((row, i) => (
             <div key={i} style={{ padding: "8px 12px", borderTop: i > 0 ? "0.5px solid var(--glass-border-dim)" : "none", display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {mapping.date && <span style={{ fontSize: 10, color: "var(--ink-muted)", background: "var(--base)", padding: "2px 6px", borderRadius: 5 }}>{row[mapping.date]}</span>}
-              {mapping.description && <span style={{ fontSize: 10, color: "var(--ink)", flex: 1, minWidth: 80 }}>{row[mapping.description]}</span>}
-              {mapping.amount && <span style={{ fontSize: 10, color: "var(--positive)", fontWeight: 600 }}>{row[mapping.amount]}</span>}
-              {mapping.debit && <span style={{ fontSize: 10, color: "var(--negative)", fontWeight: 600 }}>D:{row[mapping.debit]}</span>}
-              {mapping.credit && <span style={{ fontSize: 10, color: "var(--positive)", fontWeight: 600 }}>C:{row[mapping.credit]}</span>}
+              {mapping.date && <span style={{ fontSize: 12, color: "var(--ink-muted)", background: "var(--base)", padding: "2px 6px", borderRadius: 5 }}>{row[mapping.date]}</span>}
+              {mapping.description && <span style={{ fontSize: 12, color: "var(--ink)", flex: 1, minWidth: 80 }}>{row[mapping.description]}</span>}
+              {mapping.amount && <span style={{ fontSize: 12, color: "var(--positive)", fontWeight: 600 }}>{row[mapping.amount]}</span>}
+              {mapping.debit && <span style={{ fontSize: 12, color: "var(--negative)", fontWeight: 600 }}>D:{row[mapping.debit]}</span>}
+              {mapping.credit && <span style={{ fontSize: 12, color: "var(--positive)", fontWeight: 600 }}>C:{row[mapping.credit]}</span>}
             </div>
           ))}
         </div>
@@ -232,7 +232,7 @@ function PreviewStep({ transactions, onChange, onImport, onBack }: {
       )}
 
       {/* Select all */}
-      <button onClick={toggleAll} style={{ fontSize: 11, color: "var(--accent)", textAlign: "left", fontWeight: 600 }}>
+      <button onClick={toggleAll} style={{ fontSize: 13, color: "var(--accent)", textAlign: "left", fontWeight: 600 }}>
         {transactions.every(t => t._selected) ? "Deseleccionar todo" : "Seleccionar todo"}
       </button>
 
@@ -269,7 +269,7 @@ function PreviewStep({ transactions, onChange, onImport, onBack }: {
                     <select
                       value={t.type}
                       onChange={e => updateField(i, "type", e.target.value)}
-                      style={{ fontSize: 10, background: t.type === "income" ? "rgba(52,199,89,0.10)" : "rgba(255,59,48,0.07)", color: t.type === "income" ? "var(--positive)" : "var(--negative)", border: "none", borderRadius: 6, padding: "2px 6px", flexShrink: 0 }}>
+                      style={{ fontSize: 12, background: t.type === "income" ? "rgba(52,199,89,0.10)" : "rgba(255,59,48,0.07)", color: t.type === "income" ? "var(--positive)" : "var(--negative)", border: "none", borderRadius: 6, padding: "2px 6px", flexShrink: 0 }}>
                       <option value="expense">Gasto</option>
                       <option value="income">Ingreso</option>
                     </select>
@@ -280,32 +280,32 @@ function PreviewStep({ transactions, onChange, onImport, onBack }: {
                     <select
                       value={t.currency_code}
                       onChange={e => updateField(i, "currency_code", e.target.value)}
-                      style={{ fontSize: 11, background: "transparent", border: "none", color: "var(--ink-muted)", outline: "none" }}>
+                      style={{ fontSize: 13, background: "transparent", border: "none", color: "var(--ink-muted)", outline: "none" }}>
                       {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                     <input
                       value={t.amount}
                       onChange={e => updateField(i, "amount", e.target.value)}
-                      type="number"
-                      style={{ width: 80, fontSize: 11, fontWeight: 600, color: t.type === "income" ? "var(--positive)" : "var(--negative)", background: "transparent", border: "none", outline: "none" }}
+                      type="number" inputMode="decimal"
+                      style={{ width: 80, fontSize: 13, fontWeight: 600, color: t.type === "income" ? "var(--positive)" : "var(--negative)", background: "transparent", border: "none", outline: "none" }}
                     />
                     <input
                       value={t.date}
                       onChange={e => updateField(i, "date", e.target.value)}
                       type="date"
-                      style={{ fontSize: 10, color: "var(--ink-muted)", background: "transparent", border: "none", outline: "none" }}
+                      style={{ fontSize: 12, color: "var(--ink-muted)", background: "transparent", border: "none", outline: "none" }}
                     />
                     <input
                       value={t.category_name}
                       onChange={e => updateField(i, "category_name", e.target.value)}
                       placeholder="Categoría"
-                      style={{ flex: 1, minWidth: 60, fontSize: 10, color: "var(--ink-muted)", background: "transparent", border: "none", outline: "none" }}
+                      style={{ flex: 1, minWidth: 60, fontSize: 12, color: "var(--ink-muted)", background: "transparent", border: "none", outline: "none" }}
                     />
                   </div>
 
                   {/* Errors */}
                   {hasError && (
-                    <p style={{ fontSize: 10, color: "var(--warning)" }}>{t._errors.join(" · ")}</p>
+                    <p style={{ fontSize: 12, color: "var(--warning)" }}>{t._errors.join(" · ")}</p>
                   )}
                 </div>
               </div>

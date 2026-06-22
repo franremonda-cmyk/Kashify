@@ -126,13 +126,15 @@ export default async function DashboardPage() {
           <p className="text-xs font-medium" style={{ color: "var(--ink-muted)" }}>
             {now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
-          <h1 className="display font-semibold" style={{ fontSize: "1.35rem", color: "var(--ink)" }}>
+          <h1 className="page-title">
             Hola{firstName ? `, ${firstName}` : ""}
           </h1>
         </div>
         <div
           className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
           style={{ background: "var(--accent)", color: "#FFFFFF" }}
+          role="img"
+          aria-label={firstName ? `Tu perfil, ${firstName}` : "Tu perfil"}
         >
           {(firstName?.[0] ?? "K").toUpperCase()}
         </div>

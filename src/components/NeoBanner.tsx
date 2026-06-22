@@ -61,7 +61,7 @@ export default function NeoBanner() {
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3 }}>
             Neo está activo
           </p>
-          <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 2 }}>
+          <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 2 }}>
             Enviame un mensaje para empezar
           </p>
         </Link>

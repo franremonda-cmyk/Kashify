@@ -157,11 +157,11 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                 </div>
 
                 <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
-                  <p style={{ fontSize: 11, color: "var(--ink-muted)", marginBottom: 2 }}>Monto</p>
+                  <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 2 }}>Monto</p>
                   <p style={{ fontSize: 24, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
                     {isIncome ? "+" : "−"}{tx.currency_code} {Number(tx.amount).toLocaleString("es-AR", { maximumFractionDigits: 2 })}
                   </p>
-                  {tx.date && <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 4 }}>{tx.date}</p>}
+                  {tx.date && <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 4 }}>{tx.date}</p>}
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 4 }}>
@@ -175,7 +175,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                     </div>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Editar categoría</p>
-                      <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 1 }}>{catData?.name ? `Modificar "${catData.name}"` : "Sin categoría"}</p>
+                      <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 1 }}>{catData?.name ? `Modificar "${catData.name}"` : "Sin categoría"}</p>
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", marginLeft: "auto", flexShrink: 0 }}>
                       <polyline points="9 18 15 12 9 6"/>
@@ -197,7 +197,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 4 }}>
                 <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Tipo</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Tipo</p>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {TX_TYPES.map(t => {
                       const on = txType === t.value;
@@ -211,24 +211,24 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Descripción</p>
-                  <input style={inpSm} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripción"/>
+                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Descripción</p>
+                  <input style={inpSm} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripción" aria-label="Descripción"/>
                 </div>
                 <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Monto</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Monto</p>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={currency} onChange={e => setCurrency(e.target.value)}>
+                    <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={currency} onChange={e => setCurrency(e.target.value)} aria-label="Moneda">
                       {CURRENCIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <input style={inpSm} type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0"/>
+                    <input style={inpSm} type="number" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" aria-label="Monto"/>
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Fecha</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Fecha</p>
                   <input style={inpSm} type="date" value={date} onChange={e => setDate(e.target.value)}/>
                 </div>
                 <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Categoría</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Categoría</p>
                   <select style={inpSm} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
                     <option value="">Sin categoría</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
