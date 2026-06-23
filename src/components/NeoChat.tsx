@@ -446,9 +446,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       ...containerStyle,
       zIndex: 20,
       display: "flex", flexDirection: "column",
-      // When active, the accent color fills the safe-area-inset-top region
-      // (the area above the header strip content but within the container).
-      background: isActive ? "var(--accent)" : "var(--base)",
+      background: "var(--void)",
     }}>
 
       {/* ── IDLE state — landing sin franja, avatar centrado moviéndose ── */}
@@ -457,27 +455,51 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           {/* Welcome body — scrollable, no top strip */}
           <div style={{
             flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch",
-            background: "var(--base)",
+            background: "var(--void)",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            gap: 14, padding: "calc(40px + env(safe-area-inset-top, 0px)) 20px 28px",
+            gap: 18, padding: "calc(40px + env(safe-area-inset-top, 0px)) 20px 28px",
           } as React.CSSProperties}>
-            <div className="neo-avatar-idle" style={{ width: 96, height: 96, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 40px var(--accent-glow)" }} />
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>Hola, soy Neo</p>
-              <p style={{ fontSize: 13.5, color: "var(--ink-muted)", marginTop: 4 }}>Tu asistente personal de finanzas</p>
+            {/* Living avatar — floats + breathes */}
+            <div className="float-bob" style={{ position: "relative" }}>
+              <div className="neo-avatar-idle breathe-glow" style={{
+                width: 100, height: 100, borderRadius: "50%",
+                background: "radial-gradient(circle at 35% 30%, #46E0AB 0%, #24C892 45%, #0E9E70 100%)",
+              }} />
+              {/* AI sparkle */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                style={{ position: "absolute", top: -2, right: -2 }}>
+                <path d="M12 2l1.6 4.8L18 8l-4.4 1.2L12 14l-1.6-4.8L6 8l4.4-1.2z" fill="var(--ink)" opacity="0.92"/>
+              </svg>
             </div>
+
+            <div style={{ textAlign: "center", maxWidth: 320 }}>
+              <p style={{ fontSize: 23, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>Hola, soy Neo</p>
+              <p style={{ fontSize: 14.5, color: "var(--ink-muted)", marginTop: 6, lineHeight: 1.5 }}>
+                Tu asistente de finanzas. Escribime como a un amigo —<br/>
+                <span style={{ color: "var(--ink)", fontWeight: 500 }}>“gasté 5 lucas en el súper”</span> y yo lo anoto.
+              </p>
+            </div>
+
             {!hasPhone && (
-              <a href="/perfil" style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", textDecoration: "none" }}>
+              <a href="/perfil" className="press" style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 18px", borderRadius: 999, fontSize: 13.5, fontWeight: 700, background: "var(--accent)", color: "#04130D", textDecoration: "none", boxShadow: "0 4px 18px var(--shadow-accent)" }}>
                 Conectar WhatsApp →
               </a>
             )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 420, marginTop: 4 }}>
-              {SUGGESTIONS.map(s => (
-                <button key={s} onClick={() => sendMessage(s)}
-                  style={{ padding: "12px 16px", borderRadius: 14, fontSize: 14, fontWeight: 500, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink)", textAlign: "left" }}>
-                  {s}
-                </button>
-              ))}
+
+            <div style={{ width: "100%", maxWidth: 420, marginTop: 2 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 10, textAlign: "center" }}>
+                Probá preguntándome
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {SUGGESTIONS.map(s => (
+                  <button key={s} onClick={() => sendMessage(s)} className="glass press"
+                    style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 16px", borderRadius: 16, fontSize: 14.5, fontWeight: 500, color: "var(--ink)", textAlign: "left", cursor: "pointer" }}>
+                    <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: "var(--accent)", boxShadow: "0 0 8px var(--accent-glow)", flexShrink: 0 }} />
+                    <span style={{ flex: 1 }}>{s}</span>
+                    <span aria-hidden style={{ color: "var(--ink-dim)", fontSize: 16 }}>→</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

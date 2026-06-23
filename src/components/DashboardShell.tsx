@@ -91,7 +91,7 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
   const full   = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <button onClick={onClick} style={{ flex: 1, padding: "16px 16px", borderRadius: 18, background: bg, border, boxShadow: "var(--shadow-sm)", textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
+    <button onClick={onClick} className="press" style={{ flex: 1, padding: "16px 16px", borderRadius: 18, background: bg, border, boxShadow: "var(--shadow-sm)", textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
         <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flexShrink: 0 }} />
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{label}</p>
@@ -255,7 +255,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             ? `hsl(${90 - (pct - 50) * 2.4}, 80%, 48%)`
             : `hsl(${16 - Math.max(0, pct - 80) * 0.4}, 88%, 52%)`;
           return (
-            <button key={b.id} style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+            <button key={b.id} className="press" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer" }}
               onClick={() => onSelect(b)}>
               <div style={{
                 width: 86, padding: "10px 8px 8px",
@@ -355,7 +355,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
               const catColor  = catColorOrFallback(cat?.color, cat?.name ?? "");
               return (
-                <button key={`${t.id}-${i}`} onClick={() => setSelectedTx(t)} style={{
+                <button key={`${t.id}-${i}`} onClick={() => setSelectedTx(t)} className="press" style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
                   borderBottom: i < visibleTx.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
                   width: "100%", textAlign: "left", background: "transparent",

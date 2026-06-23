@@ -15,48 +15,48 @@
 
   color-scheme: dark;
 
-  /* Backgrounds — obsidian depth */
-  --void:    #06090B;   /* deep obsidian app background */
-  --base:    #0C1113;   /* solid fallback surface */
-  --raised:  #11171A;   /* grouped inset bg */
+  /* Backgrounds — soft charcoal depth (not pure black) */
+  --void:    #0D1012;   /* refined charcoal app background */
+  --base:    #141A1C;   /* solid fallback surface */
+  --raised:  #1A2123;   /* grouped inset bg */
 
-  /* Glass surfaces — frosted translucent (light edge) */
-  --glass-1: rgba(255, 255, 255, 0.045);
-  --glass-2: rgba(255, 255, 255, 0.065);
-  --glass-3: rgba(255, 255, 255, 0.085);
+  /* Glass surfaces — clean frosted translucent */
+  --glass-1: rgba(255, 255, 255, 0.04);
+  --glass-2: rgba(255, 255, 255, 0.06);
+  --glass-3: rgba(255, 255, 255, 0.075);
 
-  /* Borders — luminous hairline */
-  --glass-border:       rgba(255, 255, 255, 0.10);
-  --glass-border-hover: rgba(255, 255, 255, 0.20);
-  --glass-border-dim:   rgba(255, 255, 255, 0.05);
+  /* Borders — soft hairline */
+  --glass-border:       rgba(255, 255, 255, 0.09);
+  --glass-border-hover: rgba(255, 255, 255, 0.17);
+  --glass-border-dim:   rgba(255, 255, 255, 0.045);
 
-  /* Accent — glowing emerald */
-  --accent:       #10D98A;
-  --accent-soft:  rgba(16, 217, 138, 0.12);
-  --accent-glow:  rgba(16, 217, 138, 0.30);
+  /* Accent — calm jade emerald (sophisticated, not neon) */
+  --accent:       #24C892;
+  --accent-soft:  rgba(36, 200, 146, 0.11);
+  --accent-glow:  rgba(36, 200, 146, 0.22);
 
   /* Semantic */
-  --positive:  #10D98A;
-  --negative:  #FF5C6C;
-  --warning:   #FFB23E;
+  --positive:  #24C892;
+  --negative:  #FF6470;
+  --warning:   #FFB445;
 
-  /* Text — cool near-white scale */
-  --ink:       #ECF2EF;
-  --ink-muted: rgba(236, 242, 239, 0.62);
-  --ink-dim:   rgba(236, 242, 239, 0.40);
+  /* Text — warm-neutral near-white scale */
+  --ink:       #EDF1EF;
+  --ink-muted: rgba(237, 241, 239, 0.60);
+  --ink-dim:   rgba(237, 241, 239, 0.38);
 
-  /* Shadows — deep, with emerald-free neutrality */
-  --shadow-sm: 0 1px 3px  rgba(0, 0, 0, 0.40);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.40);
-  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.65), 0 4px 16px rgba(0, 0, 0, 0.45);
+  /* Shadows — soft, deep, neutral */
+  --shadow-sm: 0 1px 3px  rgba(0, 0, 0, 0.30);
+  --shadow-md: 0 4px 18px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.32);
+  --shadow-xl: 0 22px 58px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.38);
 
   /* Accent-tinted shadow / glow for interactive elements */
-  --shadow-accent: rgba(16, 217, 138, 0.40);
+  --shadow-accent: rgba(36, 200, 146, 0.30);
 
-  /* Top-edge specular highlight for glass */
-  --spec:    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  --spec-sm: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /* Top-edge specular highlight for glass (subtle) */
+  --spec:    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  --spec-sm: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   /* Type scale (Sprint 5 — legibility floor: nothing below 12px) */
   --text-2xs:  12px;   /* was 10 — micro-labels, captions */
@@ -96,13 +96,8 @@ img, svg, video, canvas { max-width: 100%; }
 body {
   background-color: var(--void);
   background-image:
-    radial-gradient(ellipse 90% 50% at 50% -5%,
-      rgba(16, 217, 138, 0.10) 0%, transparent 58%),
-    radial-gradient(ellipse 70% 40% at 90% 100%,
-      rgba(16, 217, 138, 0.05) 0%, transparent 60%),
-    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+    radial-gradient(ellipse 110% 50% at 50% -10%,
+      rgba(36, 200, 146, 0.07) 0%, transparent 55%);
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans, 'DM Sans'), system-ui, sans-serif;
@@ -252,12 +247,53 @@ body {
 
 .lift {
   transition:
-    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 200ms ease-out;
   will-change: transform;
 }
 .lift:hover  { transform: translateY(-2px) scale(1.005); box-shadow: var(--shadow-lg); }
-.lift:active { transform: translateY(0) scale(0.99); transition-duration: 80ms; }
+.lift:active { transform: translateY(0) scale(0.97); transition-duration: 90ms; }
+
+/* Press feedback for any tappable surface (spring scale-down) */
+.press { transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.press:active { transform: scale(0.96); transition-duration: 90ms; }
+
+/* Soft accent glow on hover — for interactive cards */
+.glow-hover {
+  transition: box-shadow 280ms ease-out, border-color 280ms ease-out, transform 280ms cubic-bezier(0.34,1.56,0.64,1);
+}
+.glow-hover:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--shadow-lg), 0 0 0 1px var(--accent-soft), 0 8px 32px var(--accent-glow);
+  transform: translateY(-2px);
+}
+
+/* AI shimmer — a sweeping sheen for Neo surfaces */
+@keyframes ai-shimmer {
+  0%   { background-position: -160% 0; }
+  100% { background-position: 260% 0; }
+}
+.ai-shimmer {
+  background-image: linear-gradient(
+    105deg, transparent 38%, var(--accent-soft) 50%, transparent 62%);
+  background-size: 220% 100%;
+  animation: ai-shimmer 3.4s ease-in-out infinite;
+}
+
+/* Gentle floating bob — for the Neo avatar idle */
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.float-bob { animation: float-bob 3.6s ease-in-out infinite; }
+
+/* Soft breathing glow ring */
+@keyframes breathe-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft), 0 0 28px var(--accent-glow); }
+  50%      { box-shadow: 0 0 0 10px transparent, 0 0 44px var(--accent-glow); }
+}
+.breathe-glow { animation: breathe-glow 3s ease-in-out infinite; }
 
 /* ─── Entrance animations ────────────────── */
 
