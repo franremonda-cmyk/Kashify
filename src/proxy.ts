@@ -28,7 +28,20 @@ export async function proxy(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession();
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/login") || pathname.startsWith("/api/") || pathname.startsWith("/onboarding")) {
+  // Public routes — never gate these behind auth (incl. social/SEO crawlers)
+  const isPublic =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/onboarding") ||
+    pathname === "/opengraph-image" ||
+    pathname === "/twitter-image" ||
+    pathname === "/icon.svg" ||
+    pathname.startsWith("/apple-icon") ||
+    pathname === "/logo-mark.svg" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml";
+
+  if (isPublic) {
     return supabaseResponse;
   }
 
@@ -42,5 +55,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icons|manifest.json).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon|opengraph-image|twitter-image|logo-mark.svg|icons|manifest.json|robots.txt|sitemap.xml).*)"],
 };
