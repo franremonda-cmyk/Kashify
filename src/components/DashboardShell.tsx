@@ -86,8 +86,8 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
 }) {
   const animated = useCounter(value);
   const color  = isIncome ? "var(--positive)" : "var(--negative)";
-  const bg     = isIncome ? "rgba(16,217,138,0.09)"  : "rgba(255,92,108,0.08)";
-  const border = isIncome ? "1px solid rgba(16,217,138,0.24)" : "1px solid rgba(255,92,108,0.22)";
+  const bg     = "var(--base)";
+  const border = "1px solid var(--glass-border)";
   const full   = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (

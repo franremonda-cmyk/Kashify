@@ -15,30 +15,30 @@
 
   color-scheme: dark;
 
-  /* Backgrounds — soft charcoal depth (not pure black) */
-  --void:    #0D1012;   /* refined charcoal app background */
-  --base:    #141A1C;   /* solid fallback surface */
-  --raised:  #1A2123;   /* grouped inset bg */
+  /* Backgrounds — graphite depth (elevated, not pure black) */
+  --void:    #121517;   /* graphite app background */
+  --base:    #1B2123;   /* elevated surface */
+  --raised:  #232A2C;   /* grouped inset bg */
 
   /* Glass surfaces — clean frosted translucent */
-  --glass-1: rgba(255, 255, 255, 0.04);
-  --glass-2: rgba(255, 255, 255, 0.06);
-  --glass-3: rgba(255, 255, 255, 0.075);
+  --glass-1: rgba(255, 255, 255, 0.035);
+  --glass-2: rgba(255, 255, 255, 0.05);
+  --glass-3: rgba(255, 255, 255, 0.065);
 
   /* Borders — soft hairline */
-  --glass-border:       rgba(255, 255, 255, 0.09);
-  --glass-border-hover: rgba(255, 255, 255, 0.17);
-  --glass-border-dim:   rgba(255, 255, 255, 0.045);
+  --glass-border:       rgba(255, 255, 255, 0.10);
+  --glass-border-hover: rgba(255, 255, 255, 0.18);
+  --glass-border-dim:   rgba(255, 255, 255, 0.05);
 
-  /* Accent — calm jade emerald (sophisticated, not neon) */
-  --accent:       #24C892;
-  --accent-soft:  rgba(36, 200, 146, 0.11);
-  --accent-glow:  rgba(36, 200, 146, 0.22);
+  /* Accent — muted refined green (used sparingly, no glow) */
+  --accent:       #46B58C;
+  --accent-soft:  rgba(70, 181, 140, 0.10);
+  --accent-glow:  rgba(70, 181, 140, 0.0);   /* glow retired */
 
   /* Semantic */
-  --positive:  #24C892;
-  --negative:  #FF6470;
-  --warning:   #FFB445;
+  --positive:  #4FC093;
+  --negative:  #EB6B72;
+  --warning:   #E8A84B;
 
   /* Text — warm-neutral near-white scale */
   --ink:       #EDF1EF;
@@ -51,8 +51,8 @@
   --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.32);
   --shadow-xl: 0 22px 58px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.38);
 
-  /* Accent-tinted shadow / glow for interactive elements */
-  --shadow-accent: rgba(36, 200, 146, 0.30);
+  /* Accent-tinted shadow — neutral, no neon glow */
+  --shadow-accent: rgba(0, 0, 0, 0.32);
 
   /* Top-edge specular highlight for glass (subtle) */
   --spec:    inset 0 1px 0 rgba(255, 255, 255, 0.09);
@@ -96,8 +96,8 @@ img, svg, video, canvas { max-width: 100%; }
 body {
   background-color: var(--void);
   background-image:
-    radial-gradient(ellipse 110% 50% at 50% -10%,
-      rgba(36, 200, 146, 0.07) 0%, transparent 55%);
+    radial-gradient(ellipse 120% 44% at 50% -12%,
+      rgba(70, 181, 140, 0.035) 0%, transparent 50%);
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans, 'DM Sans'), system-ui, sans-serif;

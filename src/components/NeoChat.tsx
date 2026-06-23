@@ -461,9 +461,10 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           } as React.CSSProperties}>
             {/* Living avatar — floats + breathes */}
             <div className="float-bob" style={{ position: "relative" }}>
-              <div className="neo-avatar-idle breathe-glow" style={{
+              <div className="neo-avatar-idle" style={{
                 width: 100, height: 100, borderRadius: "50%",
-                background: "radial-gradient(circle at 35% 30%, #46E0AB 0%, #24C892 45%, #0E9E70 100%)",
+                background: "radial-gradient(circle at 36% 30%, #6FCBA6 0%, #46B58C 48%, #2E7D62 100%)",
+                boxShadow: "inset 0 2px 6px rgba(255,255,255,0.18), var(--shadow-lg)",
               }} />
               {/* AI sparkle */}
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"
