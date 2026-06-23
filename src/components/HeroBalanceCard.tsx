@@ -54,7 +54,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
   const formatted = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <div className="enter-up hero-balance" data-delay="1" data-tour="balance" style={{
+    <div className="enter-up hero-balance sheen" data-delay="1" data-tour="balance" style={{
       overflow: "hidden",
       position: "relative",
     }}>

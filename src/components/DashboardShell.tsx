@@ -86,12 +86,10 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
 }) {
   const animated = useCounter(value);
   const color  = isIncome ? "var(--positive)" : "var(--negative)";
-  const bg     = "var(--base)";
-  const border = "1px solid var(--glass-border)";
   const full   = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <button onClick={onClick} className="press" style={{ flex: 1, padding: "16px 16px", borderRadius: 18, background: bg, border, boxShadow: "var(--shadow-sm)", textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
+    <button onClick={onClick} className="press glow-hover glass-card" style={{ flex: 1, padding: "16px 16px", borderRadius: 18, textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
         <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flexShrink: 0 }} />
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{label}</p>
@@ -199,7 +197,7 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
         <p className="section-title">Metas de ahorro</p>
         <Link href="/metas" className="section-link">Ver todo →</Link>
       </div>
-      <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+      <div className="glass-card" style={{ borderRadius: 18, overflow: "hidden" }}>
         {visible.map((g, i) => {
           const pct = Math.min(100, (g.current_amount / g.target_amount) * 100);
           const reached = g.status === "reached" || g.current_amount >= g.target_amount;
@@ -260,12 +258,11 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             ? `hsl(${90 - (pct - 50) * 2.4}, 80%, 48%)`
             : `hsl(${16 - Math.max(0, pct - 80) * 0.4}, 88%, 52%)`;
           return (
-            <button key={b.id} className="press" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+            <button key={b.id} className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 16 }}
               onClick={() => onSelect(b)}>
-              <div style={{
+              <div className="glass-card" style={{
                 width: 86, padding: "10px 8px 8px",
-                borderRadius: 14, background: "var(--base)",
-                border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)",
+                borderRadius: 16,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
               }}>
                 <div style={{ width: 32, height: 32, borderRadius: 9, background: (b.color ?? "#46B58C") + "22", border: `1px solid ${b.color ?? "#46B58C"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#46B58C" }}>
@@ -352,7 +349,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
             <p className="section-title">Últimas transacciones</p>
             <Link href="/historial" className="section-link">Ver todo →</Link>
           </div>
-          <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+          <div className="glass-card" style={{ borderRadius: 18, overflow: "hidden" }}>
             {visibleTx.map((t, i) => {
               const cat = t.categories as { name?: string; icon?: string; color?: string } | null;
               const isIncome  = t.type === "income";

@@ -144,6 +144,45 @@ body {
   box-shadow: var(--shadow-xl), var(--spec);
 }
 
+/* Frosted card — translucent, blurred, for content groups */
+.glass-card {
+  background: var(--glass-2);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md), var(--spec-sm);
+}
+
+/* Light sweep across a glass surface (premium sheen) */
+.sheen::after {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: 0; width: 42%;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.10) 50%, transparent 100%);
+  transform: translateX(-140%) skewX(-16deg);
+  pointer-events: none;
+  animation: sheen-sweep 7s ease-in-out 1.2s infinite;
+}
+@keyframes sheen-sweep {
+  0%        { transform: translateX(-140%) skewX(-16deg); }
+  55%, 100% { transform: translateX(320%)  skewX(-16deg); }
+}
+
+/* Drifting aurora behind everything (subtle global motion) */
+body::before {
+  content: "";
+  position: fixed;
+  top: -25%; left: -15%; right: -15%; height: 75%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 46% 60% at 32% 0%, var(--accent-soft) 0%, transparent 62%);
+  opacity: 0.9;
+  animation: aurora-drift 20s ease-in-out infinite alternate;
+}
+@keyframes aurora-drift {
+  0%   { transform: translateX(-5%) translateY(0)    scale(1);    opacity: 0.7; }
+  100% { transform: translateX(9%)  translateY(3%)   scale(1.08); opacity: 1;   }
+}
+
 /* Hero balance panel — frosted glass (dark) / emerald (light) */
 .hero-balance {
   background: var(--glass-2);
