@@ -386,6 +386,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           </button>
           {showMisCats && (
             <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 8, borderTop: "0.5px solid var(--glass-border-dim)" }}>
+              <button onClick={() => setEditingCat("new")}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)" }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
+              </button>
               {catLoading ? (
                 <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "8px 0" }}>Cargando...</p>
               ) : categories.length === 0 ? (
@@ -406,10 +410,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                   ))}
                 </div>
               )}
-              <button onClick={() => setEditingCat("new")}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)" }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
-              </button>
             </div>
           )}
         </div>

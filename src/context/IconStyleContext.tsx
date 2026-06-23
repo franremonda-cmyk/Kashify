@@ -15,13 +15,13 @@ export function IconStyleProvider({ children }: { children: React.ReactNode }) {
   const [iconStyle, setIconStyleState] = useState<IconStyle>("emoji");
 
   useEffect(() => {
-    const saved = localStorage.getItem("kashify-icon-style") as IconStyle | null;
+    const saved = localStorage.getItem("kashify-icon-style-v2") as IconStyle | null;
     if (saved) setIconStyleState(saved);
   }, []);
 
   function setIconStyle(s: IconStyle) {
     setIconStyleState(s);
-    localStorage.setItem("kashify-icon-style", s);
+    localStorage.setItem("kashify-icon-style-v2", s);
   }
 
   return <Ctx.Provider value={{ iconStyle, setIconStyle }}>{children}</Ctx.Provider>;

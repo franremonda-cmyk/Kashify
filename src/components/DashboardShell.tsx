@@ -261,7 +261,7 @@ function CuotasWidget({ installments }: { installments: InstallmentEntry[] }) {
           return (
             <Link key={p.id} href="/cuotas" className="list-row">
               <div className="list-row__icon" style={{ background: color + "22", border: `1px solid ${color}33`, color }}>
-                <CategoryIcon icon={p.icon} name={p.name} color={p.color} size={18} />
+                <CategoryIcon icon={p.icon ?? "💳"} name={p.name} color={p.color} size={18} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
