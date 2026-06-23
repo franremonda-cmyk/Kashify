@@ -244,7 +244,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
     .sort((a, b) => pctOf(b) - pctOf(a));
   if (relevant.length === 0) return null;
   return (
-    <section className="enter-up" data-delay="4">
+    <section className="enter-up" data-delay="4" data-tour="budgets">
       <div className="section-head">
         <p className="section-title">Límites por categoría</p>
         <Link href="/categorias" className="section-link">Ver todo →</Link>
@@ -337,7 +337,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         onSelectCurrency={setSelectedCurrency}
       />
 
-      <div className="flex gap-3 enter-up" data-delay="2">
+      <div className="flex gap-3 enter-up" data-delay="2" data-tour="metrics">
         <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />
         <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} onClick={() => setBreakdownType("expense")} />
       </div>

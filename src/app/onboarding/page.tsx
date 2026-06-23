@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
+import Logo, { LogoMark } from "@/components/Logo";
 const ImportFlow = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 
 const CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU", "CLP", "GBP", "CHF"];
@@ -98,14 +99,7 @@ export default function OnboardingPage() {
     0: (
       <div className="flex flex-col gap-6 scale-up">
         <div>
-          <div style={{
-            width: 52, height: 52, borderRadius: 16, marginBottom: 16,
-            background: "var(--accent)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 8px 32px var(--accent-glow)",
-          }}>
-            <span className="display" style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF" }}>K</span>
-          </div>
+          <div style={{ marginBottom: 16 }}><LogoMark size={52} /></div>
           <h1 className="display font-bold" style={{ fontSize: "1.75rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>
             Bienvenido a Kashify
           </h1>
@@ -208,7 +202,7 @@ export default function OnboardingPage() {
             <div>
               <div style={{
                 width: 48, height: 48, borderRadius: 14, marginBottom: 16,
-                background: "rgba(123,97,255,0.10)",
+                background: "var(--accent-soft)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: "var(--accent)",
               }}>
@@ -338,15 +332,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-2">
-        <div style={{
-          width: 26, height: 26, borderRadius: 8,
-          background: "var(--accent)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 13, fontWeight: 700, color: "#FFFFFF",
-        }}>K</div>
-        <span className="display font-semibold" style={{ fontSize: 14, color: "var(--ink)" }}>Kashify</span>
-      </div>
+      <Logo size={26} />
 
       <ProgressDots step={step} />
 
