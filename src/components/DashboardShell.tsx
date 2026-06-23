@@ -236,7 +236,12 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
 
 // Franja horizontal de límites de categoría
 function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; currency: string; onSelect: (b: BudgetEntry) => void }) {
-  const relevant = budgets.filter(b => b.currency_code === currency).slice(0, 5);
+  // Sin tope: todas las categorías con límite, ordenadas por cercanía al 100%
+  const pctOf = (b: BudgetEntry) =>
+    b.monthly_limit > 0 ? Math.min(100, ((b.spent ?? 0) / b.monthly_limit) * 100) : 0;
+  const relevant = budgets
+    .filter(b => b.currency_code === currency)
+    .sort((a, b) => pctOf(b) - pctOf(a));
   if (relevant.length === 0) return null;
   return (
     <section className="enter-up" data-delay="4">
@@ -263,7 +268,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
                 border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
               }}>
-                <div style={{ width: 32, height: 32, borderRadius: 9, background: (b.color ?? "#7B61FF") + "22", border: `1px solid ${b.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#7B61FF" }}>
+                <div style={{ width: 32, height: 32, borderRadius: 9, background: (b.color ?? "#46B58C") + "22", border: `1px solid ${b.color ?? "#46B58C"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#46B58C" }}>
                   <CategoryIcon icon={b.icon} name={b.name} color={b.color} size={15} />
                 </div>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
@@ -275,14 +280,14 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             </button>
           );
         })}
-        <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
+        <Link href="/categorias" className="press" style={{ textDecoration: "none", flexShrink: 0 }} aria-label="Agregar límite por categoría">
           <div style={{
             width: 86, padding: "10px 8px 8px", borderRadius: 14,
-            background: "var(--raised)", border: "0.5px dashed var(--glass-border-hover)",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 92,
+            background: "var(--raised)", border: "1px dashed var(--glass-border-hover)",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 92,
           }}>
-            <span style={{ fontSize: 20, color: "var(--ink-dim)" }}>+</span>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Ver todos</p>
+            <span style={{ width: 32, height: 32, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 20, fontWeight: 400 }}>+</span>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
           </div>
         </Link>
       </div>

@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0D1012",
+  themeColor: "#121517",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1, // evita el auto-zoom de iOS Safari al enfocar inputs (se ve "más grande y corrido")

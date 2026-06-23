@@ -29,16 +29,12 @@ interface Props {
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const CURRENCIES = ["ARS","USD","EUR","CHF","BRL","UYU","CLP","GBP","PYG","PEN","COP"];
 const THEMES = [
-  { id: "arctic",   label: "Arctic",   desc: "Blanco + violeta",  preview: "#7B61FF" },
-  { id: "midnight", label: "Midnight", desc: "Azul noche",        preview: "#0A84FF" },
-  { id: "void",     label: "Void",     desc: "Negro total",       preview: "#30D158" },
-  { id: "sand",     label: "Sand",     desc: "Cálido + tierra",   preview: "#C8820A" },
+  { id: "arctic", label: "Oscuro", desc: "Grafito + verde", preview: "#46B58C" },
+  { id: "light",  label: "Claro",  desc: "Marfil + verde",  preview: "#2E9E74" },
 ] as const;
 const ICON_STYLES: { id: IconStyle; label: string; desc: string }[] = [
-  { id: "line",    label: "Línea",   desc: "Trazo fino" },
-  { id: "solid",   label: "Sólido",  desc: "Relleno" },
-  { id: "duotone", label: "Duotone", desc: "Bicolor" },
-  { id: "emoji",   label: "Emoji",   desc: "Clásico" },
+  { id: "line",  label: "Línea", desc: "Trazo fino" },
+  { id: "emoji", label: "Emoji", desc: "Clásico" },
 ];
 
 const inp: React.CSSProperties = {

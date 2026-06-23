@@ -365,85 +365,45 @@ button, a, input, select, textarea {
 
 /* ─── Themes ─────────────────────────────── */
 
-/* VOID — pure dark, emerald accent (original Kashify) */
-[data-theme="void"] {
-  --void:    #060C09;
-  --base:    #0D1A10;
-  --raised:  #0A1410;
-  --glass-1: rgba(13, 26, 16, 0.80);
-  --glass-2: rgba(15, 30, 18, 0.90);
-  --glass-3: rgba(18, 34, 21, 0.96);
-  --glass-border:       rgba(0, 200, 83, 0.12);
-  --glass-border-hover: rgba(0, 200, 83, 0.26);
-  --glass-border-dim:   rgba(0, 200, 83, 0.06);
-  --accent:       #00C853;
-  --accent-soft:  rgba(0, 200, 83, 0.12);
-  --accent-glow:  rgba(0, 200, 83, 0.28);
-  --ink:       #F0FFF4;
-  --ink-muted: rgba(240, 255, 244, 0.60);
-  --ink-dim:   rgba(240, 255, 244, 0.28);
-  --shadow-sm: 0 1px 4px  rgba(0,200,83,0.06), 0 1px 2px rgba(0,0,0,0.35);
-  --shadow-md: 0 4px 16px rgba(0,200,83,0.08), 0 2px 6px rgba(0,0,0,0.45);
-  --shadow-lg: 0 8px 32px rgba(0,200,83,0.10), 0 2px 8px rgba(0,0,0,0.55);
-  --shadow-xl: 0 20px 60px rgba(0,200,83,0.12), 0 4px 16px rgba(0,0,0,0.65);
-  --shadow-accent: rgba(0, 200, 83, 0.45);
-}
-[data-theme="void"] body {
-  background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(0,200,83,0.07) 0%, transparent 65%);
-}
+/* LIGHT — sophisticated ivory + muted green (sister of the dark default) */
+[data-theme="light"] {
+  color-scheme: light;
 
-/* MIDNIGHT — deep blue night */
-[data-theme="midnight"] {
-  --void:    #070B1A;
-  --base:    #0F1629;
-  --raised:  #0B1120;
-  --glass-1: rgba(15, 22, 41, 0.80);
-  --glass-2: rgba(18, 26, 48, 0.90);
-  --glass-3: rgba(22, 32, 58, 0.96);
-  --glass-border:       rgba(10, 132, 255, 0.15);
-  --glass-border-hover: rgba(10, 132, 255, 0.30);
-  --glass-border-dim:   rgba(10, 132, 255, 0.07);
-  --accent:       #0A84FF;
-  --accent-soft:  rgba(10, 132, 255, 0.12);
-  --accent-glow:  rgba(10, 132, 255, 0.28);
-  --ink:       #F0F6FF;
-  --ink-muted: rgba(240, 246, 255, 0.60);
-  --ink-dim:   rgba(240, 246, 255, 0.28);
-  --shadow-sm: 0 1px 4px  rgba(10,132,255,0.07), 0 1px 2px rgba(0,0,0,0.35);
-  --shadow-md: 0 4px 16px rgba(10,132,255,0.09), 0 2px 6px rgba(0,0,0,0.45);
-  --shadow-lg: 0 8px 32px rgba(10,132,255,0.12), 0 2px 8px rgba(0,0,0,0.55);
-  --shadow-xl: 0 20px 60px rgba(10,132,255,0.14), 0 4px 16px rgba(0,0,0,0.65);
-  --shadow-accent: rgba(10, 132, 255, 0.45);
-}
-[data-theme="midnight"] body {
-  background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(10,132,255,0.08) 0%, transparent 65%);
-}
-
-/* SAND — warm light, amber accent */
-[data-theme="sand"] {
-  --void:    #FAF6EE;
+  --void:    #F4F5F2;
   --base:    #FFFFFF;
-  --raised:  #F5EFE3;
-  --glass-1: rgba(255, 255, 255, 0.72);
-  --glass-2: rgba(255, 255, 255, 0.88);
-  --glass-3: rgba(255, 255, 255, 0.96);
-  --glass-border:       rgba(120, 80, 20, 0.12);
-  --glass-border-hover: rgba(120, 80, 20, 0.25);
-  --glass-border-dim:   rgba(120, 80, 20, 0.06);
-  --accent:       #7C5400;   /* darkened for 4.9:1 contrast on white */
-  --accent-soft:  rgba(124, 84, 0, 0.10);
-  --accent-glow:  rgba(124, 84, 0, 0.22);
-  --ink:       #1A1000;
-  --ink-muted: rgba(26, 16, 0, 0.60);
-  --ink-dim:   rgba(26, 16, 0, 0.28);
-  --shadow-sm: 0 1px 4px  rgba(100,60,0,0.07);
-  --shadow-md: 0 4px 16px rgba(100,60,0,0.09);
-  --shadow-lg: 0 8px 32px rgba(100,60,0,0.11);
-  --shadow-xl: 0 20px 60px rgba(100,60,0,0.13);
-  --shadow-accent: rgba(124, 84, 0, 0.40);
+  --raised:  #ECEEE9;
+
+  --glass-1: rgba(255, 255, 255, 0.70);
+  --glass-2: rgba(255, 255, 255, 0.82);
+  --glass-3: rgba(255, 255, 255, 0.94);
+
+  --glass-border:       rgba(20, 30, 25, 0.11);
+  --glass-border-hover: rgba(20, 30, 25, 0.22);
+  --glass-border-dim:   rgba(20, 30, 25, 0.055);
+
+  --accent:       #2E9E74;   /* darker for contrast on white */
+  --accent-soft:  rgba(46, 158, 116, 0.10);
+  --accent-glow:  rgba(46, 158, 116, 0.0);
+
+  --positive:  #2E9E74;
+  --negative:  #D8504E;
+  --warning:   #C6810F;
+
+  --ink:       #16201B;
+  --ink-muted: rgba(22, 32, 27, 0.62);
+  --ink-dim:   rgba(22, 32, 27, 0.42);
+
+  --shadow-sm: 0 1px 2px  rgba(20, 30, 25, 0.05), 0 1px 3px rgba(20, 30, 25, 0.04);
+  --shadow-md: 0 4px 16px rgba(20, 30, 25, 0.07), 0 1px 3px rgba(20, 30, 25, 0.05);
+  --shadow-lg: 0 12px 32px rgba(20, 30, 25, 0.10), 0 2px 8px rgba(20, 30, 25, 0.05);
+  --shadow-xl: 0 20px 52px rgba(20, 30, 25, 0.12), 0 4px 14px rgba(20, 30, 25, 0.06);
+  --shadow-accent: rgba(20, 30, 25, 0.16);
+
+  --spec:    none;
+  --spec-sm: none;
 }
-[data-theme="sand"] body {
-  background-image: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(200,130,10,0.06) 0%, transparent 65%);
+[data-theme="light"] body {
+  background-image: radial-gradient(ellipse 120% 44% at 50% -12%, rgba(46, 158, 116, 0.05) 0%, transparent 50%);
 }
 
 /* ─── Neo avatar animations ──────────────── */

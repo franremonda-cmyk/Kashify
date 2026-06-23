@@ -459,9 +459,9 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             gap: 18, padding: "calc(40px + env(safe-area-inset-top, 0px)) 20px 28px",
           } as React.CSSProperties}>
-            {/* Living avatar — floats + breathes */}
-            <div className="float-bob" style={{ position: "relative" }}>
-              <div className="neo-avatar-idle" style={{
+            {/* Avatar — calm, static orb */}
+            <div style={{ position: "relative" }}>
+              <div style={{
                 width: 100, height: 100, borderRadius: "50%",
                 background: "radial-gradient(circle at 36% 30%, #6FCBA6 0%, #46B58C 48%, #2E7D62 100%)",
                 boxShadow: "inset 0 2px 6px rgba(255,255,255,0.18), var(--shadow-lg)",
