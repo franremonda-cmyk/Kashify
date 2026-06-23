@@ -776,6 +776,16 @@ export default function ActividadPage() {
               </div>
             ) : (
               <div className="budget-wrap" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <Link href="/categorias" className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, borderRadius: 14 }} aria-label="Agregar límite por categoría">
+                  <div style={{
+                    width: 72, height: 94, padding: "8px 6px 7px", borderRadius: 14,
+                    background: "var(--base)", border: "0.5px dashed var(--glass-border-hover)", boxShadow: "var(--shadow-sm)",
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5,
+                  }}>
+                    <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 18, fontWeight: 400 }}>+</span>
+                    <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
+                  </div>
+                </Link>
                 {catsWithBudget.map((cat) => {
                   const spent = spendByCat[cat.id] ?? 0;
                   const pct = Math.min(100, cat.monthly_limit > 0 ? (spent / cat.monthly_limit) * 100 : 0);

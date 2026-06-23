@@ -309,9 +309,10 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
       {/* 1 row on mobile, 2 rows on tablet/desktop (CSS max-height clips the rest) */}
       <div className="budget-wrap" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {/* "Agregar" primero para que siempre se vea (incluida la única fila de mobile) */}
-        <Link href="/categorias" className="press glow-hover glass-card" style={{ textDecoration: "none", flexShrink: 0, borderRadius: 14, borderStyle: "dashed", borderColor: "var(--glass-border-hover)" }} aria-label="Agregar límite por categoría">
-          <div style={{
-            width: 72, height: 94, padding: "8px 6px 7px",
+        <Link href="/categorias" className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, borderRadius: 14 }} aria-label="Agregar límite por categoría">
+          <div className="glass-card" style={{
+            width: 72, height: 94, padding: "8px 6px 7px", borderRadius: 14,
+            borderStyle: "dashed", borderColor: "var(--glass-border-hover)",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5,
           }}>
             <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 18, fontWeight: 400 }}>+</span>
