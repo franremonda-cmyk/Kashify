@@ -7,44 +7,50 @@
    ───────────────────────────────────────── */
 
 :root {
-  /* Backgrounds — Apple Light hierarchy */
-  --void:    #F2F2F7;   /* iOS system background */
+  /* ───────────────────────────────────────────
+     KASHIFY v2 — "WARM LEDGER" (default / light)
+     Warm paper background, confident emerald accent,
+     flat crisp surfaces, numbers as protagonists.
+     ─────────────────────────────────────────── */
+
+  /* Backgrounds — warm paper hierarchy */
+  --void:    #F7F5F0;   /* warm cream app background */
   --base:    #FFFFFF;   /* card / sidebar surface */
-  --raised:  #F2F2F7;   /* grouped inset bg */
+  --raised:  #F1EEE6;   /* grouped inset bg (warm) */
 
-  /* Glass surfaces — frosted white */
-  --glass-1: rgba(255, 255, 255, 0.70);
-  --glass-2: rgba(255, 255, 255, 0.85);
-  --glass-3: rgba(255, 255, 255, 0.96);
+  /* Surfaces — flat & solid (glassmorphism retired) */
+  --glass-1: #FFFFFF;
+  --glass-2: #FFFFFF;
+  --glass-3: #FFFFFF;
 
-  /* Borders — iOS light separator */
-  --glass-border:       rgba(60, 60, 67, 0.13);
-  --glass-border-hover: rgba(60, 60, 67, 0.28);
-  --glass-border-dim:   rgba(60, 60, 67, 0.07);
+  /* Borders — warm hairline separators */
+  --glass-border:       rgba(40, 33, 20, 0.12);
+  --glass-border-hover: rgba(40, 33, 20, 0.26);
+  --glass-border-dim:   rgba(40, 33, 20, 0.06);
 
-  /* Accent — soft violet (calm, feminine-forward, tech) */
-  --accent:       #7B61FF;
-  --accent-soft:  rgba(123, 97, 255, 0.10);
-  --accent-glow:  rgba(123, 97, 255, 0.22);
+  /* Accent — confident emerald (money, growth, trust) */
+  --accent:       #06865B;
+  --accent-soft:  rgba(6, 134, 91, 0.10);
+  --accent-glow:  rgba(6, 134, 91, 0.20);
 
-  /* Semantic — iOS system colors (light variant) */
-  --positive:  #34C759;
-  --negative:  #FF3B30;
-  --warning:   #FF9500;
+  /* Semantic — warm, legible */
+  --positive:  #06865B;   /* income shares the brand green */
+  --negative:  #E5484D;   /* warm red */
+  --warning:   #E8870E;   /* amber */
 
-  /* Text — iOS label system (darkened for WCAG accessibility) */
-  --ink:       #000000;
-  --ink-muted: rgba(60, 60, 67, 0.78);
-  --ink-dim:   rgba(60, 60, 67, 0.62);
+  /* Text — warm near-black ink scale (WCAG AA+) */
+  --ink:       #1A1813;
+  --ink-muted: rgba(26, 24, 19, 0.66);
+  --ink-dim:   rgba(26, 24, 19, 0.48);
 
-  /* Shadows — airy, soft */
-  --shadow-sm: 0 1px 4px  rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.09), 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.11), 0 4px 16px rgba(0, 0, 0, 0.06);
+  /* Shadows — soft, warm-tinted, subtle */
+  --shadow-sm: 0 1px 2px  rgba(40, 33, 20, 0.05), 0 1px 3px rgba(40, 33, 20, 0.04);
+  --shadow-md: 0 2px 8px  rgba(40, 33, 20, 0.06), 0 1px 3px rgba(40, 33, 20, 0.05);
+  --shadow-lg: 0 8px 28px rgba(40, 33, 20, 0.09), 0 2px 8px rgba(40, 33, 20, 0.05);
+  --shadow-xl: 0 18px 50px rgba(40, 33, 20, 0.12), 0 4px 14px rgba(40, 33, 20, 0.06);
 
-  /* Accent-tinted shadow for interactive elements (currency buttons, etc.) */
-  --shadow-accent: rgba(123, 97, 255, 0.38);
+  /* Accent-tinted shadow for interactive elements */
+  --shadow-accent: rgba(6, 134, 91, 0.32);
 
   /* No top-edge specular on light theme */
   --spec:    none;
@@ -88,8 +94,8 @@ img, svg, video, canvas { max-width: 100%; }
 body {
   background-color: var(--void);
   background-image:
-    radial-gradient(ellipse 90% 50% at 50% 0%,
-      rgba(123, 97, 255, 0.05) 0%, transparent 65%);
+    radial-gradient(ellipse 100% 56% at 50% 0%,
+      rgba(6, 134, 91, 0.06) 0%, transparent 60%);
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans, 'DM Sans'), system-ui, sans-serif;
@@ -98,40 +104,75 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Glass Materials (iOS frosted light) ─── */
+/* ─── Surfaces (flat, crisp, warm) ─────────────
+   Class names kept for compatibility; glassmorphism
+   retired in favour of solid cards with hairline
+   borders and soft warm shadows. ─────────────── */
 
 .glass {
-  background: var(--glass-1);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 0.5px solid var(--glass-border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-md);
+  background: var(--base);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .glass-elevated {
-  background: var(--glass-2);
-  backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
-  border: 0.5px solid var(--glass-border-hover);
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
+  background: var(--base);
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  box-shadow: var(--shadow-md);
 }
 
 .glass-strong {
-  background: var(--glass-3);
-  backdrop-filter: blur(48px) saturate(200%);
-  -webkit-backdrop-filter: blur(48px) saturate(200%);
-  border: 0.5px solid var(--glass-border);
-  border-radius: 20px;
-  box-shadow: var(--shadow-xl);
+  background: var(--base);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg);
 }
 
 /* Solid surface — sidebar, bottom nav */
 .surface {
   background: var(--base);
-  border-right: 0.5px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
 }
+
+/* ─── v2 component primitives ─────────────────── */
+
+/* Card — the default container for grouped content */
+.card-v2 {
+  background: var(--base);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Primary action button */
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 20px;
+  border-radius: 14px;
+  background: var(--accent); color: #FFFFFF;
+  font-size: var(--text-base); font-weight: 600;
+  box-shadow: 0 2px 10px var(--shadow-accent);
+  cursor: pointer; border: none;
+}
+.btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 18px;
+  border-radius: 14px;
+  background: var(--raised); color: var(--ink);
+  font-size: var(--text-base); font-weight: 600;
+  border: 1px solid var(--glass-border); cursor: pointer;
+}
+
+/* List row inside a card */
+.row-v2 {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 14px 16px;
+  background: transparent; text-align: left;
+  border: none; cursor: pointer;
+}
+.row-v2 + .row-v2 { border-top: 1px solid var(--glass-border-dim); }
 
 /* ─── Typography ─────────────────────────── */
 
@@ -155,19 +196,19 @@ body {
 /* Top-level page heading — one size across every screen */
 .page-title {
   font-family: var(--font-display, 'Space Grotesk'), sans-serif;
-  font-size: 1.4rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--ink);
   margin: 0;
 }
 
+/* Section label — warm, confident, sentence case (v2) */
 .section-title {
-  font-size: var(--text-xs);          /* 13px — readable, was 11 */
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-muted);
+  font-size: var(--text-base);        /* 16px — readable, present */
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
   margin: 0;
 }
 

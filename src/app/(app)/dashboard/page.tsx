@@ -123,16 +123,16 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between enter-up">
         <div>
-          <p className="text-xs font-medium" style={{ color: "var(--ink-muted)" }}>
+          <p className="text-sm font-medium" style={{ color: "var(--ink-muted)", textTransform: "capitalize" }}>
             {now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
-          <h1 className="page-title">
+          <h1 className="page-title" style={{ marginTop: 2 }}>
             Hola{firstName ? `, ${firstName}` : ""}
           </h1>
         </div>
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
-          style={{ background: "var(--accent)", color: "#FFFFFF" }}
+          className="rounded-full flex items-center justify-center font-bold"
+          style={{ width: 44, height: 44, fontSize: 17, background: "var(--accent)", color: "#FFFFFF", boxShadow: "0 2px 10px var(--shadow-accent)" }}
           role="img"
           aria-label={firstName ? `Tu perfil, ${firstName}` : "Tu perfil"}
         >

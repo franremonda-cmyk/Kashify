@@ -86,24 +86,24 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
 }) {
   const animated = useCounter(value);
   const color  = isIncome ? "var(--positive)" : "var(--negative)";
-  const bg     = isIncome ? "rgba(52,199,89,0.07)"  : "rgba(255,59,48,0.06)";
-  const border = isIncome ? "0.5px solid rgba(52,199,89,0.18)" : "0.5px solid rgba(255,59,48,0.16)";
+  const bg     = isIncome ? "rgba(6,134,91,0.07)"  : "rgba(229,72,77,0.06)";
+  const border = isIncome ? "1px solid rgba(6,134,91,0.20)" : "1px solid rgba(229,72,77,0.18)";
   const full   = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <button onClick={onClick} style={{ flex: 1, padding: "14px 16px", borderRadius: 14, background: bg, border, boxShadow: "var(--shadow-sm)", textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
-      <p style={{
-        fontSize: 12, fontWeight: 600, textTransform: "uppercase",
-        letterSpacing: "0.06em", color: "var(--ink-muted)", marginBottom: 8,
-      }}>{label}</p>
-      <p className="display" style={{
-        fontSize: "clamp(1rem, 3.4vw, 1.2rem)",
+    <button onClick={onClick} style={{ flex: 1, padding: "16px 16px", borderRadius: 18, background: bg, border, boxShadow: "var(--shadow-sm)", textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flexShrink: 0 }} />
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{label}</p>
+      </div>
+      <p className="mono" style={{
+        fontSize: "clamp(1.15rem, 4.2vw, 1.5rem)",
         fontWeight: 700, color, letterSpacing: "-0.02em",
         fontVariantNumeric: "tabular-nums", lineHeight: 1,
       }}>
         {sym} {full}
       </p>
-      {onClick && <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>ver desglose →</p>}
+      {onClick && <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 8, fontWeight: 500 }}>Ver desglose →</p>}
     </button>
   );
 }
