@@ -567,6 +567,17 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         {inviteCopied ? "¡Link copiado!" : "Invitar amigo"}
       </button>
 
+      {/* Sugerencias de edición — entre invitar amigo y cerrar sesión */}
+      <a
+        href={`mailto:kashify.finanzas@gmail.com?subject=${encodeURIComponent("Sugerencia para Kashify")}&body=${encodeURIComponent("Hola! Tengo una sugerencia para Kashify:\n\n")}`}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--raised)", color: "var(--ink)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
+        </svg>
+        Sugerencias de edición
+      </a>
+
       {/* Botón cerrar sesión — fuera de acordeones */}
       <button
         onClick={signOut}

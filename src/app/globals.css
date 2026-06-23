@@ -544,8 +544,9 @@ button, a, input, select, textarea {
   50%      { transform: translate(14%, 10%) scale(1.12); opacity: 0.6; }
 }
 @keyframes neo-orb-breathe {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.04); }
+  0%, 100% { transform: scale(1) translate(0, 0); }
+  30%      { transform: scale(1.06) translate(1.5%, -1.5%); }
+  65%      { transform: scale(0.985) translate(-1.5%, 1.2%); }
 }
 /* Clean, calm orb — a soft green blob that fades into the page at its
    edges (no hard container, no dark corners, no card shadow). */
@@ -556,7 +557,7 @@ button, a, input, select, textarea {
   background: none;
 }
 .neo-orb-alive {
-  animation: neo-blob 11s ease-in-out infinite, neo-orb-breathe 5s ease-in-out infinite;
+  animation: neo-blob 7s ease-in-out infinite, neo-orb-breathe 4.5s ease-in-out infinite;
 }
 /* Soft iridescent halo behind — blurred, bleeds out gently (subtle) */
 .neo-orb__iris {
@@ -566,7 +567,7 @@ button, a, input, select, textarea {
     #2C6F58 64%, #4ECB9A 80%, #2C6F58 100%);
   filter: blur(11px) saturate(110%);
   opacity: 0.85;
-  animation: neo-orb-spin 16s linear infinite;
+  animation: neo-orb-spin 11s linear infinite;
   z-index: 0;
 }
 .neo-orb__iris2 { display: none; }

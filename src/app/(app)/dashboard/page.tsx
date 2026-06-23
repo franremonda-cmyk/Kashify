@@ -62,7 +62,7 @@ export default async function DashboardPage() {
       };
     })
     .filter((p) => p.paid < p.n_installments)
-    .slice(0, 4);
+    .slice(0, 2);
 
   if (!profile?.display_name) redirect("/onboarding");
 

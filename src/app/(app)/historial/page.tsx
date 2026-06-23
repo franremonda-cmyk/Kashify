@@ -786,7 +786,13 @@ export default function ActividadPage() {
                     <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
                   </div>
                 </Link>
-                {catsWithBudget.map((cat) => {
+                {[...catsWithBudget]
+                  .sort((a, b) => {
+                    const pa = a.monthly_limit > 0 ? (spendByCat[a.id] ?? 0) / a.monthly_limit : 0;
+                    const pb = b.monthly_limit > 0 ? (spendByCat[b.id] ?? 0) / b.monthly_limit : 0;
+                    return pb - pa;
+                  })
+                  .map((cat) => {
                   const spent = spendByCat[cat.id] ?? 0;
                   const pct = Math.min(100, cat.monthly_limit > 0 ? (spent / cat.monthly_limit) * 100 : 0);
                   const over = pct >= 100;

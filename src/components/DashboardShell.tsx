@@ -456,11 +456,12 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         </section>
       )}
 
-      {/* Widget de metas — máx 2 */}
-      <GoalsWidget goals={goals} />
-
-      {/* Cuotas activas — solo desktop */}
-      <CuotasWidget installments={installments} />
+      {/* Metas + Cuotas apiladas (en desktop comparten la columna derecha) */}
+      <div className="flex flex-col gap-6">
+        <GoalsWidget goals={goals} />
+        {/* Cuotas activas — solo desktop, debajo de metas */}
+        <CuotasWidget installments={installments} />
+      </div>
 
       {/* Gráfico de líneas mensual */}
       <div className="dash-full enter-up" data-delay="6">
