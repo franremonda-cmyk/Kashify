@@ -325,15 +325,8 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-sm p-5 flex flex-col gap-4 mb-16 scale-up"
-        style={{
-          borderRadius: 24,
-          background: "rgba(255,255,255,0.96)",
-          backdropFilter: "blur(48px) saturate(260%)",
-          border: "0.5px solid var(--glass-border)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), 0 24px 80px rgba(0,0,0,0.80)",
-          overflow: "hidden",
-        }}
+        className="glass-strong w-full max-w-sm p-5 flex flex-col gap-4 mb-16 scale-up"
+        style={{ borderRadius: 24, overflow: "hidden" }}
       >
         <div className="flex items-center justify-between">
           <h2 className="display font-semibold text-base" style={{ color: "var(--ink)" }}>
@@ -562,11 +555,11 @@ export default function BottomNav() {
             maxWidth: 460,
             margin: "0 auto",
             borderRadius: 9999,
-            background: "var(--glass-2)",
-            backdropFilter: "blur(40px) saturate(180%)",
-            WebkitBackdropFilter: "blur(40px) saturate(180%)",
-            border: "0.5px solid var(--glass-border)",
-            boxShadow: "var(--shadow-lg)",
+            background: "var(--glass-3)",
+            backdropFilter: "blur(48px) saturate(200%)",
+            WebkitBackdropFilter: "blur(48px) saturate(200%)",
+            border: "0.5px solid var(--glass-border-hover)",
+            boxShadow: "var(--shadow-lg), var(--spec-lg)",
             display: "flex",
             alignItems: "center",
             height: 60,
