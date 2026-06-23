@@ -638,15 +638,15 @@ export default function ActividadPage() {
 
       {filtered.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }} className="enter-up" data-delay="1">
-          <button onClick={() => setBreakdownType("income")} style={{ padding: "12px 14px", borderRadius: 14, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
+          <button onClick={() => setBreakdownType("income")} className="card-glass" style={{ padding: "12px 14px", textAlign: "left" }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Ingresos</p>
             <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "var(--positive)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
-          <button onClick={() => setBreakdownType("expense")} style={{ padding: "12px 14px", borderRadius: 14, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
+          <button onClick={() => setBreakdownType("expense")} className="card-glass" style={{ padding: "12px 14px", textAlign: "left" }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Gastos</p>
             <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
-          <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)" }}>
+          <div className="card-glass" style={{ padding: "12px 14px" }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Neto</p>
             <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: net >= 0 ? "var(--positive)" : "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
@@ -675,7 +675,7 @@ export default function ActividadPage() {
       {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies}/>}
 
       <div className="flex flex-col gap-2">
-        <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 2 }}>
+        <p className="section-title">
           Transacciones
         </p>
         {loading && (
@@ -694,8 +694,8 @@ export default function ActividadPage() {
         {!loading && filtered.length > 0 && (() => {
           const visibleTx = showAllTx ? filtered : filtered.slice(0, 5);
           return (
-            <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
-              {visibleTx.map((t, i) => {
+            <div className="card-solid" style={{ overflow: "hidden" }}>
+              {visibleTx.map((t) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const catData   = (t as any).categories ?? t.category;
                 const isIncome  = t.type === "income";
@@ -708,16 +708,11 @@ export default function ActividadPage() {
                   <button
                     key={t.id}
                     onClick={() => setSelectedTx(t)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
-                      borderBottom: i < visibleTx.length-1 ? "0.5px solid var(--glass-border-dim)" : "none",
-                      width: "100%", textAlign: "left",
-                      background: "transparent",
-                      transition: "background 120ms ease-out",
-                    }}
+                    className="press list-row"
+                    style={{ transition: "background 120ms ease-out" }}
                   >
-                    <div style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: iconBg, color: iconColor }}>
-                      <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={19}/>
+                    <div className="list-row__icon" style={{ background: iconBg, color: iconColor }}>
+                      <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={18}/>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
@@ -766,7 +761,7 @@ export default function ActividadPage() {
         return (
           <section className="flex flex-col gap-2">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 2 }}>Límites por categoría</p>
+              <p className="section-title">Límites por categoría</p>
               <Link href="/categorias" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>+ Agregar límite</Link>
             </div>
             {catsWithBudget.length === 0 ? (
@@ -776,12 +771,8 @@ export default function ActividadPage() {
               </div>
             ) : (
               <div className="budget-wrap" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <Link href="/categorias" className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, borderRadius: 14 }} aria-label="Agregar límite por categoría">
-                  <div style={{
-                    width: 72, height: 94, padding: "8px 6px 7px", borderRadius: 14,
-                    background: "var(--base)", border: "0.5px dashed var(--glass-border-hover)", boxShadow: "var(--shadow-sm)",
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5,
-                  }}>
+                <Link href="/categorias" className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, borderRadius: "var(--radius-chip)" }} aria-label="Agregar límite por categoría">
+                  <div className="budget-chip budget-chip--add">
                     <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 18, fontWeight: 400 }}>+</span>
                     <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
                   </div>
@@ -806,26 +797,24 @@ export default function ActividadPage() {
                   return (
                     <button key={cat.id}
                       onClick={() => setSelectedBudget({ ...cat, spent })}
+                      className="press glow-hover budget-chip"
                       style={{
-                        flexShrink: 0, width: 72, height: 94, padding: "8px 6px 7px",
-                        borderRadius: 14, background: "var(--base)",
+                        background: "var(--base)",
                         border: `0.5px solid ${over ? "rgba(255,69,58,0.3)" : "var(--glass-border)"}`,
-                        boxShadow: "var(--shadow-sm)",
-                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5,
-                        cursor: "pointer",
+                        boxShadow: "var(--shadow-sm)", cursor: "pointer",
                       }}>
                       <div style={{ width: 28, height: 28, borderRadius: 8, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
                         <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={14} />
                       </div>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
+                      <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
                       <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
                         <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
                       </div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: labelColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
+                      <p style={{ fontSize: 12.5, fontWeight: 700, color: labelColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
                     </button>
                   );
                 })}
-                <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
+                <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0, display: "none" }}>
                   <div style={{
                     width: 80, borderRadius: 14, background: "var(--raised)",
                     border: "0.5px dashed var(--glass-border-hover)",
@@ -845,7 +834,7 @@ export default function ActividadPage() {
       {goals.length > 0 && (
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 4 }}>Metas de ahorro</p>
+            <p className="section-title">Metas de ahorro</p>
             <Link href="/metas" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar meta</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
