@@ -638,20 +638,31 @@ export default function ActividadPage() {
 
       {filtered.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }} className="enter-up" data-delay="1">
-          <button onClick={() => setBreakdownType("income")} className="card-glass" style={{ padding: "12px 14px", textAlign: "left" }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Ingresos</p>
-            <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "var(--positive)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          <button onClick={() => setBreakdownType("income")} className="card-glass" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--positive)", flexShrink: 0 }} />
+              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Ingresos</p>
+            </div>
+            <p className="mono" style={{ fontSize: "clamp(1.05rem, 3.4vw, 1.4rem)", fontWeight: 700, color: "var(--positive)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
-          <button onClick={() => setBreakdownType("expense")} className="card-glass" style={{ padding: "12px 14px", textAlign: "left" }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Gastos</p>
-            <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          <button onClick={() => setBreakdownType("expense")} className="card-glass" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--negative)", flexShrink: 0 }} />
+              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Gastos</p>
+            </div>
+            <p className="mono" style={{ fontSize: "clamp(1.05rem, 3.4vw, 1.4rem)", fontWeight: 700, color: "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
-          <div className="card-glass" style={{ padding: "12px 14px" }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Neto</p>
-            <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: net >= 0 ? "var(--positive)" : "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          <div className="card-glass" style={{ padding: "14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: net >= 0 ? "var(--positive)" : "var(--negative)", flexShrink: 0 }} />
+              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Neto</p>
+            </div>
+            <p className="mono" style={{ fontSize: "clamp(1.05rem, 3.4vw, 1.4rem)", fontWeight: 700, color: net >= 0 ? "var(--positive)" : "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
       )}
+
+      {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies}/>}
 
       <div className="flex gap-2 enter-up" data-delay="2">
         <input style={{ ...inp, borderRadius: 12, flex: 1 }} placeholder="Buscar…"
@@ -672,12 +683,16 @@ export default function ActividadPage() {
         </button>
       </div>
 
-      {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies}/>}
-
       <div className="flex flex-col gap-2">
-        <p className="section-title">
-          Transacciones
-        </p>
+        <div className="section-head" style={{ marginBottom: 0 }}>
+          <p className="section-title">Transacciones</p>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }))}
+            className="section-link"
+            style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer" }}>
+            + Agregar
+          </button>
+        </div>
         {loading && (
           <div style={{ padding: 24, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)" }}>
             <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Cargando...</p>
@@ -800,7 +815,7 @@ export default function ActividadPage() {
                       className="press glow-hover budget-chip"
                       style={{
                         background: "var(--base)",
-                        border: `0.5px solid ${over ? "rgba(255,69,58,0.3)" : "var(--glass-border)"}`,
+                        border: "0.5px solid var(--glass-border)",
                         boxShadow: "var(--shadow-sm)", cursor: "pointer",
                       }}>
                       <div style={{ width: 28, height: 28, borderRadius: 8, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
