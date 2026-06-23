@@ -25,6 +25,14 @@ const STEPS: Step[] = [
 ];
 
 const TOUR_KEY = "kashify-tour-done";
+const TOUR_PENDING_KEY = "kashify-tour-pending";
+
+function clearTourFlags() {
+  try {
+    localStorage.setItem(TOUR_KEY, "1");
+    localStorage.removeItem(TOUR_PENDING_KEY);
+  } catch {}
+}
 
 export default function Tour() {
   const [mounted, setMounted] = useState(false);
@@ -36,6 +44,8 @@ export default function Tour() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (localStorage.getItem(TOUR_KEY)) return;
+    // Solo usuarios nuevos: el onboarding deja este flag al terminar
+    if (!localStorage.getItem(TOUR_PENDING_KEY)) return;
     const t = setTimeout(() => setI(0), 650);
     return () => clearTimeout(t);
   }, []);
@@ -69,12 +79,12 @@ export default function Tour() {
   }, [i, targetEl]);
 
   function finish() {
-    try { localStorage.setItem(TOUR_KEY, "1"); } catch {}
+    clearTourFlags();
     setI(-1);
   }
   function advance() {
     setI((p) => {
-      if (p >= STEPS.length - 1) { try { localStorage.setItem(TOUR_KEY, "1"); } catch {} return -1; }
+      if (p >= STEPS.length - 1) { clearTourFlags(); return -1; }
       return p + 1;
     });
   }

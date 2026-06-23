@@ -88,6 +88,9 @@ export default function OnboardingPage() {
       });
     }
 
+    // Usuario nuevo: habilitar el tour guiado una sola vez en el dashboard
+    try { localStorage.setItem("kashify-tour-pending", "1"); } catch {}
+
     router.push("/dashboard");
   }
 
