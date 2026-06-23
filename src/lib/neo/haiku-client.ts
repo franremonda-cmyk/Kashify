@@ -4,6 +4,15 @@ import { inferCurrency } from "./rules-engine";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Haiku suele envolver el JSON en ```json … ``` o agregar texto alrededor.
+// Extraemos el primer objeto {…} para que JSON.parse no reviente.
+function extractJson(s: string): string {
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fence ? fence[1] : s;
+  const obj = body.match(/\{[\s\S]*\}/);
+  return obj ? obj[0] : body.trim();
+}
+
 const SYSTEM_PROMPT = `Sos Neo, un asistente de finanzas personales para usuarios rioplatenses (Argentina/Uruguay).
 Tu tarea es parsear mensajes de texto libre y extraer información de transacciones financieras.
 
@@ -48,7 +57,7 @@ export async function parseWithHaiku(
     });
 
     const raw = (message.content[0] as { type: string; text: string }).text;
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(extractJson(raw));
 
     return {
       type: parsed.type ?? "expense",
@@ -64,7 +73,8 @@ export async function parseWithHaiku(
       needs_confirmation: parsed.needs_confirmation ?? true,
       question: parsed.question ?? undefined,
     };
-  } catch {
+  } catch (err) {
+    console.error("parseWithHaiku failed:", err);
     return {
       type: "expense",
       amount: 0,
