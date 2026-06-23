@@ -79,7 +79,7 @@ export default function MetasPage() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}
+          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
         >
           + Nueva
         </button>
@@ -165,7 +165,7 @@ export default function MetasPage() {
                     <button onClick={() => contribute(g.id, -1)}
                       style={{ padding: "0 12px", borderRadius: 12, fontSize: 16, fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>−</button>
                     <button onClick={() => contribute(g.id, 1)}
-                      style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF" }}>Sumar</button>
+                      style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Sumar</button>
                     <button onClick={() => { setContributing(null); setAddAmount(""); }}
                       style={{ padding: "0 10px", borderRadius: 12, fontSize: 13, background: "transparent", color: "var(--ink-dim)" }}>✕</button>
                   </div>

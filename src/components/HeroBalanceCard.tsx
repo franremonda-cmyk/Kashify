@@ -54,21 +54,25 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
   const formatted = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <div className="enter-up" data-delay="1" style={{
-      borderRadius: 24,
-      background: "linear-gradient(155deg, #0A9D6B 0%, #06865B 55%, #05754F 100%)",
-      boxShadow: "0 14px 40px var(--shadow-accent), 0 4px 14px rgba(40,33,20,0.10)",
+    <div className="enter-up glass-elevated" data-delay="1" style={{
+      borderRadius: 26,
       overflow: "hidden",
       position: "relative",
     }}>
+      {/* Emerald aurora glow behind the number */}
+      <div aria-hidden style={{
+        position: "absolute", inset: 0, pointerEvents: "none",
+        background: "radial-gradient(ellipse 70% 60% at 18% 120%, var(--accent-glow) 0%, transparent 60%)",
+      }} />
+
       <div style={{ padding: "18px 20px 0", position: "relative" }}>
         <p style={{
-          fontSize: 13, fontWeight: 700, textTransform: "uppercase",
-          letterSpacing: "0.14em", color: "rgba(255,255,255,0.72)", margin: 0,
+          fontSize: 12.5, fontWeight: 700, textTransform: "uppercase",
+          letterSpacing: "0.16em", color: "var(--ink-dim)", margin: 0,
         }}>Balance</p>
 
         {balances.length === 0 ? (
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", padding: "12px 0 20px" }}>
+          <p style={{ fontSize: 14, color: "var(--ink-muted)", padding: "12px 0 20px" }}>
             Enviá tu primer mensaje a Neo para empezar
           </p>
         ) : (
@@ -83,14 +87,15 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
                     flex: "0 0 auto", minWidth: 58, minHeight: 40,
                     padding: "8px 16px", borderRadius: 999,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    background: isActive ? "#FFFFFF" : "rgba(255,255,255,0.16)",
-                    border: "none",
+                    background: isActive ? "var(--accent)" : "rgba(255,255,255,0.06)",
+                    border: isActive ? "none" : "1px solid var(--glass-border)",
+                    boxShadow: isActive ? "0 0 16px var(--shadow-accent)" : "none",
                     transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
                     cursor: "pointer", outline: "none",
                   }}>
                   <span style={{
                     fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
-                    color: isActive ? "#06865B" : "rgba(255,255,255,0.92)",
+                    color: isActive ? "#04130D" : "var(--ink-muted)",
                   }}>{b.currency_code}</span>
                 </button>
               );
@@ -104,12 +109,13 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
           <div className="display mono" style={{
             fontSize: "clamp(2.4rem, 11vw, 3.4rem)",
             fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1,
-            color: "#FFFFFF",
+            color: isNeg ? "var(--negative)" : "var(--ink)",
             fontVariantNumeric: "tabular-nums", wordBreak: "keep-all",
+            textShadow: isNeg ? "none" : "0 0 30px var(--accent-glow)",
           }}>
-            {isNeg ? "−" : ""}{symbol} {formatted}
+            {isNeg ? "−" : ""}<span style={{ color: "var(--accent)" }}>{symbol}</span> {formatted}
           </div>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", marginTop: 8, fontWeight: 500 }}>
+          <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 8, fontWeight: 500 }}>
             {NAMES[selected] ?? selected}
           </p>
         </div>

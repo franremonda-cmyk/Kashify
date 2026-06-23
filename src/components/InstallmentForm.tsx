@@ -232,7 +232,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
         <button onClick={onCancel} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
           Cancelar
         </button>
-        <button onClick={handleSubmit} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: attempted && !isValid ? 0.7 : 1 }}>
+        <button onClick={handleSubmit} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: attempted && !isValid ? 0.7 : 1 }}>
           {editMode ? "Guardar cambios" : "Registrar ✓"}
         </button>
       </div>

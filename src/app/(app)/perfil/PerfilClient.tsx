@@ -78,7 +78,7 @@ function Accordion({ label, defaultOpen = false, children }: { label: string; de
 function SaveButton({ onClick, saving, label = "Guardar" }: { onClick: () => void; saving: boolean; label?: string }) {
   return (
     <button onClick={onClick} disabled={saving}
-      style={{ padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0, opacity: saving ? 0.5 : 1 }}>
+      style={{ padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", flexShrink: 0, opacity: saving ? 0.5 : 1 }}>
       {saving ? "..." : label}
     </button>
   );
@@ -477,7 +477,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                           </div>
                         )}
                         <button onClick={() => saveBudgetPeriod(b)} disabled={savingBudget === b.id}
-                          style={{ padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: savingBudget === b.id ? 0.6 : 1 }}>
+                          style={{ padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: savingBudget === b.id ? 0.6 : 1 }}>
                           {savingBudget === b.id ? "Guardando..." : "Guardar"}
                         </button>
                       </div>

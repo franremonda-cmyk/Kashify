@@ -132,7 +132,7 @@ export default async function DashboardPage() {
         </div>
         <div
           className="rounded-full flex items-center justify-center font-bold"
-          style={{ width: 44, height: 44, fontSize: 17, background: "var(--accent)", color: "#FFFFFF", boxShadow: "0 2px 10px var(--shadow-accent)" }}
+          style={{ width: 44, height: 44, fontSize: 17, background: "var(--accent)", color: "#04130D", boxShadow: "0 2px 10px var(--shadow-accent)" }}
           role="img"
           aria-label={firstName ? `Tu perfil, ${firstName}` : "Tu perfil"}
         >

@@ -132,7 +132,7 @@ export default function CategoriasPage() {
           </div>
         </div>
         <button onClick={() => setEditingCat("new")}
-          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}>
+          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}>
           + Nueva
         </button>
       </div>
@@ -198,7 +198,7 @@ export default function CategoriasPage() {
                       <MonthGrid selected={editBudget.months} onToggle={(m) => setEditBudget(b => b ? { ...b, months: toggleMonth(b.months, m) } : b)} />
                     )}
                     <button onClick={() => editBudget && saveBudget(cat.id, editBudget)}
-                      style={{ padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF" }}>Guardar límite</button>
+                      style={{ padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Guardar límite</button>
                   </div>
                 )}
               </div>

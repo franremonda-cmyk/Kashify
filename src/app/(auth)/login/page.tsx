@@ -58,7 +58,7 @@ export default function LoginPage() {
             className="w-full flex items-center justify-center gap-3 lift"
             style={{
               minHeight: 52, borderRadius: 16, fontWeight: 600, fontSize: 15,
-              background: "var(--ink)", color: "#FFFFFF", border: "none", cursor: "pointer",
+              background: "var(--ink)", color: "var(--void)", border: "none", cursor: "pointer",
             }}
           >
             <span style={{ background: "#fff", borderRadius: 6, padding: 3, display: "inline-flex" }}>

@@ -186,7 +186,7 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
 
       <div style={{ display: "flex", gap: 8 }}>
         <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
-        <button onClick={onNext} disabled={!canProceed} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: canProceed ? 1 : 0.4 }}>
+        <button onClick={onNext} disabled={!canProceed} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: canProceed ? 1 : 0.4 }}>
           Ver preview →
         </button>
       </div>
@@ -316,7 +316,7 @@ function PreviewStep({ transactions, onChange, onImport, onBack }: {
 
       <div style={{ display: "flex", gap: 8 }}>
         <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
-        <button onClick={onImport} disabled={selected.length === 0} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: selected.length > 0 ? 1 : 0.4 }}>
+        <button onClick={onImport} disabled={selected.length === 0} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: selected.length > 0 ? 1 : 0.4 }}>
           Importar {selected.length} →
         </button>
       </div>
@@ -375,7 +375,7 @@ function ResultStep({ inserted, duplicates, errors, onDone }: {
           {errors > 0 && <p style={{ fontSize: 12, color: "var(--negative)" }}>· {errors} con error</p>}
         </div>
       )}
-      <button onClick={onDone} style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", boxShadow: "0 0 24px var(--accent-glow)" }}>
+      <button onClick={onDone} style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D", boxShadow: "0 0 24px var(--accent-glow)" }}>
         Ver movimientos →
       </button>
     </div>

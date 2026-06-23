@@ -467,7 +467,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
               <p style={{ fontSize: 13.5, color: "var(--ink-muted)", marginTop: 4 }}>Tu asistente personal de finanzas</p>
             </div>
             {!hasPhone && (
-              <a href="/perfil" style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#fff", textDecoration: "none" }}>
+              <a href="/perfil" style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", textDecoration: "none" }}>
                 Conectar WhatsApp →
               </a>
             )}
@@ -489,28 +489,28 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       {isActive && (
         <>
           {/* WhatsApp-style header strip */}
-          <div style={{
+          <div className="glass" style={{
             flexShrink: 0,
             display: "flex", alignItems: "center", gap: 10,
             padding: "calc(10px + env(safe-area-inset-top, 0px)) 16px 10px 8px",
-            background: "var(--accent)",
+            borderRadius: 0, borderLeft: "none", borderRight: "none", borderTop: "none",
           }}>
             <button
               onClick={() => setIsActive(false)}
               aria-label="Volver"
-              style={{ width: 36, height: 36, borderRadius: "50%", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ width: 40, height: 40, borderRadius: "50%", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
 
-            <div className={thinking ? "neo-avatar-thinking" : "neo-avatar-active"} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
+            <div className={thinking ? "neo-avatar-thinking" : "neo-avatar-active"} style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 18px var(--accent-glow)", flexShrink: 0 }} />
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 16, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>Neo</p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {thinking ? "escribiendo..." : "asistente personal de finanzas"}
+              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 }}>Neo</p>
+              <p style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {thinking ? "escribiendo…" : "asistente personal de finanzas"}
               </p>
             </div>
           </div>
@@ -601,8 +601,8 @@ function WaBubble({
   // WhatsApp bubble shapes
   const bubbleBg = isUser ? "var(--accent)" : "var(--raised)";
   const bubbleRadius = isUser ? "18px 2px 18px 18px" : "2px 18px 18px 18px";
-  const textColor = isUser ? "#fff" : "var(--ink)";
-  const timeColor = isUser ? "rgba(255,255,255,0.65)" : "var(--ink-dim)";
+  const textColor = isUser ? "#04130D" : "var(--ink)";
+  const timeColor = isUser ? "rgba(4,19,13,0.55)" : "var(--ink-dim)";
 
   return (
     <div style={{
@@ -639,7 +639,7 @@ function WaBubble({
         {msg.isPending && msg.pendingData && (
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <button onClick={() => onConfirmPending(msg.pendingData!)} disabled={busyPending === msg.pendingData.id}
-              style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#fff", opacity: busyPending === msg.pendingData.id ? 0.5 : 1, border: "none" }}>
+              style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: busyPending === msg.pendingData.id ? 0.5 : 1, border: "none" }}>
               {busyPending === msg.pendingData.id ? "..." : "Confirmar"}
             </button>
             <button onClick={() => onDismissPending(msg.pendingData!)} disabled={!!busyPending}
@@ -758,7 +758,7 @@ function InstallmentFormCard({ prefill, busy, onSubmit, onDismiss }: {
         </button>
         <button onClick={() => canSubmit && onSubmit({ name: name.trim(), nInstallments: nInt, installmentAmount: amt, firstPaymentDate: date })}
           disabled={!canSubmit || busy}
-          style={{ flex: 2, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: canSubmit && !busy ? "var(--accent)" : "var(--raised)", color: canSubmit && !busy ? "#fff" : "var(--ink-muted)", border: "none", transition: "background 140ms" }}>
+          style={{ flex: 2, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: canSubmit && !busy ? "var(--accent)" : "var(--raised)", color: canSubmit && !busy ? "#04130D" : "var(--ink-muted)", border: "none", transition: "background 140ms" }}>
           {busy ? "Creando..." : "Crear cuota"}
         </button>
       </div>

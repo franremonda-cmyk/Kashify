@@ -8,53 +8,55 @@
 
 :root {
   /* ───────────────────────────────────────────
-     KASHIFY v2 — "WARM LEDGER" (default / light)
-     Warm paper background, confident emerald accent,
-     flat crisp surfaces, numbers as protagonists.
+     KASHIFY v3 — "OBSIDIAN GLASS" (default / dark)
+     Deep obsidian background, real frosted glass,
+     glowing emerald accent. Minimal, tech, sophisticated.
      ─────────────────────────────────────────── */
 
-  /* Backgrounds — warm paper hierarchy */
-  --void:    #F7F5F0;   /* warm cream app background */
-  --base:    #FFFFFF;   /* card / sidebar surface */
-  --raised:  #F1EEE6;   /* grouped inset bg (warm) */
+  color-scheme: dark;
 
-  /* Surfaces — flat & solid (glassmorphism retired) */
-  --glass-1: #FFFFFF;
-  --glass-2: #FFFFFF;
-  --glass-3: #FFFFFF;
+  /* Backgrounds — obsidian depth */
+  --void:    #06090B;   /* deep obsidian app background */
+  --base:    #0C1113;   /* solid fallback surface */
+  --raised:  #11171A;   /* grouped inset bg */
 
-  /* Borders — warm hairline separators */
-  --glass-border:       rgba(40, 33, 20, 0.12);
-  --glass-border-hover: rgba(40, 33, 20, 0.26);
-  --glass-border-dim:   rgba(40, 33, 20, 0.06);
+  /* Glass surfaces — frosted translucent (light edge) */
+  --glass-1: rgba(255, 255, 255, 0.045);
+  --glass-2: rgba(255, 255, 255, 0.065);
+  --glass-3: rgba(255, 255, 255, 0.085);
 
-  /* Accent — confident emerald (money, growth, trust) */
-  --accent:       #06865B;
-  --accent-soft:  rgba(6, 134, 91, 0.10);
-  --accent-glow:  rgba(6, 134, 91, 0.20);
+  /* Borders — luminous hairline */
+  --glass-border:       rgba(255, 255, 255, 0.10);
+  --glass-border-hover: rgba(255, 255, 255, 0.20);
+  --glass-border-dim:   rgba(255, 255, 255, 0.05);
 
-  /* Semantic — warm, legible */
-  --positive:  #06865B;   /* income shares the brand green */
-  --negative:  #E5484D;   /* warm red */
-  --warning:   #E8870E;   /* amber */
+  /* Accent — glowing emerald */
+  --accent:       #10D98A;
+  --accent-soft:  rgba(16, 217, 138, 0.12);
+  --accent-glow:  rgba(16, 217, 138, 0.30);
 
-  /* Text — warm near-black ink scale (WCAG AA+) */
-  --ink:       #1A1813;
-  --ink-muted: rgba(26, 24, 19, 0.66);
-  --ink-dim:   rgba(26, 24, 19, 0.48);
+  /* Semantic */
+  --positive:  #10D98A;
+  --negative:  #FF5C6C;
+  --warning:   #FFB23E;
 
-  /* Shadows — soft, warm-tinted, subtle */
-  --shadow-sm: 0 1px 2px  rgba(40, 33, 20, 0.05), 0 1px 3px rgba(40, 33, 20, 0.04);
-  --shadow-md: 0 2px 8px  rgba(40, 33, 20, 0.06), 0 1px 3px rgba(40, 33, 20, 0.05);
-  --shadow-lg: 0 8px 28px rgba(40, 33, 20, 0.09), 0 2px 8px rgba(40, 33, 20, 0.05);
-  --shadow-xl: 0 18px 50px rgba(40, 33, 20, 0.12), 0 4px 14px rgba(40, 33, 20, 0.06);
+  /* Text — cool near-white scale */
+  --ink:       #ECF2EF;
+  --ink-muted: rgba(236, 242, 239, 0.62);
+  --ink-dim:   rgba(236, 242, 239, 0.40);
 
-  /* Accent-tinted shadow for interactive elements */
-  --shadow-accent: rgba(6, 134, 91, 0.32);
+  /* Shadows — deep, with emerald-free neutrality */
+  --shadow-sm: 0 1px 3px  rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.40);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.65), 0 4px 16px rgba(0, 0, 0, 0.45);
 
-  /* No top-edge specular on light theme */
-  --spec:    none;
-  --spec-sm: none;
+  /* Accent-tinted shadow / glow for interactive elements */
+  --shadow-accent: rgba(16, 217, 138, 0.40);
+
+  /* Top-edge specular highlight for glass */
+  --spec:    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --spec-sm: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   /* Type scale (Sprint 5 — legibility floor: nothing below 12px) */
   --text-2xs:  12px;   /* was 10 — micro-labels, captions */
@@ -94,8 +96,13 @@ img, svg, video, canvas { max-width: 100%; }
 body {
   background-color: var(--void);
   background-image:
-    radial-gradient(ellipse 100% 56% at 50% 0%,
-      rgba(6, 134, 91, 0.06) 0%, transparent 60%);
+    radial-gradient(ellipse 90% 50% at 50% -5%,
+      rgba(16, 217, 138, 0.10) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 40% at 90% 100%,
+      rgba(16, 217, 138, 0.05) 0%, transparent 60%),
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans, 'DM Sans'), system-ui, sans-serif;
@@ -104,30 +111,33 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Surfaces (flat, crisp, warm) ─────────────
-   Class names kept for compatibility; glassmorphism
-   retired in favour of solid cards with hairline
-   borders and soft warm shadows. ─────────────── */
+/* ─── Frosted glass materials (Obsidian) ─────── */
 
 .glass {
-  background: var(--base);
+  background: var(--glass-1);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
   border: 1px solid var(--glass-border);
   border-radius: 20px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md), var(--spec-sm);
 }
 
 .glass-elevated {
-  background: var(--base);
+  background: var(--glass-2);
+  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
   border: 1px solid var(--glass-border);
   border-radius: 22px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg), var(--spec);
 }
 
 .glass-strong {
-  background: var(--base);
-  border: 1px solid var(--glass-border);
+  background: var(--glass-3);
+  backdrop-filter: blur(40px) saturate(170%);
+  -webkit-backdrop-filter: blur(40px) saturate(170%);
+  border: 1px solid var(--glass-border-hover);
   border-radius: 24px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl), var(--spec);
 }
 
 /* Solid surface — sidebar, bottom nav */
@@ -151,9 +161,9 @@ body {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 48px; padding: 0 20px;
   border-radius: 14px;
-  background: var(--accent); color: #FFFFFF;
-  font-size: var(--text-base); font-weight: 600;
-  box-shadow: 0 2px 10px var(--shadow-accent);
+  background: var(--accent); color: #04130D;
+  font-size: var(--text-base); font-weight: 700;
+  box-shadow: 0 2px 16px var(--shadow-accent);
   cursor: pointer; border: none;
 }
 .btn-secondary {

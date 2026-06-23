@@ -85,7 +85,7 @@ export default function CuotasPage() {
         </div>
         <button
           onClick={() => { setShowForm(true); setEditingPlan(null); }}
-          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}
+          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
         >
           + Nueva
         </button>

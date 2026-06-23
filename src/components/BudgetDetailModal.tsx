@@ -196,7 +196,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
                 <button onClick={() => setEditing(false)}
                   style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>Cancelar</button>
                 <button onClick={saveLimit} disabled={savingLimit}
-                  style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: savingLimit ? 0.6 : 1 }}>
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: savingLimit ? 0.6 : 1 }}>
                   {savingLimit ? "Guardando..." : "Guardar"}
                 </button>
               </div>

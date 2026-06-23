@@ -324,7 +324,7 @@ export default function OnboardingPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div style={{
           width: 40, height: 40, borderRadius: 12,
-          background: "var(--accent)", color: "#FFFFFF",
+          background: "var(--accent)", color: "#04130D",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 16, fontWeight: 700,
           animation: "pageFade 600ms ease-in-out infinite alternate",
@@ -384,7 +384,7 @@ export default function OnboardingPage() {
                 className="lift"
                 style={{
                   flex: 1, padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-                  background: "var(--accent)", color: "#FFFFFF",
+                  background: "var(--accent)", color: "#04130D",
                   opacity: step === 0 && !name.trim() ? 0.35 : 1,
                 }}>
                 Continuar →
@@ -394,7 +394,7 @@ export default function OnboardingPage() {
                 className="lift"
                 style={{
                   flex: 1, padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-                  background: "var(--accent)", color: "#FFFFFF",
+                  background: "var(--accent)", color: "#04130D",
                   boxShadow: "0 0 28px var(--accent-glow)",
                   opacity: saving ? 0.6 : 1,
                 }}>

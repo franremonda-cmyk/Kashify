@@ -165,7 +165,7 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
         <div style={{ padding: "12px 18px 16px", flexShrink: 0, borderTop: "0.5px solid var(--glass-border-dim)" }}>
           <button onClick={handleAdd} style={{
             width: "100%", padding: "12px", borderRadius: 12, fontSize: 15, fontWeight: 600,
-            background: "var(--accent)", color: "#FFFFFF",
+            background: "var(--accent)", color: "#04130D",
             boxShadow: "0 0 20px var(--accent-glow)",
           }}>
             {addLabel}

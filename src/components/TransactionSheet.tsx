@@ -236,7 +236,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                 </div>
                 <div style={{ display: "flex", gap: 8, paddingTop: 8 }}>
                   <button onClick={() => setMode("view")} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
-                  <button onClick={handleSave} disabled={saving || !desc.trim() || !amount} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: saving ? 0.6 : 1 }}>{saving ? "Guardando..." : "Guardar"}</button>
+                  <button onClick={handleSave} disabled={saving || !desc.trim() || !amount} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: saving ? 0.6 : 1 }}>{saving ? "Guardando..." : "Guardar"}</button>
                 </div>
               </div>
             )}
