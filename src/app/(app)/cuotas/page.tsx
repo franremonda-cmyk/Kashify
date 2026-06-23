@@ -142,7 +142,7 @@ export default function CuotasPage() {
       )}
 
       {plans.length === 0 && !showForm && (
-        <div className="glass p-8 text-center enter-up" style={{ borderRadius: 20 }}>
+        <div className="card-glass p-8 text-center enter-up">
           <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>Sin compras en cuotas</p>
           <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>Registrá una compra financiada para seguir tus pagos.</p>
         </div>
@@ -166,7 +166,7 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
   const isActive = plan.status === "active";
 
   return (
-    <div className="glass p-4 flex flex-col gap-3" style={{ borderRadius: 16 }}>
+    <div className="card-glass p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div style={{ minWidth: 0 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{plan.name}</p>

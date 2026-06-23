@@ -88,7 +88,7 @@ export default function MetasPage() {
       {loading ? (
         <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Cargando...</p>
       ) : goals.length === 0 ? (
-        <div className="glass p-8 text-center enter-up" style={{ borderRadius: 20 }}>
+        <div className="card-glass p-8 text-center enter-up">
           <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>Sin metas todavía</p>
           <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
             Creá una meta (un viaje, un fondo de emergencia) y seguí tu progreso.
@@ -102,7 +102,7 @@ export default function MetasPage() {
             const reached = g.status === "reached" || g.current_amount >= g.target_amount;
             const isContributing = contributing === g.id;
             return (
-              <div key={g.id} className="glass p-4 flex flex-col gap-3" style={{ borderRadius: 18 }}>
+              <div key={g.id} className="card-glass p-4 flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <div style={{
                     width: 42, height: 42, borderRadius: 12, flexShrink: 0,
