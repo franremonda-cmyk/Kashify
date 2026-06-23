@@ -23,7 +23,6 @@ export default function NeoOrb({ size = 104, alive = false, children, style, cla
       style={{
         width: size,
         height: size,
-        boxShadow: "var(--shadow-md)",
         ...style,
       }}
     >

@@ -699,7 +699,7 @@ function ActivityIcon({ active }: { active: boolean }) {
 function NeoIcon({ active }: { active: boolean }) {
   if (active) {
     return (
-      <NeoOrb size={26} className="neo-nav-avatar" style={{ boxShadow: "0 0 10px var(--accent-glow)" }}>
+      <NeoOrb size={26} className="neo-nav-avatar">
         <span style={{
           fontSize: 12, fontWeight: 800, color: "#FFFFFF", lineHeight: 1,
           letterSpacing: "-0.5px", textShadow: "0 1px 2px rgba(4,20,14,0.55)",

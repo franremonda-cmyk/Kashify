@@ -261,30 +261,30 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             <button key={b.id} className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 16 }}
               onClick={() => onSelect(b)}>
               <div className="glass-card" style={{
-                width: 86, padding: "10px 8px 8px",
-                borderRadius: 16,
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                width: 72, padding: "8px 6px 7px",
+                borderRadius: 14,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
               }}>
-                <div style={{ width: 32, height: 32, borderRadius: 9, background: (b.color ?? "#46B58C") + "22", border: `1px solid ${b.color ?? "#46B58C"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#46B58C" }}>
-                  <CategoryIcon icon={b.icon} name={b.name} color={b.color} size={15} />
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: (b.color ?? "#46B58C") + "22", border: `1px solid ${b.color ?? "#46B58C"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#46B58C" }}>
+                  <CategoryIcon icon={b.icon} name={b.name} color={b.color} size={14} />
                 </div>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
-                <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
+                <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
                   <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
                 </div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: textColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
+                <p style={{ fontSize: 12.5, fontWeight: 700, color: textColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
               </div>
             </button>
           );
         })}
         <Link href="/categorias" className="press" style={{ textDecoration: "none", flexShrink: 0 }} aria-label="Agregar límite por categoría">
           <div style={{
-            width: 86, padding: "10px 8px 8px", borderRadius: 14,
+            width: 72, padding: "8px 6px 7px", borderRadius: 14,
             background: "var(--raised)", border: "1px dashed var(--glass-border-hover)",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 92,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, minHeight: 80,
           }}>
-            <span style={{ width: 32, height: 32, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 20, fontWeight: 400 }}>+</span>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
+            <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 18, fontWeight: 400 }}>+</span>
+            <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
           </div>
         </Link>
       </div>

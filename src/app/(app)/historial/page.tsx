@@ -638,17 +638,17 @@ export default function ActividadPage() {
 
       {filtered.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }} className="enter-up" data-delay="1">
-          <button onClick={() => setBreakdownType("income")} style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 4 }}>Ingresos</p>
-            <p style={{ fontSize: 12, fontWeight: 700, color: "var(--positive)", fontVariantNumeric: "tabular-nums" }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          <button onClick={() => setBreakdownType("income")} style={{ padding: "12px 14px", borderRadius: 14, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Ingresos</p>
+            <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "var(--positive)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
-          <button onClick={() => setBreakdownType("expense")} style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 4 }}>Gastos</p>
-            <p style={{ fontSize: 12, fontWeight: 700, color: "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          <button onClick={() => setBreakdownType("expense")} style={{ padding: "12px 14px", borderRadius: 14, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Gastos</p>
+            <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
-          <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)" }}>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 4 }}>Neto</p>
-            <p style={{ fontSize: 12, fontWeight: 700, color: net >= 0 ? "var(--positive)" : "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+          <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)" }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6 }}>Neto</p>
+            <p className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: net >= 0 ? "var(--positive)" : "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
       )}

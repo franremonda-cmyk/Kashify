@@ -391,7 +391,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     <div style={{
       flexShrink: 0,
       padding: "8px 16px 12px",
-      background: "var(--base)",
+      background: "transparent",
       display: "flex", flexDirection: "column", gap: 4,
       width: "100%", maxWidth: 760, margin: "0 auto",
     }}>
@@ -532,7 +532,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           <div ref={listRef} className="neo-chat-list" style={{
             flex: 1, minHeight: 0, width: "100%",
             overflowY: "auto", WebkitOverflowScrolling: "touch",
-            background: "var(--base)",
+            background: "transparent",
             padding: "8px 16px 12px",
             display: "flex", flexDirection: "column", gap: 2,
           } as React.CSSProperties}>
