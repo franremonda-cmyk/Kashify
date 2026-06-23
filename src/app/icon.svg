@@ -7,9 +7,7 @@
     </linearGradient>
   </defs>
   <rect width="100" height="100" rx="26" fill="url(#k)"/>
-  <g stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M37 25 V75"/>
-    <path d="M37 53 L65 25"/>
-    <path d="M45 48 L67 75"/>
-  </g>
+  <text x="50" y="50" text-anchor="middle" dominant-baseline="central" fill="#FFFFFF"
+    font-family="'Space Grotesk', system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    font-weight="700" font-size="64" letter-spacing="-3">K</text>
 </svg>

@@ -34,10 +34,10 @@ function MonthGrid({ selected, onToggle }: { selected: number[]; onToggle: (m: n
 
 function PeriodToggle({ value, onChange }: { value: PeriodType; onChange: (p: PeriodType) => void }) {
   return (
-    <div style={{ display: "flex", gap: 6 }}>
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
       {(["always", "specific_months"] as const).map((pt) => (
         <button key={pt} type="button" onClick={() => onChange(pt)}
-          style={{ flex: 1, padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: value === pt ? "var(--accent-soft)" : "var(--base)", border: value === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: value === pt ? "var(--accent)" : "var(--ink-muted)" }}>
+          style={{ padding: "7px 14px", borderRadius: "var(--radius-pill)", fontSize: 12, fontWeight: 600, background: value === pt ? "var(--accent-soft)" : "var(--base)", border: value === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: value === pt ? "var(--accent)" : "var(--ink-muted)" }}>
           {pt === "always" ? "Siempre" : "Mes específico"}
         </button>
       ))}
@@ -198,7 +198,7 @@ export default function CategoriasPage() {
                       <MonthGrid selected={editBudget.months} onToggle={(m) => setEditBudget(b => b ? { ...b, months: toggleMonth(b.months, m) } : b)} />
                     )}
                     <button onClick={() => editBudget && saveBudget(cat.id, editBudget)}
-                      style={{ padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Guardar límite</button>
+                      style={{ alignSelf: "flex-start", padding: "9px 20px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Guardar límite</button>
                   </div>
                 )}
               </div>
@@ -252,7 +252,7 @@ export default function CategoriasPage() {
                 <MonthGrid selected={newBudgetMonths} onToggle={(m) => setNewBudgetMonths(arr => toggleMonth(arr, m))} />
               )}
               <button onClick={saveNewBudget} disabled={!newBudgetCatId || !newBudgetLimit}
-                style={{ padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: newBudgetCatId && newBudgetLimit ? "var(--accent)" : "var(--raised)", color: newBudgetCatId && newBudgetLimit ? "#FFFFFF" : "var(--ink-dim)" }}>
+                style={{ alignSelf: "flex-start", padding: "10px 20px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: 600, background: newBudgetCatId && newBudgetLimit ? "var(--accent)" : "var(--raised)", color: newBudgetCatId && newBudgetLimit ? "#FFFFFF" : "var(--ink-dim)" }}>
                 Guardar límite
               </button>
             </div>

@@ -39,11 +39,10 @@ export function LogoMark({ size = 40 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect width="100" height="100" rx="26" fill="url(#kashify-mark)" />
-      <g stroke="#FFFFFF" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M37 25 V75" />
-        <path d="M37 53 L65 25" />
-        <path d="M45 48 L67 75" />
-      </g>
+      <text x="50" y="52" textAnchor="middle" dominantBaseline="central" fill="#FFFFFF"
+        style={{ fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif", fontWeight: 700, fontSize: 64, letterSpacing: "-0.04em" }}>
+        K
+      </text>
     </svg>
   );
 }

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import InstallmentForm from "@/components/InstallmentForm";
 import type { InstallmentFormData } from "@/components/InstallmentForm";
 import { BackButton } from "@/components/ui/BackButton";
+import CategoryIcon from "@/components/CategoryIcon";
 import type { InstallmentPlan, InstallmentPayment } from "@/types";
 
 type PlanWithPayments = InstallmentPlan & {
@@ -168,12 +169,17 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
   return (
     <div className="card-glass p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
-        <div style={{ minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{plan.name}</p>
-          <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
-            {plan.card_name ? `${plan.card_name} · ` : ""}
-            {plan.interest_type === "french" ? `TNA ${plan.tna}%` : "Sin interés"}
-          </p>
+        <div className="flex items-start gap-3" style={{ minWidth: 0, flex: 1 }}>
+          <div className="list-row__icon" style={{ background: (plan.categories?.color ?? "#46B58C") + "22", border: `1px solid ${plan.categories?.color ?? "#46B58C"}33`, color: plan.categories?.color ?? "#46B58C" }}>
+            <CategoryIcon icon={plan.categories?.icon ?? "💳"} name={plan.categories?.name ?? plan.name} color={plan.categories?.color} size={18} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{plan.name}</p>
+            <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
+              {plan.card_name ? `${plan.card_name} · ` : ""}
+              {plan.interest_type === "french" ? `TNA ${plan.tna}%` : "Sin interés"}
+            </p>
+          </div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-mono, monospace)" }}>

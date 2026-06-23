@@ -35,13 +35,7 @@ export default function OpengraphImage() {
               background: "linear-gradient(150deg, #34C58E 0%, #1F9468 60%, #157053 100%)",
             }}
           >
-            <svg width="116" height="116" viewBox="0 0 100 100" fill="none">
-              <g stroke="#FFFFFF" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M37 25 V75" />
-                <path d="M37 53 L65 25" />
-                <path d="M45 48 L67 75" />
-              </g>
-            </svg>
+            <span style={{ fontSize: 76, fontWeight: 800, color: "#FFFFFF", letterSpacing: "-0.04em", lineHeight: 1 }}>K</span>
           </div>
           <span style={{ fontSize: 92, fontWeight: 800, letterSpacing: "-0.04em" }}>Kashify</span>
         </div>

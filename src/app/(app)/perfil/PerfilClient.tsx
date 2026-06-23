@@ -29,8 +29,8 @@ interface Props {
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const CURRENCIES = ["ARS","USD","EUR","CHF","BRL","UYU","CLP","GBP","PYG","PEN","COP"];
 const THEMES = [
-  { id: "arctic", label: "Oscuro", desc: "Grafito + verde", preview: "#46B58C" },
-  { id: "light",  label: "Claro",  desc: "Marfil + verde",  preview: "#2E9E74" },
+  { id: "arctic", label: "Oscuro", desc: "Grafito + verde", preview: "#46B58C", bg: "#15181A", ink: "#E8EAE7", sub: "rgba(232,234,231,0.55)" },
+  { id: "light",  label: "Claro",  desc: "Marfil + verde",  preview: "#2E9E74", bg: "#F4F1EA", ink: "#1A2C22", sub: "rgba(26,44,34,0.55)" },
 ] as const;
 const ICON_STYLES: { id: IconStyle; label: string; desc: string }[] = [
   { id: "line",  label: "Línea", desc: "Trazo fino" },
@@ -341,13 +341,13 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             const active = theme === t.id;
             return (
               <button key={t.id} onClick={() => applyTheme(t.id)}
-                style={{ padding: "12px 14px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 12, height: 12, borderRadius: "50%", background: t.preview, flexShrink: 0 }} />
+                style={{ padding: "12px 14px", borderRadius: "var(--radius-control)", textAlign: "left", background: t.bg, border: active ? `2px solid ${t.preview}` : "1px solid var(--glass-border)", boxShadow: active ? `0 0 0 3px ${t.preview}22` : "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 14, height: 14, borderRadius: "50%", background: t.preview, flexShrink: 0, boxShadow: `0 0 8px ${t.preview}66` }} />
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{t.label}</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>{t.desc}</p>
+                  <p style={{ fontSize: 12.5, fontWeight: 600, color: t.ink }}>{t.label}</p>
+                  <p style={{ fontSize: 12, color: t.sub, marginTop: 1 }}>{t.desc}</p>
                 </div>
-                {active && <div style={{ marginLeft: "auto", fontSize: 13, color: "var(--accent)" }}>✓</div>}
+                {active && <div style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: t.preview }}>✓</div>}
               </button>
             );
           })}
@@ -554,10 +554,11 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         </Link>
       </Accordion>
 
-      {/* Invitar amigo — arriba de cerrar sesión */}
+      {/* Bloque final separado: invitar / sugerencias / cerrar sesión */}
+      <div style={{ marginTop: 16, paddingTop: 18, borderTop: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", gap: 10 }}>
       <button
         onClick={inviteFriend}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--accent-glow)", marginTop: 4 }}>
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--accent-glow)" }}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
@@ -584,6 +585,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         style={{ padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "rgba(255,59,48,0.07)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
         Cerrar sesión
       </button>
+      </div>
 
       {/* Category modal */}
       {editingCat !== null && (
