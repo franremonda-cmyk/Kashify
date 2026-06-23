@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Fuse from "fuse.js";
 import CategoryModal from "@/components/CategoryModal";
+import NeoOrb from "@/components/NeoOrb";
 import { useIconStyle } from "@/context/IconStyleContext";
 
 const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "PYG", "BOB", "COP", "PEN", "GBP"];
@@ -703,30 +704,27 @@ function ActivityIcon({ active }: { active: boolean }) {
 }
 
 function NeoIcon({ active }: { active: boolean }) {
+  if (active) {
+    return (
+      <NeoOrb size={26} className="neo-nav-avatar" style={{ boxShadow: "0 0 10px var(--accent-glow)" }}>
+        <span style={{
+          fontSize: 12, fontWeight: 800, color: "#FFFFFF", lineHeight: 1,
+          letterSpacing: "-0.5px", textShadow: "0 1px 2px rgba(4,20,14,0.55)",
+        }}>N</span>
+      </NeoOrb>
+    );
+  }
   return (
     <div
-      className={`neo-nav-avatar${active ? " neo-avatar-idle" : ""}`}
+      className="neo-nav-avatar"
       style={{
-        width: 26,
-        height: 26,
-        borderRadius: "50%",
-        background: active ? "var(--accent)" : "var(--raised)",
-        border: active ? "none" : "1.5px solid var(--ink-muted)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: active ? "0 0 10px var(--accent-glow)" : "none",
-        transition: "background 200ms ease, box-shadow 200ms ease",
-        flexShrink: 0,
+        width: 26, height: 26, borderRadius: "50%",
+        background: "var(--raised)", border: "1.5px solid var(--ink-muted)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "background 200ms ease, box-shadow 200ms ease", flexShrink: 0,
       }}
     >
-      <span style={{
-        fontSize: 13,
-        fontWeight: 800,
-        color: active ? "#FFFFFF" : "var(--ink-muted)",
-        lineHeight: 1,
-        letterSpacing: "-0.5px",
-      }}>
+      <span style={{ fontSize: 13, fontWeight: 800, color: "var(--ink-muted)", lineHeight: 1, letterSpacing: "-0.5px" }}>
         N
       </span>
     </div>
