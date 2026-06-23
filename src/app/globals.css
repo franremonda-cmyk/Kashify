@@ -293,6 +293,7 @@ body::before {
 .section-title {
   font-size: var(--text-base);        /* 16px — readable, present */
   font-weight: 700;
+  line-height: 20px;                  /* deterministic head height for grid alignment */
   letter-spacing: -0.01em;
   color: var(--ink);
   margin: 0;
@@ -606,6 +607,10 @@ body.neo-keyboard-open .app-bottom-nav {
 
 /* ─── Responsive layout ──────────────────── */
 
+/* Budget chips: chip height 94 + gap 8 → 1 row = 94, 2 rows = 196.
+   Mobile shows a single row; the rest live behind "Ver todo →". */
+.budget-wrap { max-height: 96px; overflow: hidden; }
+
 /* Dashboard becomes a 2-column grid on tablet+; hero & chart span full.
    Items flagged .dash-full stay full-width; the rest auto-place in 2 cols. */
 @media (min-width: 768px) {
@@ -616,13 +621,14 @@ body.neo-keyboard-open .app-bottom-nav {
     align-items: start;
   }
   .dashboard-shell > .dash-full { grid-column: 1 / -1; }
-  /* Drop the metrics down so Ingresos/Gastos line up with the budget
-     chips (not the "Límites" title) in the right column. */
-  .dashboard-shell > .dash-metrics { margin-top: 34px; }
-  /* Grow the Ingresos/Gastos cards to match the height of the two
-     budget-chip rows in the right column. */
+  /* Two rows of budget chips on tablet/desktop */
+  .budget-wrap { max-height: 198px; }
+  /* Drop the metrics down so the cards' TOP lines up with the chips
+     (below the "Límites" title), and grow them so the BOTTOM lines up
+     with the end of the second chip row. */
+  .dashboard-shell > .dash-metrics { margin-top: 32px; }
   .dash-metrics > button {
-    min-height: 186px;
+    min-height: 196px;
     display: flex;
     flex-direction: column;
     justify-content: center;

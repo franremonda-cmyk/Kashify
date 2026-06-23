@@ -247,9 +247,9 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
         <p className="section-title">Límites por categoría</p>
         <Link href="/categorias" className="section-link">Ver todo →</Link>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingBottom: 2 }}>
-        {/* Cap to 2 rows on the dashboard; the rest live in "Ver todo →" */}
-        {relevant.slice(0, 7).map((b) => {
+      {/* 1 row on mobile, 2 rows on tablet/desktop (CSS max-height clips the rest) */}
+      <div className="budget-wrap" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {relevant.slice(0, 10).map((b) => {
           const pct = b.monthly_limit > 0 ? Math.min(100, ((b.spent ?? 0) / b.monthly_limit) * 100) : 0;
           const textColor = pct >= 100 ? "var(--negative)" : pct >= 80 ? "var(--warning)" : "var(--positive)";
           // Gradiente dinámico: verde→amarillo→rojo según porcentaje
@@ -262,9 +262,9 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             <button key={b.id} className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 16 }}
               onClick={() => onSelect(b)}>
               <div className="glass-card" style={{
-                width: 72, padding: "8px 6px 7px",
+                width: 72, height: 94, padding: "8px 6px 7px",
                 borderRadius: 14,
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5,
               }}>
                 <div style={{ width: 28, height: 28, borderRadius: 8, background: (b.color ?? "#46B58C") + "22", border: `1px solid ${b.color ?? "#46B58C"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#46B58C" }}>
                   <CategoryIcon icon={b.icon} name={b.name} color={b.color} size={14} />
@@ -278,11 +278,10 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             </button>
           );
         })}
-        <Link href="/categorias" className="press" style={{ textDecoration: "none", flexShrink: 0 }} aria-label="Agregar límite por categoría">
+        <Link href="/categorias" className="press glow-hover glass-card" style={{ textDecoration: "none", flexShrink: 0, borderRadius: 14, borderStyle: "dashed", borderColor: "var(--glass-border-hover)" }} aria-label="Agregar límite por categoría">
           <div style={{
-            width: 72, padding: "8px 6px 7px", borderRadius: 14,
-            background: "var(--raised)", border: "1px dashed var(--glass-border-hover)",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, minHeight: 80,
+            width: 72, height: 94, padding: "8px 6px 7px",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5,
           }}>
             <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 18, fontWeight: 400 }}>+</span>
             <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
