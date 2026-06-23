@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import Fuse from "fuse.js";
 import CategoryModal from "@/components/CategoryModal";
@@ -318,7 +319,8 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     display: "block",
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center p-4"
       style={{ background: "rgba(0,0,0,0.80)", backdropFilter: "blur(8px)" }}
@@ -491,7 +493,8 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
           onClose={() => setShowNewCat(false)}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -701,8 +704,8 @@ function NeoIcon({ active }: { active: boolean }) {
     return (
       <NeoOrb size={26} className="neo-nav-avatar">
         <span style={{
-          fontSize: 12, fontWeight: 800, color: "#FFFFFF", lineHeight: 1,
-          letterSpacing: "-0.5px", textShadow: "0 1px 2px rgba(4,20,14,0.55)",
+          fontSize: 12, fontWeight: 800, color: "#04130D", lineHeight: 1,
+          letterSpacing: "-0.5px", textShadow: "0 1px 1px rgba(255,255,255,0.30)",
         }}>N</span>
       </NeoOrb>
     );

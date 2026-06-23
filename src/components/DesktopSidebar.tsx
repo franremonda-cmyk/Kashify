@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import NeoOrb from "./NeoOrb";
 
 const NAV = [
   { href: "/dashboard", label: "Inicio",    icon: HomeIcon },
@@ -11,6 +13,23 @@ const NAV = [
 
 export default function DesktopSidebar() {
   const pathname = usePathname();
+  const [invited, setInvited] = useState(false);
+
+  function openRegister() {
+    window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }));
+  }
+
+  async function inviteFriend() {
+    const url = "https://kashify.vercel.app";
+    const text = `Te invito a Kashify, la app para llevar tus finanzas hablándole a Neo por WhatsApp 💚 ${url}`;
+    try {
+      if (navigator.share) { await navigator.share({ title: "Kashify", text, url }); return; }
+      await navigator.clipboard.writeText(text);
+      setInvited(true);
+      setTimeout(() => setInvited(false), 2000);
+    } catch { /* usuario canceló el share */ }
+  }
+
   return (
     <aside
       className="app-sidebar"
@@ -20,9 +39,7 @@ export default function DesktopSidebar() {
         background: "var(--base)",
         borderRight: "0.5px solid var(--glass-border)",
         padding: "28px 0 28px",
-        position: "sticky",
-        top: 0,
-        height: "100dvh",
+        alignSelf: "stretch",
         zIndex: 30,
       }}
     >
@@ -46,6 +63,19 @@ export default function DesktopSidebar() {
             fontSize: 16, fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.01em",
           }}>Kashify</span>
         </div>
+      </div>
+
+      {/* Registrar */}
+      <div style={{ padding: "0 14px 22px" }}>
+        <button onClick={openRegister} className="press"
+          style={{
+            width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            padding: "12px", borderRadius: 12, border: "none", cursor: "pointer",
+            background: "var(--accent)", color: "#04130D", fontWeight: 700, fontSize: 14,
+            boxShadow: "0 4px 16px var(--shadow-accent)",
+          }}>
+          <span style={{ fontSize: 19, lineHeight: 1, marginTop: -1 }}>+</span> Registrar
+        </button>
       </div>
 
       {/* Nav */}
@@ -87,6 +117,26 @@ export default function DesktopSidebar() {
         })}
       </nav>
 
+      {/* Invitar amigo */}
+      <div style={{ padding: "0 14px 16px" }}>
+        <button onClick={inviteFriend} className="press"
+          style={{
+            width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            padding: "10px", borderRadius: 12, cursor: "pointer",
+            background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 600, fontSize: 13,
+            border: "0.5px solid var(--glass-border)",
+          }}>
+          {invited ? "¡Copiado! ✓" : (
+            <>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" />
+              </svg>
+              Invitar amigo
+            </>
+          )}
+        </button>
+      </div>
+
       <div style={{ padding: "0 20px" }}>
         <p style={{ fontSize: 12.5, color: "var(--ink-dim)", letterSpacing: "0.06em", fontWeight: 600 }}>
           KASHIFY · BETA
@@ -115,11 +165,12 @@ function ActivityIcon({ active }: { active: boolean }) {
 }
 function NeoIcon({ active }: { active: boolean }) {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9"/>
-      <path d="M9 8v8M15 8v8"/>
-    </svg>
+    <NeoOrb size={20} alive={active}>
+      <span style={{
+        fontSize: 10, fontWeight: 800, color: "#04130D", lineHeight: 1,
+        letterSpacing: "-0.4px", textShadow: "0 1px 1px rgba(255,255,255,0.3)",
+      }}>N</span>
+    </NeoOrb>
   );
 }
 function UserIcon({ active }: { active: boolean }) {

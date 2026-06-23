@@ -677,9 +677,8 @@ body.neo-keyboard-open .app-bottom-nav {
   .app-layout {
     display: grid !important;
     grid-template-columns: 240px 1fr;
-    grid-template-rows: 1fr;
-    min-height: 100dvh;
-    align-items: start;
+    grid-template-rows: auto;       /* row = content height (sidebar ends at content) */
+    align-items: stretch;
   }
   .app-sidebar { display: flex !important; }
   .app-bottom-nav { display: none !important; }
