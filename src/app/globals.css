@@ -81,6 +81,19 @@
 
   /* Spacing */
   --space-section: 22px;
+  --gap-section: 24px;
+
+  /* ── Design system radii (single source of truth) ───────────
+     Usar SIEMPRE estos en vez de números sueltos:
+       --radius-card    contenedores/cards/tiles
+       --radius-chip    chips de límite, mini-cards cuadradas
+       --radius-control inputs, botones, íconos de fila
+       --radius-pill    pills / toggles redondos */
+  --radius-card:    18px;
+  --radius-chip:    14px;
+  --radius-control: 12px;
+  --radius-pill:    999px;
+  --pad-card:       16px;
 
   /* Legacy aliases */
   --bg-primary:       var(--void);
@@ -148,13 +161,54 @@ body {
   box-shadow: var(--shadow-xl), var(--spec-lg);
 }
 
-/* Frosted card — translucent, blurred, for content groups */
-.glass-card {
+/* ── Card system ─────────────────────────────────────────────
+   REGLA: .card-glass para widgets / resúmenes (dashboard, summary,
+   metas/cuotas). .card-solid para listas largas (historial).
+   Mismo radio/borde/sombra; sólo cambia el fondo. ─────────── */
+.card-glass, .glass-card {
   background: var(--glass-2);
   backdrop-filter: blur(22px) saturate(150%);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow-md), var(--spec-sm);
+}
+.card-solid {
+  background: var(--base);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Fila de lista canónica (transacciones, metas, cuotas) */
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  text-decoration: none;
+}
+.list-row + .list-row { border-top: 0.5px solid var(--glass-border-dim); }
+.list-row__icon {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: var(--radius-control);
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Chip de límite por categoría (Inicio + Actividad) */
+.budget-chip {
+  width: 72px; height: 94px; flex-shrink: 0;
+  padding: 8px 6px 7px;
+  border-radius: var(--radius-chip);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+}
+.budget-chip--add {
+  background: var(--base);
+  border: 0.5px dashed var(--glass-border-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Light sweep across a glass surface (premium sheen) */
@@ -647,7 +701,9 @@ body.neo-keyboard-open .app-bottom-nav {
     gap: 18px;
     align-items: start;
   }
-  .dashboard-shell > .dash-full { grid-column: 1 / -1; }
+  /* tile-full = ocupa las 2 columnas (hero, gráfico, widgets anchos nuevos) */
+  .dashboard-shell > .dash-full,
+  .dashboard-shell > .tile-full { grid-column: 1 / -1; }
   /* Two rows of budget chips on tablet/desktop */
   .budget-wrap { max-height: 198px; }
   /* Drop the metrics down so the cards' TOP lines up with the chips
