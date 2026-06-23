@@ -619,6 +619,16 @@ body.neo-keyboard-open .app-bottom-nav {
   /* Drop the metrics down so Ingresos/Gastos line up with the budget
      chips (not the "Límites" title) in the right column. */
   .dashboard-shell > .dash-metrics { margin-top: 34px; }
+  /* Grow the Ingresos/Gastos cards to match the height of the two
+     budget-chip rows in the right column. */
+  .dash-metrics > button {
+    min-height: 186px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+  }
+  .metric-value { font-size: 2rem !important; }
 }
 
 /* Tablet (768–1023): no sidebar yet — just give the column room to breathe */

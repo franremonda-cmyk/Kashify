@@ -94,7 +94,7 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
         <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flexShrink: 0 }} />
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{label}</p>
       </div>
-      <p className="mono" style={{
+      <p className="mono metric-value" style={{
         fontSize: "clamp(1.15rem, 4.2vw, 1.5rem)",
         fontWeight: 700, color, letterSpacing: "-0.02em",
         fontVariantNumeric: "tabular-nums", lineHeight: 1,
@@ -248,7 +248,8 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
         <Link href="/categorias" className="section-link">Ver todo →</Link>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingBottom: 2 }}>
-        {relevant.map((b) => {
+        {/* Cap to 2 rows on the dashboard; the rest live in "Ver todo →" */}
+        {relevant.slice(0, 7).map((b) => {
           const pct = b.monthly_limit > 0 ? Math.min(100, ((b.spent ?? 0) / b.monthly_limit) * 100) : 0;
           const textColor = pct >= 100 ? "var(--negative)" : pct >= 80 ? "var(--warning)" : "var(--positive)";
           // Gradiente dinámico: verde→amarillo→rojo según porcentaje
