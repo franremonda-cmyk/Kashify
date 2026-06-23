@@ -611,6 +611,10 @@ body.neo-keyboard-open .app-bottom-nav {
    Mobile shows a single row; the rest live behind "Ver todo →". */
 .budget-wrap { max-height: 96px; overflow: hidden; }
 
+/* Desktop-only blocks (e.g. the Cuotas widget): hidden on mobile/tablet */
+.desktop-only { display: none !important; }
+@media (min-width: 1024px) { .desktop-only { display: flex !important; } }
+
 /* Dashboard becomes a 2-column grid on tablet+; hero & chart span full.
    Items flagged .dash-full stay full-width; the rest auto-place in 2 cols. */
 @media (min-width: 768px) {

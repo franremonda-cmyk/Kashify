@@ -45,6 +45,17 @@ interface BudgetEntry {
   applies_months?: number[] | null;
 }
 
+interface InstallmentEntry {
+  id: string;
+  name: string;
+  currency_code: string;
+  n_installments: number;
+  installment_amount: number;
+  paid: number;
+  color?: string;
+  icon?: string;
+}
+
 interface Props {
   balances: Balance[];
   primaryCurrency: string;
@@ -53,6 +64,7 @@ interface Props {
   recent: RecentTx[];
   goals?: SavingsGoal[];
   budgets?: BudgetEntry[];
+  installments?: InstallmentEntry[];
 }
 
 const SYMBOLS: Record<string, string> = {
@@ -232,6 +244,53 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
   );
 }
 
+// Widget de cuotas activas — solo desktop
+function CuotasWidget({ installments }: { installments: InstallmentEntry[] }) {
+  if (installments.length === 0) return null;
+  function fmt(n: number, c: string) {
+    if (n >= 1_000_000) return `${c} ${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${c} ${Math.round(n / 1_000)}K`;
+    return `${c} ${Math.round(n).toLocaleString("es-AR")}`;
+  }
+  return (
+    <section className="desktop-only flex flex-col gap-2 enter-up" data-delay="5">
+      <div className="section-head" style={{ marginBottom: 0 }}>
+        <p className="section-title">Cuotas activas</p>
+        <Link href="/cuotas" className="section-link">Ver todo →</Link>
+      </div>
+      <div className="glass-card" style={{ borderRadius: 18, overflow: "hidden" }}>
+        {installments.map((p, i) => {
+          const pct = Math.min(100, (p.paid / p.n_installments) * 100);
+          const color = p.color ?? "#46B58C";
+          return (
+            <Link key={p.id} href="/cuotas" style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+              borderBottom: i < installments.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
+              textDecoration: "none",
+            }}>
+              <div style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, background: color + "22", border: `1px solid ${color}33`, display: "flex", alignItems: "center", justifyContent: "center", color }}>
+                <CategoryIcon icon={p.icon} name={p.name} color={p.color} size={16} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{p.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0 }}>{p.paid}/{p.n_installments}</span>
+                </div>
+                <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: color, transition: "width 400ms ease-out" }} />
+                </div>
+                <p className="mono" style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+                  {fmt(p.installment_amount, p.currency_code)} / mes
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 // Franja horizontal de límites de categoría
 function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; currency: string; onSelect: (b: BudgetEntry) => void }) {
   // Sin tope: todas las categorías con límite, ordenadas por cercanía al 100%
@@ -292,7 +351,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent, goals = [], budgets = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent, goals = [], budgets = [], installments = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -397,6 +456,9 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
 
       {/* Widget de metas — máx 2 */}
       <GoalsWidget goals={goals} />
+
+      {/* Cuotas activas — solo desktop */}
+      <CuotasWidget installments={installments} />
 
       {/* Gráfico de líneas mensual */}
       <div className="dash-full enter-up" data-delay="6">

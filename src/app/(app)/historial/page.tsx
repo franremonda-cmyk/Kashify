@@ -775,7 +775,7 @@ export default function ActividadPage() {
                 <Link href="/categorias" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Agregar uno →</Link>
               </div>
             ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingBottom: 2 }}>
+              <div className="budget-wrap" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {catsWithBudget.map((cat) => {
                   const spent = spendByCat[cat.id] ?? 0;
                   const pct = Math.min(100, cat.monthly_limit > 0 ? (spent / cat.monthly_limit) * 100 : 0);
@@ -791,15 +791,15 @@ export default function ActividadPage() {
                     <button key={cat.id}
                       onClick={() => setSelectedBudget({ ...cat, spent })}
                       style={{
-                        flexShrink: 0, width: 80, padding: "10px 8px 8px",
+                        flexShrink: 0, width: 72, height: 94, padding: "8px 6px 7px",
                         borderRadius: 14, background: "var(--base)",
                         border: `0.5px solid ${over ? "rgba(255,69,58,0.3)" : "var(--glass-border)"}`,
                         boxShadow: "var(--shadow-sm)",
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5,
                         cursor: "pointer",
                       }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
-                        <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={15} />
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
+                        <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={14} />
                       </div>
                       <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
                       <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>

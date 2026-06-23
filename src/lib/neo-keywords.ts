@@ -398,7 +398,8 @@ export function detectPurchaseIntent(normalized: string): PurchaseIntent {
   // IMPORTANT: do NOT fall back to the whole message. If only verb+amount was
   // given ("gasté 20"), item stays empty so the caller asks "¿en qué?" instead
   // of assuming a description.
-  const item = rest;
+  // Strip a leading preposition left over after the amount ("en almuerzo" → "almuerzo").
+  const item = rest.replace(/^(en|de|del|por|para|a|al)\s+/, "").trim();
 
   // Find category by checking each word in the item against the keyword map
   let suggestedCategory: string | null = null;

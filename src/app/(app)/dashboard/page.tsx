@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const yearAgo    = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().split("T")[0];
 
-  const [balancesRes, profileRes, pendingRes, txMonthRes, txHistoryRes, goalsRes, budgetsRes] = await Promise.all([
+  const [balancesRes, profileRes, pendingRes, txMonthRes, txHistoryRes, goalsRes, budgetsRes, installmentsRes] = await Promise.all([
     supabase.from("balances").select("*").eq("user_id", user.id).order("currency_code"),
     supabase.from("profiles").select("*").eq("user_id", user.id).single(),
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
@@ -33,6 +33,7 @@ export default async function DashboardPage() {
       .order("date", { ascending: true }),
     supabase.from("savings_goals").select("*").eq("user_id", user.id).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
     supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id),
+    supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(id), categories(name, color, icon)").eq("user_id", user.id).neq("status", "cancelled").order("created_at", { ascending: false }),
   ]);
 
   const balances   = balancesRes.data ?? [];
@@ -42,6 +43,24 @@ export default async function DashboardPage() {
   const txHistory  = txHistoryRes.data ?? [];
   const goals      = goalsRes.data ?? [];
   const budgetsRaw = budgetsRes.data ?? [];
+  // Cuotas activas (las que aún tienen pagos pendientes)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const installments = (installmentsRes.data as any[] ?? [])
+    .map((p) => {
+      const paid = Array.isArray(p.installment_payments) ? p.installment_payments.length : 0;
+      return {
+        id: p.id,
+        name: p.name,
+        currency_code: p.currency_code,
+        n_installments: p.n_installments,
+        installment_amount: Number(p.installment_amount),
+        paid,
+        color: p.categories?.color,
+        icon: p.categories?.icon,
+      };
+    })
+    .filter((p) => p.paid < p.n_installments)
+    .slice(0, 4);
 
   if (!profile?.display_name) redirect("/onboarding");
 
@@ -152,6 +171,7 @@ export default async function DashboardPage() {
         recent={recent}
         goals={goals}
         budgets={budgets}
+        installments={installments}
       />
 
       {/* Empty state */}
