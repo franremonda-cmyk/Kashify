@@ -620,7 +620,7 @@ export default function BottomNav() {
               Icon={item.icon}
               active={pathname === item.href}
               badge={item.badge ? neoBadge : 0}
-              tourId={item.href === "/neo" ? "neo" : undefined}
+              tourId={item.href === "/neo" ? "neo" : item.href === "/perfil" ? "perfil" : undefined}
             />
           ))}
         </div>

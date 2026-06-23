@@ -20,6 +20,8 @@ const STEPS: Step[] = [
     body: "Tocá el botón ✚ para anotar un gasto o ingreso al instante." },
   { sel: "neo", emoji: "🤖", title: "Neo, tu asistente",
     body: "Preguntale lo que quieras o cargá gastos hablándole, como a un amigo." },
+  { sel: "perfil", emoji: "⚙️", title: "Todo a tu medida",
+    body: "En tu Perfil ajustás metas, cuotas, categorías y el aspecto de la app. Pasá cuando quieras a personalizarla." },
 ];
 
 const TOUR_KEY = "kashify-tour-done";

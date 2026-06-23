@@ -326,7 +326,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
   const visibleTx = showAllTx ? recent : recent.slice(0, 5);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <HeroBalanceCard
         balances={balances}
         primaryCurrency={primaryCurrency}
