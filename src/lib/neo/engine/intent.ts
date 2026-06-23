@@ -196,5 +196,24 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     }
   }
 
+  // ── Transacción "pelada": palabra(s) + monto, sin verbo ni comando ────────
+  // "almuerzo 850", "850 uber", "kiosco 1200". Si llegó hasta acá no fue
+  // ninguna consulta/comando, así que un texto + un monto = gasto (o ingreso
+  // si hay keyword de ingreso). 0 tokens, sin pasar por el LLM.
+  const bareAmt = m.match(/(\d[\d.,]*)/);
+  if (bareAmt) {
+    const amount = parseAmount(bareAmt[1]);
+    const desc = m
+      .replace(/\d[\d.,]*/g, " ")
+      .replace(/\b(pesos?|ars|usd|eur|uyu|brl|mangos?|lucas?|palos?)\b/g, " ")
+      .replace(/\b(en|de|del|por|para|al|un|una|unos|unas|el|la|los|las|mi|mis|me|gaste|gasté|pague|pagué|compre|compré)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!isNaN(amount) && amount > 0 && desc.length >= 2) {
+      const txType: "income" | "expense" = /ingres|sueldo|cobr[eé]?|me\s+pagaron|me\s+depositaron/.test(m) ? "income" : "expense";
+      return { type: "flow", ctx: { flow: txType, description: desc, amount, category: categoryForText(desc) } };
+    }
+  }
+
   return { type: "unknown" };
 }
