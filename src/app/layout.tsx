@@ -27,10 +27,25 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Kashify",
-  description: "Tus finanzas, por WhatsApp. Con Neo.",
+  metadataBase: new URL("https://kashify.vercel.app"),
+  title: { default: "Kashify — Finanzas personales", template: "%s · Kashify" },
+  description: "Tus finanzas, por WhatsApp. Con Neo, tu asistente personal.",
+  applicationName: "Kashify",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Kashify" },
+  openGraph: {
+    type: "website",
+    siteName: "Kashify",
+    title: "Kashify — Tus finanzas, claras y al día.",
+    description: "Cargá gastos por WhatsApp. Neo, tu asistente, ordena todo por vos.",
+    url: "https://kashify.vercel.app",
+    locale: "es_AR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kashify — Tus finanzas, claras y al día.",
+    description: "Cargá gastos por WhatsApp. Neo, tu asistente, ordena todo por vos.",
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,6 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/client";
+import Logo from "@/components/Logo";
 
 export default function LoginPage() {
   async function signInWithGoogle() {
@@ -21,25 +22,15 @@ export default function LoginPage() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 60% 40% at 50% 0%,   rgba(123,97,255,0.07) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 30% at 80% 100%, rgba(123,97,255,0.04) 0%, transparent 60%)
+            radial-gradient(ellipse 70% 44% at 50% -6%, rgba(46,180,130,0.10) 0%, transparent 58%),
+            radial-gradient(ellipse 50% 34% at 84% 104%, rgba(46,180,130,0.05) 0%, transparent 60%)
           `,
         }}
       />
 
       <div className="relative w-full max-w-sm flex flex-col items-center gap-9 scale-up">
-        {/* Emerald wordmark badge */}
-        <div
-          className="display flex items-center justify-center"
-          style={{
-            width: 76, height: 76, borderRadius: 24, fontSize: 38, fontWeight: 700,
-            background: "linear-gradient(155deg, #0A9D6B 0%, #06865B 60%, #05754F 100%)",
-            color: "#FFFFFF",
-            boxShadow: "0 12px 36px var(--shadow-accent)",
-          }}
-        >
-          K
-        </div>
+        {/* Logo lockup */}
+        <Logo size={56} className="enter-up" />
 
         {/* Headline */}
         <div className="text-center" style={{ padding: "0 8px" }}>

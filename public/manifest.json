@@ -1,22 +1,17 @@
 {
-  "name": "Neo — Finanzas Personales",
-  "short_name": "Neo",
-  "description": "Registrá tus gastos por WhatsApp con Neo",
+  "name": "Kashify — Finanzas personales",
+  "short_name": "Kashify",
+  "description": "Tus finanzas, por WhatsApp. Con Neo.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#0f0f1a",
+  "background_color": "#121517",
+  "theme_color": "#121517",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/logo-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]
