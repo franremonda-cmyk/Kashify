@@ -637,27 +637,27 @@ export default function ActividadPage() {
       )}
 
       {filtered.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }} className="enter-up" data-delay="1">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }} className="enter-up" data-delay="1">
           <button onClick={() => setBreakdownType("income")} className="card-glass" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--positive)", flexShrink: 0 }} />
               <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Ingresos</p>
             </div>
-            <p className="mono" style={{ fontSize: "clamp(1.05rem, 3.4vw, 1.4rem)", fontWeight: 700, color: "var(--positive)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+            <p className="mono" style={{ fontSize: "clamp(0.78rem, 3vw, 1.4rem)", fontWeight: 700, whiteSpace: "nowrap", color: "var(--positive)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
           <button onClick={() => setBreakdownType("expense")} className="card-glass" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--negative)", flexShrink: 0 }} />
               <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Gastos</p>
             </div>
-            <p className="mono" style={{ fontSize: "clamp(1.05rem, 3.4vw, 1.4rem)", fontWeight: 700, color: "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+            <p className="mono" style={{ fontSize: "clamp(0.78rem, 3vw, 1.4rem)", fontWeight: 700, whiteSpace: "nowrap", color: "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
           <div className="card-glass" style={{ padding: "14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: net >= 0 ? "var(--positive)" : "var(--negative)", flexShrink: 0 }} />
               <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Neto</p>
             </div>
-            <p className="mono" style={{ fontSize: "clamp(1.05rem, 3.4vw, 1.4rem)", fontWeight: 700, color: net >= 0 ? "var(--positive)" : "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+            <p className="mono" style={{ fontSize: "clamp(0.78rem, 3vw, 1.4rem)", fontWeight: 700, whiteSpace: "nowrap", color: net >= 0 ? "var(--positive)" : "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
       )}
@@ -888,7 +888,7 @@ export default function ActividadPage() {
       {installmentPlans.filter(p => p.status === "active").length > 0 && (
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 4 }}>Cuotas activas</p>
+            <p className="section-title">Cuotas activas</p>
             <Link href="/cuotas" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar cuota</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
@@ -898,9 +898,14 @@ export default function ActividadPage() {
               const pct = (paidCount / plan.n_installments) * 100;
               return (
                 <Link key={plan.id} href="/cuotas" style={{ display: "block", textDecoration: "none", padding: "12px 16px", borderBottom: i < arr.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{plan.name}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", fontVariantNumeric: "tabular-nums" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(70,181,140,0.13)", border: "1px solid rgba(70,181,140,0.22)", display: "flex", alignItems: "center", justifyContent: "center", color: "#46B58C", flexShrink: 0 }}>
+                        <CategoryIcon icon={(plan as import("@/types").InstallmentPlan & { categories?: { icon?: string } }).categories?.icon ?? "💳"} name={plan.name} size={14} />
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{plan.name}</span>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                       {plan.currency_code} {Number(plan.installment_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })} · cuota {paidCount + 1}/{plan.n_installments}
                     </span>
                   </div>
