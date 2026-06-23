@@ -85,7 +85,7 @@ export default function CuotasPage() {
         </div>
         <button
           onClick={() => { setShowForm(true); setEditingPlan(null); }}
-          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0 }}
+          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
         >
           + Nueva
         </button>
@@ -125,7 +125,7 @@ export default function CuotasPage() {
 
       {active.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 4 }}>Activas</p>
+          <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 4 }}>Activas</p>
           {active.map((plan) => (
             <PlanCard key={plan.id} plan={plan} onCancel={handleCancel} onPay={handlePay} onEdit={setEditingPlan} />
           ))}
@@ -134,7 +134,7 @@ export default function CuotasPage() {
 
       {paid.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 4 }}>Saldadas</p>
+          <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 4 }}>Saldadas</p>
           {paid.map((plan) => (
             <PlanCard key={plan.id} plan={plan} onCancel={handleCancel} onPay={handlePay} onEdit={setEditingPlan} />
           ))}

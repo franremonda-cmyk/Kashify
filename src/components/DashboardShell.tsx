@@ -86,24 +86,22 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
 }) {
   const animated = useCounter(value);
   const color  = isIncome ? "var(--positive)" : "var(--negative)";
-  const bg     = isIncome ? "rgba(52,199,89,0.07)"  : "rgba(255,59,48,0.06)";
-  const border = isIncome ? "0.5px solid rgba(52,199,89,0.18)" : "0.5px solid rgba(255,59,48,0.16)";
   const full   = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <button onClick={onClick} style={{ flex: 1, padding: "14px 16px", borderRadius: 14, background: bg, border, boxShadow: "var(--shadow-sm)", textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
-      <p style={{
-        fontSize: 12, fontWeight: 600, textTransform: "uppercase",
-        letterSpacing: "0.06em", color: "var(--ink-muted)", marginBottom: 8,
-      }}>{label}</p>
-      <p className="display" style={{
-        fontSize: "clamp(1rem, 3.4vw, 1.2rem)",
+    <button onClick={onClick} className="press glow-hover glass-card" style={{ flex: 1, padding: "16px 16px", borderRadius: 18, textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flexShrink: 0 }} />
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{label}</p>
+      </div>
+      <p className="mono" style={{
+        fontSize: "clamp(1.15rem, 4.2vw, 1.5rem)",
         fontWeight: 700, color, letterSpacing: "-0.02em",
         fontVariantNumeric: "tabular-nums", lineHeight: 1,
       }}>
         {sym} {full}
       </p>
-      {onClick && <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>ver desglose →</p>}
+      {onClick && <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 8, fontWeight: 500 }}>Ver desglose →</p>}
     </button>
   );
 }
@@ -199,7 +197,7 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
         <p className="section-title">Metas de ahorro</p>
         <Link href="/metas" className="section-link">Ver todo →</Link>
       </div>
-      <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+      <div className="glass-card" style={{ borderRadius: 18, overflow: "hidden" }}>
         {visible.map((g, i) => {
           const pct = Math.min(100, (g.current_amount / g.target_amount) * 100);
           const reached = g.status === "reached" || g.current_amount >= g.target_amount;
@@ -236,10 +234,15 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
 
 // Franja horizontal de límites de categoría
 function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; currency: string; onSelect: (b: BudgetEntry) => void }) {
-  const relevant = budgets.filter(b => b.currency_code === currency).slice(0, 5);
+  // Sin tope: todas las categorías con límite, ordenadas por cercanía al 100%
+  const pctOf = (b: BudgetEntry) =>
+    b.monthly_limit > 0 ? Math.min(100, ((b.spent ?? 0) / b.monthly_limit) * 100) : 0;
+  const relevant = budgets
+    .filter(b => b.currency_code === currency)
+    .sort((a, b) => pctOf(b) - pctOf(a));
   if (relevant.length === 0) return null;
   return (
-    <section className="enter-up" data-delay="4">
+    <section className="enter-up" data-delay="4" data-tour="budgets">
       <div className="section-head">
         <p className="section-title">Límites por categoría</p>
         <Link href="/categorias" className="section-link">Ver todo →</Link>
@@ -255,15 +258,14 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             ? `hsl(${90 - (pct - 50) * 2.4}, 80%, 48%)`
             : `hsl(${16 - Math.max(0, pct - 80) * 0.4}, 88%, 52%)`;
           return (
-            <button key={b.id} style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+            <button key={b.id} className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 16 }}
               onClick={() => onSelect(b)}>
-              <div style={{
+              <div className="glass-card" style={{
                 width: 86, padding: "10px 8px 8px",
-                borderRadius: 14, background: "var(--base)",
-                border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)",
+                borderRadius: 16,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
               }}>
-                <div style={{ width: 32, height: 32, borderRadius: 9, background: (b.color ?? "#7B61FF") + "22", border: `1px solid ${b.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#7B61FF" }}>
+                <div style={{ width: 32, height: 32, borderRadius: 9, background: (b.color ?? "#46B58C") + "22", border: `1px solid ${b.color ?? "#46B58C"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#46B58C" }}>
                   <CategoryIcon icon={b.icon} name={b.name} color={b.color} size={15} />
                 </div>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
@@ -275,14 +277,14 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
             </button>
           );
         })}
-        <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0 }}>
+        <Link href="/categorias" className="press" style={{ textDecoration: "none", flexShrink: 0 }} aria-label="Agregar límite por categoría">
           <div style={{
             width: 86, padding: "10px 8px 8px", borderRadius: 14,
-            background: "var(--raised)", border: "0.5px dashed var(--glass-border-hover)",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 92,
+            background: "var(--raised)", border: "1px dashed var(--glass-border-hover)",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 92,
           }}>
-            <span style={{ fontSize: 20, color: "var(--ink-dim)" }}>+</span>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Ver todos</p>
+            <span style={{ width: 32, height: 32, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 20, fontWeight: 400 }}>+</span>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
           </div>
         </Link>
       </div>
@@ -324,7 +326,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
   const visibleTx = showAllTx ? recent : recent.slice(0, 5);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <HeroBalanceCard
         balances={balances}
         primaryCurrency={primaryCurrency}
@@ -332,7 +334,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         onSelectCurrency={setSelectedCurrency}
       />
 
-      <div className="flex gap-3 enter-up" data-delay="2">
+      <div className="flex gap-3 enter-up" data-delay="2" data-tour="metrics">
         <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />
         <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} onClick={() => setBreakdownType("expense")} />
       </div>
@@ -347,7 +349,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
             <p className="section-title">Últimas transacciones</p>
             <Link href="/historial" className="section-link">Ver todo →</Link>
           </div>
-          <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
+          <div className="glass-card" style={{ borderRadius: 18, overflow: "hidden" }}>
             {visibleTx.map((t, i) => {
               const cat = t.categories as { name?: string; icon?: string; color?: string } | null;
               const isIncome  = t.type === "income";
@@ -355,24 +357,24 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
               const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
               const catColor  = catColorOrFallback(cat?.color, cat?.name ?? "");
               return (
-                <button key={`${t.id}-${i}`} onClick={() => setSelectedTx(t)} style={{
+                <button key={`${t.id}-${i}`} onClick={() => setSelectedTx(t)} className="press" style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
                   borderBottom: i < visibleTx.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none",
                   width: "100%", textAlign: "left", background: "transparent",
                   transition: "background 120ms ease-out",
                 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: catColor + "22", color: catColor }}>
-                    <CategoryIcon name={cat?.name} icon={cat?.icon} color={cat?.color} size={16} />
+                  <div style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: catColor + "1F", color: catColor }}>
+                    <CategoryIcon name={cat?.name} icon={cat?.icon} color={cat?.color} size={19} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {t.description}
                     </p>
-                    <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
+                    <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>
                       {cat?.name ?? "Sin categoría"} · {t.date}
                     </p>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                  <span className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                     {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                   </span>
                 </button>

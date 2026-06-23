@@ -582,6 +582,7 @@ export default function BottomNav() {
           <button
             onClick={() => setShowAdd(true)}
             aria-label="Registrar"
+            data-tour="add"
             style={{
               position: "relative",
               top: -18,
@@ -589,11 +590,11 @@ export default function BottomNav() {
               height: 52,
               borderRadius: "50%",
               background: "var(--accent)",
-              color: "#FFFFFF",
+              color: "#04130D",
               border: "3px solid var(--void)",
-              boxShadow: "0 0 0 1px var(--accent-glow), 0 6px 20px var(--accent-glow)",
-              fontSize: 26,
-              fontWeight: 300,
+              boxShadow: "0 6px 20px rgba(0,0,0,0.40)",
+              fontSize: 28,
+              fontWeight: 500,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -619,6 +620,7 @@ export default function BottomNav() {
               Icon={item.icon}
               active={pathname === item.href}
               badge={item.badge ? neoBadge : 0}
+              tourId={item.href === "/neo" ? "neo" : item.href === "/perfil" ? "perfil" : undefined}
             />
           ))}
         </div>
@@ -627,16 +629,18 @@ export default function BottomNav() {
   );
 }
 
-function NavItem({ href, label, Icon, active, badge = 0 }: {
+function NavItem({ href, label, Icon, active, badge = 0, tourId }: {
   href: string; label: string;
   Icon: (p: { active: boolean }) => React.ReactNode;
   active: boolean;
   badge?: number;
+  tourId?: string;
 }) {
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
+      data-tour={tourId}
       style={{
         flex: 1,
         display: "flex",

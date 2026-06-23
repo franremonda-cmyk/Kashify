@@ -289,7 +289,7 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
           style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 20px", display: "flex", flexDirection: "column", gap: 20, touchAction: "pan-y" }}
         >
           <div>
-            <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Ordenar por</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Ordenar por</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
               {SORT_OPTIONS.map(o => {
                 const on = local.sort === o.value;
@@ -305,7 +305,7 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
             </div>
           </div>
           <div>
-            <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Tipo</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Tipo</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {TX_TYPES.map(t => {
                 const on = local.types.includes(t.value);
@@ -322,7 +322,7 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
           </div>
           {categories.length > 0 && (
             <div style={{ paddingBottom: 4 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Categoría</p>
+              <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Categoría</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {categories.map(cat => {
                   const on = local.categories.includes(cat.id);
@@ -344,7 +344,7 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
         {/* Fixed footer */}
         <div style={{ flexShrink: 0, display: "flex", gap: 8, padding: "16px 20px" }}>
           <button onClick={() => setLocal({ categories: [], types: [], sort: "date_desc" })} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Limpiar</button>
-          <button onClick={() => { onApply(local); onClose(); }} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF" }}>Aplicar</button>
+          <button onClick={() => { onApply(local); onClose(); }} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Aplicar</button>
         </div>
       </div>
     </div>,
@@ -639,15 +639,15 @@ export default function ActividadPage() {
       {filtered.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }} className="enter-up" data-delay="1">
           <button onClick={() => setBreakdownType("income")} style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
-            <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 4 }}>Ingresos</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 4 }}>Ingresos</p>
             <p style={{ fontSize: 12, fontWeight: 700, color: "var(--positive)", fontVariantNumeric: "tabular-nums" }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
           <button onClick={() => setBreakdownType("expense")} style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", textAlign: "left" }}>
-            <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 4 }}>Gastos</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 4 }}>Gastos</p>
             <p style={{ fontSize: 12, fontWeight: 700, color: "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
           <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)" }}>
-            <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 4 }}>Neto</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 4 }}>Neto</p>
             <p style={{ fontSize: 12, fontWeight: 700, color: net >= 0 ? "var(--positive)" : "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
@@ -675,7 +675,7 @@ export default function ActividadPage() {
       {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies}/>}
 
       <div className="flex flex-col gap-2">
-        <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ink-muted)", paddingLeft: 2 }}>
+        <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 2 }}>
           Transacciones
         </p>
         {loading && (
@@ -766,7 +766,7 @@ export default function ActividadPage() {
         return (
           <section className="flex flex-col gap-2">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 2 }}>Límites por categoría</p>
+              <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 2 }}>Límites por categoría</p>
               <Link href="/categorias" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>+ Agregar límite</Link>
             </div>
             {catsWithBudget.length === 0 ? (
@@ -829,7 +829,7 @@ export default function ActividadPage() {
       {goals.length > 0 && (
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 4 }}>Metas de ahorro</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 4 }}>Metas de ahorro</p>
             <Link href="/metas" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar meta</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
@@ -868,7 +868,7 @@ export default function ActividadPage() {
       {installmentPlans.filter(p => p.status === "active").length > 0 && (
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 4 }}>Cuotas activas</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 4 }}>Cuotas activas</p>
             <Link href="/cuotas" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar cuota</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
@@ -898,7 +898,7 @@ export default function ActividadPage() {
       {chartMonths.length > 0 && (
         <section className="flex flex-col gap-2">
           <div>
-            <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", paddingLeft: 2 }}>Tendencia mensual</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 2 }}>Tendencia mensual</p>
             <p style={{ fontSize: 13, color: "var(--ink-dim)", paddingLeft: 2, marginTop: 1 }}>Ingresos y gastos de los últimos 12 meses en {selectedCurrency}.</p>
           </div>
           <SpendingChart data={chartMonths} currencySymbol={CURRENCY_SYMBOLS[selectedCurrency] ?? selectedCurrency} />

@@ -29,16 +29,12 @@ interface Props {
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const CURRENCIES = ["ARS","USD","EUR","CHF","BRL","UYU","CLP","GBP","PYG","PEN","COP"];
 const THEMES = [
-  { id: "arctic",   label: "Arctic",   desc: "Blanco + violeta",  preview: "#7B61FF" },
-  { id: "midnight", label: "Midnight", desc: "Azul noche",        preview: "#0A84FF" },
-  { id: "void",     label: "Void",     desc: "Negro total",       preview: "#30D158" },
-  { id: "sand",     label: "Sand",     desc: "Cálido + tierra",   preview: "#C8820A" },
+  { id: "arctic", label: "Oscuro", desc: "Grafito + verde", preview: "#46B58C" },
+  { id: "light",  label: "Claro",  desc: "Marfil + verde",  preview: "#2E9E74" },
 ] as const;
 const ICON_STYLES: { id: IconStyle; label: string; desc: string }[] = [
-  { id: "line",    label: "Línea",   desc: "Trazo fino" },
-  { id: "solid",   label: "Sólido",  desc: "Relleno" },
-  { id: "duotone", label: "Duotone", desc: "Bicolor" },
-  { id: "emoji",   label: "Emoji",   desc: "Clásico" },
+  { id: "line",  label: "Línea", desc: "Trazo fino" },
+  { id: "emoji", label: "Emoji", desc: "Clásico" },
 ];
 
 const inp: React.CSSProperties = {
@@ -78,7 +74,7 @@ function Accordion({ label, defaultOpen = false, children }: { label: string; de
 function SaveButton({ onClick, saving, label = "Guardar" }: { onClick: () => void; saving: boolean; label?: string }) {
   return (
     <button onClick={onClick} disabled={saving}
-      style={{ padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", flexShrink: 0, opacity: saving ? 0.5 : 1 }}>
+      style={{ padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", flexShrink: 0, opacity: saving ? 0.5 : 1 }}>
       {saving ? "..." : label}
     </button>
   );
@@ -477,7 +473,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                           </div>
                         )}
                         <button onClick={() => saveBudgetPeriod(b)} disabled={savingBudget === b.id}
-                          style={{ padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: savingBudget === b.id ? 0.6 : 1 }}>
+                          style={{ padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: savingBudget === b.id ? 0.6 : 1 }}>
                           {savingBudget === b.id ? "Guardando..." : "Guardar"}
                         </button>
                       </div>

@@ -21,9 +21,9 @@ export default function SplashScreen() {
         transition: phase === "out" ? "opacity 500ms cubic-bezier(0.4, 0, 1, 1)" : "none",
         pointerEvents: phase === "out" ? "none" : "auto",
       }}>
-      {/* Ambient violet glow */}
+      {/* Ambient emerald glow */}
       <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(123,97,255,0.09) 0%, transparent 65%)",
+        background: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(16,217,138,0.12) 0%, transparent 65%)",
         opacity: phase === "in" ? 0 : 1,
         transition: "opacity 500ms ease-out",
       }} />
@@ -40,8 +40,8 @@ export default function SplashScreen() {
           ? "transform 300ms ease-in, opacity 200ms ease-in"
           : "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)",
         boxShadow: phase === "hold"
-          ? "0 0 0 16px rgba(123,97,255,0.06), 0 0 60px 20px rgba(123,97,255,0.15)"
-          : "0 0 0 0 rgba(123,97,255,0)",
+          ? "0 0 0 16px rgba(16,217,138,0.07), 0 0 60px 20px rgba(16,217,138,0.20)"
+          : "0 0 0 0 rgba(16,217,138,0)",
       }}>
         <span style={{
           fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",

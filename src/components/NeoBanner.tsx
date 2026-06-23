@@ -33,11 +33,11 @@ export default function NeoBanner() {
       <div style={{
         maxWidth: 460, margin: "0 auto", pointerEvents: "auto",
         borderRadius: 18,
-        background: "rgba(255,255,255,0.92)",
+        background: "var(--glass-3)",
         backdropFilter: "blur(40px) saturate(200%)",
         WebkitBackdropFilter: "blur(40px) saturate(200%)",
-        border: "0.5px solid var(--glass-border)",
-        boxShadow: "0 6px 32px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05)",
+        border: "0.5px solid var(--glass-border-hover)",
+        boxShadow: "var(--shadow-lg)",
         display: "flex", alignItems: "center", gap: 12,
         padding: "12px 14px 12px 12px",
       }}>

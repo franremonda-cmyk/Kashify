@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import PendingTransactionsBanner from "@/components/PendingTransactionsBanner";
+import Tour from "@/components/Tour";
 import type { PendingTransaction } from "@/types";
 
 interface Props {
@@ -37,10 +38,13 @@ export default function DashboardClient({ pending: initialPending }: Props) {
   }
 
   return (
-    <PendingTransactionsBanner
-      pending={pending}
-      onConfirm={handleConfirm}
-      onDismiss={handleDismiss}
-    />
+    <>
+      <PendingTransactionsBanner
+        pending={pending}
+        onConfirm={handleConfirm}
+        onDismiss={handleDismiss}
+      />
+      <Tour />
+    </>
   );
 }

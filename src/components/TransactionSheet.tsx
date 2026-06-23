@@ -197,7 +197,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 4 }}>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Tipo</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Tipo</p>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {TX_TYPES.map(t => {
                       const on = txType === t.value;
@@ -211,11 +211,11 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Descripción</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Descripción</p>
                   <input style={inpSm} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripción" aria-label="Descripción"/>
                 </div>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Monto</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Monto</p>
                   <div style={{ display: "flex", gap: 8 }}>
                     <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={currency} onChange={e => setCurrency(e.target.value)} aria-label="Moneda">
                       {CURRENCIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
@@ -224,11 +224,11 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Fecha</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Fecha</p>
                   <input style={inpSm} type="date" value={date} onChange={e => setDate(e.target.value)}/>
                 </div>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 6 }}>Categoría</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Categoría</p>
                   <select style={inpSm} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
                     <option value="">Sin categoría</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -236,7 +236,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                 </div>
                 <div style={{ display: "flex", gap: 8, paddingTop: 8 }}>
                   <button onClick={() => setMode("view")} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
-                  <button onClick={handleSave} disabled={saving || !desc.trim() || !amount} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#FFFFFF", opacity: saving ? 0.6 : 1 }}>{saving ? "Guardando..." : "Guardar"}</button>
+                  <button onClick={handleSave} disabled={saving || !desc.trim() || !amount} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: saving ? 0.6 : 1 }}>{saving ? "Guardando..." : "Guardar"}</button>
                 </div>
               </div>
             )}
