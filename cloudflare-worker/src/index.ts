@@ -90,10 +90,22 @@ async function verifySignature(body: string, signature: string, secret: string):
   return hex === signature;
 }
 
+// AR mobiles: Meta manda 549..., pero el número pudo guardarse como 54... (sin 9).
+// Devolvemos ambas variantes para que el lookup matchee sin importar cómo se guardó.
+function phoneLookupVariants(from: string): string[] {
+  const d = from.replace(/\D/g, "");
+  const set = new Set<string>([d]);
+  if (d.startsWith("549") && d.length === 13) set.add("54" + d.slice(3));
+  else if (d.startsWith("54") && d.length === 12) set.add("549" + d.slice(2));
+  return [...set];
+}
+
 async function enqueueAndProcess(fromPhone: string, messageId: string | undefined, payload: unknown, env: Env): Promise<void> {
-  // Buscar user_id por número de teléfono
+  // Buscar user_id por número de teléfono (probando ambas variantes AR)
+  const variants = phoneLookupVariants(fromPhone);
+  const inList = variants.join(",");
   const lookupRes = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/user_phones?phone_number=eq.${fromPhone}&verified=eq.true&select=user_id`,
+    `${env.SUPABASE_URL}/rest/v1/user_phones?phone_number=in.(${inList})&verified=eq.true&select=user_id`,
     {
       headers: {
         apikey: env.SUPABASE_SERVICE_ROLE_KEY,
