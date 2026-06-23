@@ -39,7 +39,8 @@ export default function DesktopSidebar() {
         background: "var(--base)",
         borderRight: "0.5px solid var(--glass-border)",
         padding: "28px 0 28px",
-        alignSelf: "stretch",
+        height: "100dvh",
+        overflowY: "auto",
         zIndex: 30,
       }}
     >
@@ -165,10 +166,10 @@ function ActivityIcon({ active }: { active: boolean }) {
 }
 function NeoIcon({ active }: { active: boolean }) {
   return (
-    <NeoOrb size={20} alive={active}>
+    <NeoOrb size={24} alive={active}>
       <span style={{
-        fontSize: 10, fontWeight: 800, color: "#04130D", lineHeight: 1,
-        letterSpacing: "-0.4px", textShadow: "0 1px 1px rgba(255,255,255,0.3)",
+        fontSize: 11, fontWeight: 800, color: "#04130D", lineHeight: 1,
+        letterSpacing: "-0.5px", textShadow: "0 1px 1px rgba(255,255,255,0.3)",
       }}>N</span>
     </NeoOrb>
   );

@@ -463,7 +463,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           } as React.CSSProperties}>
             {/* Avatar — living iridescent orb (floats + breathes + morphs) */}
             <div className="float-bob enter-up" style={{ position: "relative" }}>
-              <NeoOrb size={104} alive />
+              <NeoOrb size={104} alive className="neo-orb--hero" />
             </div>
 
             <div className="enter-up" data-delay="1" style={{ textAlign: "center", maxWidth: 320 }}>

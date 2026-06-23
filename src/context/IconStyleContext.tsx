@@ -8,10 +8,11 @@ interface IconStyleCtx {
   setIconStyle: (s: IconStyle) => void;
 }
 
-const Ctx = createContext<IconStyleCtx>({ iconStyle: "line", setIconStyle: () => {} });
+const Ctx = createContext<IconStyleCtx>({ iconStyle: "emoji", setIconStyle: () => {} });
 
 export function IconStyleProvider({ children }: { children: React.ReactNode }) {
-  const [iconStyle, setIconStyleState] = useState<IconStyle>("line");
+  // Emoji por defecto: todo gasto/ingreso/categoría muestra su emoji.
+  const [iconStyle, setIconStyleState] = useState<IconStyle>("emoji");
 
   useEffect(() => {
     const saved = localStorage.getItem("kashify-icon-style") as IconStyle | null;
