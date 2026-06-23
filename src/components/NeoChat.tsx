@@ -47,9 +47,9 @@ interface Props {
 const SUGGESTIONS = [
   "¿Cuánto gasté este mes?",
   "¿Cuál es mi saldo?",
-  "Mis límites",
-  "Mis metas",
-  "Mis cuotas",
+  "¿Cómo van mis límites?",
+  "¿Cómo van mis metas?",
+  "¿Qué cuotas tengo?",
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -459,43 +459,35 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             gap: 18, padding: "calc(40px + env(safe-area-inset-top, 0px)) 20px 28px",
           } as React.CSSProperties}>
-            {/* Avatar — calm, static orb */}
-            <div style={{ position: "relative" }}>
-              <div style={{
-                width: 100, height: 100, borderRadius: "50%",
+            {/* Avatar — living orb (floats + breathes + morphs) */}
+            <div className="float-bob enter-up" style={{ position: "relative" }}>
+              <div className="neo-avatar-idle" style={{
+                width: 104, height: 104, borderRadius: "50%",
                 background: "radial-gradient(circle at 36% 30%, #6FCBA6 0%, #46B58C 48%, #2E7D62 100%)",
-                boxShadow: "inset 0 2px 6px rgba(255,255,255,0.18), var(--shadow-lg)",
+                boxShadow: "inset 0 2px 8px rgba(255,255,255,0.20), var(--shadow-lg)",
               }} />
-              {/* AI sparkle */}
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-                style={{ position: "absolute", top: -2, right: -2 }}>
-                <path d="M12 2l1.6 4.8L18 8l-4.4 1.2L12 14l-1.6-4.8L6 8l4.4-1.2z" fill="var(--ink)" opacity="0.92"/>
-              </svg>
             </div>
 
-            <div style={{ textAlign: "center", maxWidth: 320 }}>
+            <div className="enter-up" data-delay="1" style={{ textAlign: "center", maxWidth: 320 }}>
               <p style={{ fontSize: 23, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>Hola, soy Neo</p>
               <p style={{ fontSize: 14.5, color: "var(--ink-muted)", marginTop: 6, lineHeight: 1.5 }}>
-                Tu asistente de finanzas. Escribime como a un amigo —<br/>
-                <span style={{ color: "var(--ink)", fontWeight: 500 }}>“gasté 5 lucas en el súper”</span> y yo lo anoto.
+                Tu asistente personal de finanzas
               </p>
             </div>
 
             {!hasPhone && (
-              <a href="/perfil" className="press" style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 18px", borderRadius: 999, fontSize: 13.5, fontWeight: 700, background: "var(--accent)", color: "#04130D", textDecoration: "none", boxShadow: "0 4px 18px var(--shadow-accent)" }}>
+              <a href="/perfil" className="press enter-up" data-delay="2" style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 18px", borderRadius: 999, fontSize: 13.5, fontWeight: 700, background: "var(--accent)", color: "#04130D", textDecoration: "none", boxShadow: "0 4px 18px var(--shadow-accent)" }}>
                 Conectar WhatsApp →
               </a>
             )}
 
             <div style={{ width: "100%", maxWidth: 420, marginTop: 2 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 10, textAlign: "center" }}>
-                Probá preguntándome
-              </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                {SUGGESTIONS.map(s => (
-                  <button key={s} onClick={() => sendMessage(s)} className="glass press"
+                {SUGGESTIONS.map((s, i) => (
+                  <button key={s} onClick={() => sendMessage(s)} className="glass press enter-up"
+                    data-delay={Math.min(6, i + 3)}
                     style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 16px", borderRadius: 16, fontSize: 14.5, fontWeight: 500, color: "var(--ink)", textAlign: "left", cursor: "pointer" }}>
-                    <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: "var(--accent)", boxShadow: "0 0 8px var(--accent-glow)", flexShrink: 0 }} />
+                    <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: "var(--accent)", flexShrink: 0 }} />
                     <span style={{ flex: 1 }}>{s}</span>
                     <span aria-hidden style={{ color: "var(--ink-dim)", fontSize: 16 }}>→</span>
                   </button>
