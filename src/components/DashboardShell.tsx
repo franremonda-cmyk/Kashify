@@ -326,13 +326,15 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
   const visibleTx = showAllTx ? recent : recent.slice(0, 5);
 
   return (
-    <div className="flex flex-col gap-8">
-      <HeroBalanceCard
-        balances={balances}
-        primaryCurrency={primaryCurrency}
-        selectedCurrency={selectedCurrency}
-        onSelectCurrency={setSelectedCurrency}
-      />
+    <div className="dashboard-shell flex flex-col gap-8">
+      <div className="dash-full">
+        <HeroBalanceCard
+          balances={balances}
+          primaryCurrency={primaryCurrency}
+          selectedCurrency={selectedCurrency}
+          onSelectCurrency={setSelectedCurrency}
+        />
+      </div>
 
       <div className="flex gap-3 enter-up" data-delay="2" data-tour="metrics">
         <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />
@@ -397,7 +399,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
       <GoalsWidget goals={goals} />
 
       {/* Gráfico de líneas mensual */}
-      <div className="enter-up" data-delay="6">
+      <div className="dash-full enter-up" data-delay="6">
         <SpendingChart data={chartMonths} currencySymbol={sym} />
       </div>
 

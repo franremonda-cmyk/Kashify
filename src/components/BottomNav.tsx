@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Fuse from "fuse.js";
 import CategoryModal from "@/components/CategoryModal";
+import NeoOrb from "@/components/NeoOrb";
 import { useIconStyle } from "@/context/IconStyleContext";
 
 const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "PYG", "BOB", "COP", "PEN", "GBP"];
@@ -324,15 +325,8 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-sm p-5 flex flex-col gap-4 mb-16 scale-up"
-        style={{
-          borderRadius: 24,
-          background: "rgba(255,255,255,0.96)",
-          backdropFilter: "blur(48px) saturate(260%)",
-          border: "0.5px solid var(--glass-border)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), 0 24px 80px rgba(0,0,0,0.80)",
-          overflow: "hidden",
-        }}
+        className="glass-strong w-full max-w-sm p-5 flex flex-col gap-4 mb-16 scale-up"
+        style={{ borderRadius: 24, overflow: "hidden" }}
       >
         <div className="flex items-center justify-between">
           <h2 className="display font-semibold text-base" style={{ color: "var(--ink)" }}>
@@ -561,11 +555,11 @@ export default function BottomNav() {
             maxWidth: 460,
             margin: "0 auto",
             borderRadius: 9999,
-            background: "var(--glass-2)",
-            backdropFilter: "blur(40px) saturate(180%)",
-            WebkitBackdropFilter: "blur(40px) saturate(180%)",
-            border: "0.5px solid var(--glass-border)",
-            boxShadow: "var(--shadow-lg)",
+            background: "var(--glass-3)",
+            backdropFilter: "blur(48px) saturate(200%)",
+            WebkitBackdropFilter: "blur(48px) saturate(200%)",
+            border: "0.5px solid var(--glass-border-hover)",
+            boxShadow: "var(--shadow-lg), var(--spec-lg)",
             display: "flex",
             alignItems: "center",
             height: 60,
@@ -703,30 +697,27 @@ function ActivityIcon({ active }: { active: boolean }) {
 }
 
 function NeoIcon({ active }: { active: boolean }) {
+  if (active) {
+    return (
+      <NeoOrb size={26} className="neo-nav-avatar" style={{ boxShadow: "0 0 10px var(--accent-glow)" }}>
+        <span style={{
+          fontSize: 12, fontWeight: 800, color: "#FFFFFF", lineHeight: 1,
+          letterSpacing: "-0.5px", textShadow: "0 1px 2px rgba(4,20,14,0.55)",
+        }}>N</span>
+      </NeoOrb>
+    );
+  }
   return (
     <div
-      className={`neo-nav-avatar${active ? " neo-avatar-idle" : ""}`}
+      className="neo-nav-avatar"
       style={{
-        width: 26,
-        height: 26,
-        borderRadius: "50%",
-        background: active ? "var(--accent)" : "var(--raised)",
-        border: active ? "none" : "1.5px solid var(--ink-muted)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: active ? "0 0 10px var(--accent-glow)" : "none",
-        transition: "background 200ms ease, box-shadow 200ms ease",
-        flexShrink: 0,
+        width: 26, height: 26, borderRadius: "50%",
+        background: "var(--raised)", border: "1.5px solid var(--ink-muted)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "background 200ms ease, box-shadow 200ms ease", flexShrink: 0,
       }}
     >
-      <span style={{
-        fontSize: 13,
-        fontWeight: 800,
-        color: active ? "#FFFFFF" : "var(--ink-muted)",
-        lineHeight: 1,
-        letterSpacing: "-0.5px",
-      }}>
+      <span style={{ fontSize: 13, fontWeight: 800, color: "var(--ink-muted)", lineHeight: 1, letterSpacing: "-0.5px" }}>
         N
       </span>
     </div>
