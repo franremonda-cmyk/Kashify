@@ -135,7 +135,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
 
           {/* Color palette */}
           <div style={{ padding: "10px 18px 0" }}>
-            <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>Color</p>
+            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Color</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {CATEGORY_COLORS.map(c => (
                 <button key={c} onClick={() => setPickedColor(c)}
@@ -156,7 +156,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           )}
           {filteredGroups.map(g => (
             <div key={g.group} style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>{g.group}</p>
+              <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>{g.group}</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6 }}>
                 {g.icons.map(icon => {
                   const isSelected = pickedIcon === icon.id;

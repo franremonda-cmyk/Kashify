@@ -122,7 +122,7 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
             </p>
           </div>
 
-          <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", marginBottom: 8 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>
             {txs.length} transacciones
           </p>
         </div>

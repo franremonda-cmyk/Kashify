@@ -361,18 +361,18 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
                   width: "100%", textAlign: "left", background: "transparent",
                   transition: "background 120ms ease-out",
                 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: catColor + "22", color: catColor }}>
-                    <CategoryIcon name={cat?.name} icon={cat?.icon} color={cat?.color} size={16} />
+                  <div style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: catColor + "1F", color: catColor }}>
+                    <CategoryIcon name={cat?.name} icon={cat?.icon} color={cat?.color} size={19} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {t.description}
                     </p>
-                    <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
+                    <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>
                       {cat?.name ?? "Sin categoría"} · {t.date}
                     </p>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                  <span className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                     {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                   </span>
                 </button>

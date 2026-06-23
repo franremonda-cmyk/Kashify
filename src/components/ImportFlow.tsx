@@ -169,7 +169,7 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
       {/* Live preview */}
       {preview.length > 0 && mapping.date && mapping.description && (
         <div style={{ borderRadius: 10, background: "var(--raised)", border: "0.5px solid var(--glass-border)", overflow: "hidden" }}>
-          <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-muted)", padding: "8px 12px 4px" }}>
+          <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", padding: "8px 12px 4px" }}>
             Vista previa ({preview.length} filas)
           </p>
           {preview.map((row, i) => (
