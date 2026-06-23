@@ -615,6 +615,28 @@ body.neo-keyboard-open .app-bottom-nav {
 .desktop-only { display: none !important; }
 @media (min-width: 1024px) { .desktop-only { display: flex !important; } }
 
+/* ── Hover affordances: en desktop (mouse fino) todo lo clickeable reacciona.
+   Gated a (hover: hover) para no dejar estados pegados en touch. ───────── */
+@media (hover: hover) and (pointer: fine) {
+  a, button, [role="button"], summary {
+    transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+                filter 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  }
+  a:hover,
+  button:not(:disabled):hover,
+  [role="button"]:hover,
+  summary:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+  button:not(:disabled):active,
+  [role="button"]:active,
+  a:active {
+    transform: scale(0.97);
+    filter: brightness(0.97);
+  }
+}
+
 /* Dashboard becomes a 2-column grid on tablet+; hero & chart span full.
    Items flagged .dash-full stay full-width; the rest auto-place in 2 cols. */
 @media (min-width: 768px) {

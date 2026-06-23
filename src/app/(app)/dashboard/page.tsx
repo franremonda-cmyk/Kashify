@@ -33,7 +33,7 @@ export default async function DashboardPage() {
       .order("date", { ascending: true }),
     supabase.from("savings_goals").select("*").eq("user_id", user.id).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
     supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id),
-    supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(id), categories(name, color, icon)").eq("user_id", user.id).neq("status", "cancelled").order("created_at", { ascending: false }),
+    supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(status), categories(name, color, icon)").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }),
   ]);
 
   const balances   = balancesRes.data ?? [];
@@ -47,7 +47,9 @@ export default async function DashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const installments = (installmentsRes.data as any[] ?? [])
     .map((p) => {
-      const paid = Array.isArray(p.installment_payments) ? p.installment_payments.length : 0;
+      const paid = Array.isArray(p.installment_payments)
+        ? p.installment_payments.filter((x: { status?: string }) => x.status === "paid").length
+        : 0;
       return {
         id: p.id,
         name: p.name,
