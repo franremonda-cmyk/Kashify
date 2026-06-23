@@ -1,5 +1,5 @@
 "use client";
-import { useState, useId } from "react";
+import { useState, useId, useRef, useLayoutEffect } from "react";
 
 export interface ChartMonth {
   label: string;   // "Ene", "Feb", …
@@ -40,6 +40,18 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
   const [period, setPeriod] = useState<Period>("6M");
   const uid = useId().replace(/:/g, "");
 
+  // Measure real pixel width so 1 SVG unit = 1px → text stays a constant
+  // size regardless of how wide the card gets (mobile vs desktop).
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(340);
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(260, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const slice = periodSlice(data, period);
   if (slice.length === 0) {
     return (
@@ -49,8 +61,8 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
     );
   }
 
-  const W = 340, H = 160;
-  const PAD = { top: 16, right: 12, bottom: 28, left: 8 };
+  const H = W >= 680 ? 240 : 200;
+  const PAD = { top: 18, right: 18, bottom: 30, left: 48 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
 
@@ -76,7 +88,7 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
   const step = Math.max(1, Math.ceil(slice.length / 4));
 
   return (
-    <div className="glass" style={{ borderRadius: 16, padding: "16px 16px 12px" }}>
+    <div ref={wrapRef} className="glass" style={{ borderRadius: 16, padding: "16px 16px 12px" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>
@@ -119,7 +131,9 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
       {/* SVG */}
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }}
+        width={W}
+        height={H}
+        style={{ width: "100%", height: H, display: "block" }}
       >
         <defs>
           <linearGradient id={`ig-${uid}`} x1="0" y1="0" x2="0" y2="1">
@@ -151,10 +165,11 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
         {gridVals.slice(1, -1).map((v, i) => (
           <text
             key={i}
-            x={PAD.left - 2}
-            y={yOf(v) + 3}
-            fontSize={7}
-            fill="rgba(235,235,245,0.25)"
+            x={PAD.left - 10}
+            y={yOf(v) + 4}
+            fontSize={12}
+            fontWeight={500}
+            fill="var(--ink-dim)"
             textAnchor="end"
           >
             {currencySymbol}{compact(v)}
@@ -166,19 +181,19 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
         <path d={areaClose(expensePoints)} fill={`url(#eg-${uid})`} clipPath={`url(#clip-${uid})`} />
 
         {/* Lines */}
-        <path d={incomePath}  fill="none" stroke="#30D158" strokeWidth={1.8} strokeLinecap="round" />
-        <path d={expensePath} fill="none" stroke="#FF453A" strokeWidth={1.8} strokeLinecap="round" />
+        <path d={incomePath}  fill="none" stroke="#30D158" strokeWidth={2.4} strokeLinecap="round" />
+        <path d={expensePath} fill="none" stroke="#FF453A" strokeWidth={2.4} strokeLinecap="round" />
 
         {/* Dots on last point */}
         {incomePoints.length > 0 && (
           <circle cx={incomePoints[incomePoints.length - 1][0]}
                   cy={incomePoints[incomePoints.length - 1][1]}
-                  r={3} fill="#30D158" />
+                  r={4.5} fill="#30D158" />
         )}
         {expensePoints.length > 0 && (
           <circle cx={expensePoints[expensePoints.length - 1][0]}
                   cy={expensePoints[expensePoints.length - 1][1]}
-                  r={3} fill="#FF453A" />
+                  r={4.5} fill="#FF453A" />
         )}
 
         {/* X-axis labels */}
@@ -186,9 +201,10 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
           <text
             key={i}
             x={xOf(i)}
-            y={H - 4}
-            fontSize={8}
-            fill="rgba(235,235,245,0.30)"
+            y={H - 8}
+            fontSize={12}
+            fontWeight={500}
+            fill="var(--ink-dim)"
             textAnchor="middle"
           >
             {d.label}

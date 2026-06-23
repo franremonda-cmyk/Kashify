@@ -78,12 +78,10 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
+          className="glass-strong"
           style={{
             width: "100%", maxWidth: 400,
             borderRadius: 20,
-            background: "var(--base)",
-            border: "0.5px solid var(--glass-border)",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.40)",
             maxHeight: "100%",
             display: "flex",
             flexDirection: "column",

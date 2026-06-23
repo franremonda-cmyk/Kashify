@@ -542,43 +542,56 @@ button, a, input, select, textarea {
   0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.9; }
   50%      { transform: translate(14%, 10%) scale(1.12); opacity: 0.6; }
 }
-.neo-orb { position: relative; border-radius: 50%; isolation: isolate; }
-/* Swirling iridescence — emerald → teal → cyan, green stays dominant */
+@keyframes neo-orb-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+/* Organic, calm orb — morphs into a soft blob, no harsh glow */
+.neo-orb {
+  position: relative;
+  border-radius: 46% 54% 56% 44% / 52% 48% 52% 48%;
+  isolation: isolate;
+  overflow: hidden;
+}
+.neo-orb-alive {
+  animation: neo-blob 9s ease-in-out infinite, neo-orb-breathe 4.5s ease-in-out infinite;
+}
+/* Swirling iridescence — emerald → teal → cyan, soft and blurred */
 .neo-orb__iris {
-  position: absolute; inset: -22%; border-radius: 50%;
+  position: absolute; inset: -16%; border-radius: 50%;
   background: conic-gradient(from 0deg,
-    #2E7D62 0%, #46B58C 18%, #3FD6C8 34%, #46B58C 50%,
-    #2E7D62 64%, #58E0A8 80%, #2E7D62 100%);
-  filter: blur(7px) saturate(135%);
-  animation: neo-orb-spin 9s linear infinite;
+    #2C6F58 0%, #43A682 18%, #3CBEB2 34%, #43A682 50%,
+    #2C6F58 64%, #4ECB9A 80%, #2C6F58 100%);
+  filter: blur(13px) saturate(108%);
+  animation: neo-orb-spin 14s linear infinite;
   z-index: 0;
 }
-/* Counter-rotating cyan glints for depth */
+/* Counter-rotating cyan glints for depth (subtle) */
 .neo-orb__iris2 {
-  position: absolute; inset: 4%; border-radius: 50%;
+  position: absolute; inset: 6%; border-radius: 50%;
   background: conic-gradient(from 120deg,
-    transparent 0%, rgba(80,230,200,0.55) 22%, transparent 40%,
-    transparent 60%, rgba(110,255,210,0.40) 82%, transparent 100%);
-  filter: blur(5px);
-  animation: neo-orb-spin-rev 13s linear infinite;
+    transparent 0%, rgba(80,210,185,0.32) 24%, transparent 42%,
+    transparent 62%, rgba(100,225,190,0.22) 82%, transparent 100%);
+  filter: blur(10px);
+  animation: neo-orb-spin-rev 19s linear infinite;
   z-index: 1; mix-blend-mode: screen;
 }
-/* Glassy sphere body with inner top light */
+/* Glassy sphere body with soft inner top light */
 .neo-orb__body {
-  position: absolute; inset: 0; border-radius: 50%; z-index: 2;
-  background: radial-gradient(circle at 36% 28%,
-    rgba(180,255,225,0.55) 0%, rgba(80,200,160,0.18) 30%,
-    rgba(20,60,46,0.30) 64%, rgba(8,28,22,0.55) 100%);
-  box-shadow: inset 0 2px 10px rgba(255,255,255,0.30),
-              inset 0 -8px 18px rgba(4,20,14,0.45);
+  position: absolute; inset: 0; border-radius: inherit; z-index: 2;
+  background: radial-gradient(circle at 38% 30%,
+    rgba(190,255,230,0.32) 0%, rgba(90,200,165,0.10) 34%,
+    rgba(18,54,42,0.22) 66%, rgba(8,26,20,0.40) 100%);
+  box-shadow: inset 0 2px 12px rgba(255,255,255,0.18),
+              inset 0 -10px 22px rgba(4,20,14,0.34);
 }
-/* Drifting specular hotspot */
+/* Soft specular sheen (no hard hotspot) */
 .neo-orb__spec {
-  position: absolute; top: 14%; left: 22%; width: 34%; height: 28%;
+  position: absolute; top: 12%; left: 18%; width: 42%; height: 34%;
   border-radius: 50%; z-index: 3;
-  background: radial-gradient(circle, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 70%);
-  filter: blur(2px);
-  animation: neo-orb-spec 5.5s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 72%);
+  filter: blur(5px);
+  animation: neo-orb-spec 6.5s ease-in-out infinite;
 }
 
 .neo-avatar-idle {
@@ -611,6 +624,9 @@ body.neo-keyboard-open .app-bottom-nav {
     align-items: start;
   }
   .dashboard-shell > .dash-full { grid-column: 1 / -1; }
+  /* Drop the metrics down so Ingresos/Gastos line up with the budget
+     chips (not the "Límites" title) in the right column. */
+  .dashboard-shell > .dash-metrics { margin-top: 34px; }
 }
 
 /* Tablet (768–1023): no sidebar yet — just give the column room to breathe */
@@ -644,4 +660,7 @@ body.neo-keyboard-open .app-bottom-nav {
     grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
     gap: 22px 26px;
   }
+  /* Neo chat: clear the sidebar and center the conversation column */
+  .neo-chat-root { left: 240px !important; }
+  .neo-chat-list { max-width: 760px; margin: 0 auto; }
 }

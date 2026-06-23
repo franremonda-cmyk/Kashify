@@ -104,10 +104,9 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
     >
       <div
         role="dialog" aria-modal="true"
+        className="glass-strong"
         style={{
           width: "100%", maxWidth: 420, borderRadius: 20,
-          background: "var(--base)", border: "0.5px solid var(--glass-border)",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.40)",
           maxHeight: "calc(100dvh - 40px)", display: "flex", flexDirection: "column",
           overflow: "hidden",
         }}

@@ -109,12 +109,9 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
-          className="w-full max-w-sm flex flex-col"
+          className="glass-strong w-full max-w-sm flex flex-col"
           style={{
             borderRadius: 20,
-            background: "var(--base)",
-            border: "0.5px solid var(--glass-border)",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.40)",
             maxHeight: "calc(100dvh - 40px)",
             overflow: "hidden",
           }}

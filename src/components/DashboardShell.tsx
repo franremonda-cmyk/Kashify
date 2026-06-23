@@ -247,7 +247,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
         <p className="section-title">Límites por categoría</p>
         <Link href="/categorias" className="section-link">Ver todo →</Link>
       </div>
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingBottom: 2 }}>
         {relevant.map((b) => {
           const pct = b.monthly_limit > 0 ? Math.min(100, ((b.spent ?? 0) / b.monthly_limit) * 100) : 0;
           const textColor = pct >= 100 ? "var(--negative)" : pct >= 80 ? "var(--warning)" : "var(--positive)";
@@ -336,7 +336,7 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
         />
       </div>
 
-      <div className="flex gap-3 enter-up" data-delay="2" data-tour="metrics">
+      <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
         <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />
         <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} onClick={() => setBreakdownType("expense")} />
       </div>

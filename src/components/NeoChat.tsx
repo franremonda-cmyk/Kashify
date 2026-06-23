@@ -393,6 +393,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       padding: "8px 16px 12px",
       background: "var(--base)",
       display: "flex", flexDirection: "column", gap: 4,
+      width: "100%", maxWidth: 760, margin: "0 auto",
     }}>
       {quickReplies && quickReplies.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingBottom: 2 }}>
@@ -441,7 +442,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
   if (!mounted) return null;
 
   return createPortal(
-    <div ref={containerRef} style={{
+    <div ref={containerRef} className="neo-chat-root" style={{
       position: "fixed",
       left: 0, right: 0,
       ...containerStyle,
@@ -528,8 +529,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           </div>
 
           {/* Message list — the only scrollable area */}
-          <div ref={listRef} style={{
-            flex: 1, minHeight: 0,
+          <div ref={listRef} className="neo-chat-list" style={{
+            flex: 1, minHeight: 0, width: "100%",
             overflowY: "auto", WebkitOverflowScrolling: "touch",
             background: "var(--base)",
             padding: "8px 16px 12px",

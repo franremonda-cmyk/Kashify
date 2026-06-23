@@ -19,11 +19,11 @@ interface Props {
 export default function NeoOrb({ size = 104, alive = false, children, style, className }: Props) {
   return (
     <div
-      className={`neo-orb${alive ? " neo-avatar-idle" : ""}${className ? ` ${className}` : ""}`}
+      className={`neo-orb${alive ? " neo-orb-alive" : ""}${className ? ` ${className}` : ""}`}
       style={{
         width: size,
         height: size,
-        boxShadow: "0 0 0 1px rgba(120,230,190,0.16), var(--shadow-lg)",
+        boxShadow: "var(--shadow-md)",
         ...style,
       }}
     >
