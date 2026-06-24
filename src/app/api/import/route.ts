@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+// Importaciones grandes: dar más tiempo a la función serverless.
+export const maxDuration = 60;
+
 interface ImportRow {
   description: string;
   amount: number;
@@ -81,9 +84,9 @@ export async function POST(request: Request) {
   let inserted = 0;
   let errors = 0;
 
-  // Bulk insert in chunks of 50
-  for (let i = 0; i < toInsert.length; i += 50) {
-    const chunk = toInsert.slice(i, i + 50);
+  // Bulk insert en lotes de 200 (menos round-trips → más rápido y menos timeout)
+  for (let i = 0; i < toInsert.length; i += 200) {
+    const chunk = toInsert.slice(i, i + 200);
     const { error } = await supabase.from("transactions").insert(chunk);
     if (error) errors += chunk.length;
     else inserted += chunk.length;
