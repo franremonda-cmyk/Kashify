@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import NeoOrb from "./NeoOrb";
 
@@ -11,8 +11,21 @@ const NAV = [
   { href: "/perfil",    label: "Perfil",    icon: UserIcon },
 ];
 
+const PERFIL_SUBS = [
+  { id: "datos",      label: "Datos personales" },
+  { id: "apariencia", label: "Apariencia" },
+  { id: "categorias", label: "Categorías" },
+  { id: "metas",      label: "Metas de ahorro" },
+  { id: "cuotas",     label: "Cuotas" },
+];
+
 export default function DesktopSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const onPerfil = pathname.startsWith("/perfil");
+  const activeSection = searchParams.get("section") ?? "datos";
+  const [perfilOpen, setPerfilOpen] = useState(onPerfil);
   const [invited, setInvited] = useState(false);
 
   function openRegister() {
@@ -83,18 +96,56 @@ export default function DesktopSidebar() {
       <nav style={{ display: "flex", flexDirection: "column", gap: 1, padding: "0 10px", flex: 1 }}>
         {NAV.map((item) => {
           const active = pathname === item.href;
+          const rowStyle: React.CSSProperties = {
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 12px", borderRadius: 10, textDecoration: "none",
+            background: active ? "var(--accent-soft)" : "transparent",
+            color: active ? "var(--accent)" : "var(--ink-muted)",
+            transition: "all 130ms ease-out",
+          };
+
+          // Perfil: desplegable con sub-secciones (master-detail)
+          if (item.href === "/perfil") {
+            return (
+              <div key="/perfil">
+                <button
+                  onClick={() => { if (onPerfil) setPerfilOpen(o => !o); else { setPerfilOpen(true); router.push("/perfil"); } }}
+                  style={{ ...rowStyle, width: "100%", border: "none", cursor: "pointer" }}>
+                  <item.icon active={active} />
+                  <span style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>{item.label}</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                    style={{ marginLeft: "auto", color: "var(--ink-dim)", transition: "transform 200ms", transform: perfilOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                {perfilOpen && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2, marginBottom: 4 }}>
+                    {PERFIL_SUBS.map((s) => {
+                      const subActive = onPerfil && activeSection === s.id;
+                      return (
+                        <Link key={s.id} href={`/perfil?section=${s.id}`}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8,
+                            textDecoration: "none", fontSize: 13, fontWeight: subActive ? 600 : 400,
+                            background: subActive ? "var(--accent-soft)" : "transparent",
+                            color: subActive ? "var(--accent)" : "var(--ink-muted)",
+                          }}>
+                          <span style={{ width: 5, height: 5, borderRadius: "50%", background: subActive ? "var(--accent)" : "var(--glass-border-hover)", flexShrink: 0 }} />
+                          {s.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 12px", borderRadius: 10,
-                textDecoration: "none",
-                background: active ? "var(--accent-soft)" : "transparent",
-                color: active ? "var(--accent)" : "var(--ink-muted)",
-                transition: "all 130ms ease-out",
-              }}
+              style={rowStyle}
               onMouseEnter={(e) => {
                 if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.04)";
               }}

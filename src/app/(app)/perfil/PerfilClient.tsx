@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useIconStyle } from "@/context/IconStyleContext";
 import type { IconStyle } from "@/context/IconStyleContext";
@@ -48,8 +49,36 @@ const inp: React.CSSProperties = {
   outline: "none",
 };
 
-function Accordion({ label, defaultOpen = false, children }: { label: string; defaultOpen?: boolean; children: React.ReactNode }) {
+// Hook: ¿estamos en desktop (≥1024)? Para el master-detail de Perfil.
+function useIsDesktop() {
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const on = () => setDesktop(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return desktop;
+}
+
+function Accordion({ label, sectionId, activeSection, isDesktop, defaultOpen = false, children }: {
+  label: string; sectionId?: string; activeSection?: string; isDesktop?: boolean;
+  defaultOpen?: boolean; children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(defaultOpen);
+
+  // Desktop: master-detail — solo la sección activa, sin chrome de acordeón.
+  if (isDesktop) {
+    if (sectionId && activeSection !== sectionId) return null;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <h2 style={{ fontSize: 19, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.01em", marginBottom: 2 }}>{label}</h2>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div style={{ borderRadius: 16, border: "0.5px solid var(--glass-border)", background: "var(--base)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
       <button
@@ -85,6 +114,11 @@ function Divider() {
 }
 
 export default function PerfilClient({ profile, phones, email }: Props) {
+  const isDesktop = useIsDesktop();
+  const searchParams = useSearchParams();
+  const activeSection = searchParams.get("section") ?? "datos";
+  // Props comunes para el master-detail de cada sección
+  const sec = (id: string) => ({ sectionId: id, activeSection, isDesktop });
   const [displayName, setDisplayName]       = useState(profile?.display_name ?? "");
   const [primaryCurrency, setPrimaryCurrency] = useState(profile?.primary_currency ?? "ARS");
   const [newPhone, setNewPhone]             = useState("");
@@ -265,7 +299,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       </div>
 
       {/* ① Datos personales + Cuenta */}
-      <Accordion label="Datos personales">
+      <Accordion label="Datos personales" {...sec("datos")}>
         {/* Nombre */}
         <div>
           <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>Nombre y apellido</p>
@@ -334,7 +368,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       </Accordion>
 
       {/* ② Apariencia */}
-      <Accordion label="Apariencia">
+      <Accordion label="Apariencia" {...sec("apariencia")}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Tema</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {THEMES.map((t) => {
@@ -372,7 +406,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       </Accordion>
 
       {/* ③ Categorías + Límites */}
-      <Accordion label="Categorías">
+      <Accordion label="Categorías" {...sec("categorias")}>
         {/* Sub-botón: Mis categorías */}
         <div style={{ borderRadius: 12, border: "0.5px solid var(--glass-border)", overflow: "hidden" }}>
           <button
@@ -491,7 +525,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       </Accordion>
 
       {/* ④ Metas de ahorro */}
-      <Accordion label="Metas de ahorro">
+      <Accordion label="Metas de ahorro" {...sec("metas")}>
         <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Seguí el progreso de tus objetivos de ahorro.</p>
         {goals.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -525,7 +559,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       </Accordion>
 
       {/* ⑤ Cuotas */}
-      <Accordion label="Cuotas">
+      <Accordion label="Cuotas" {...sec("cuotas")}>
         <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Administrá tus compras en cuotas.</p>
         {plans.filter(p => p.status === "active").length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

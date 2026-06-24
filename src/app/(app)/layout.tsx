@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import BottomNav from "@/components/BottomNav";
 import DesktopSidebar from "@/components/DesktopSidebar";
 import NeoBanner from "@/components/NeoBanner";
@@ -7,7 +8,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="app-layout" style={{ display: "flex", minHeight: "100dvh" }}>
       <NeoBanner />
       {/* Desktop sidebar — hidden on mobile via CSS */}
-      <DesktopSidebar />
+      <Suspense fallback={<aside className="app-sidebar" style={{ display: "none" }} />}>
+        <DesktopSidebar />
+      </Suspense>
 
       {/* Main content */}
       <main
