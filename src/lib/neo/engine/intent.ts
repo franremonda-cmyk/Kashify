@@ -189,7 +189,8 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
             flow: hit.type,
             description: desc || hit.keyword,
             amount: amount > 0 ? amount : undefined,
-            category: categoryForText(desc),
+            // categoría aprendida si existe; si no, la deduce de las keywords
+            category: hit.category ?? categoryForText(desc),
           },
         };
       }

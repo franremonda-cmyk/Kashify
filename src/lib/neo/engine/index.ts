@@ -3,6 +3,7 @@ import { detectIntent, normalize } from "./intent";
 import { fillSlot, interpretClarify, isCancelMsg } from "./flow";
 import { domainHint, executeConfirm, executeIntent, respondFlow } from "./actions";
 import { llmFallback } from "./llm-fallback";
+import type { ParsedTransaction } from "@/types";
 import type { FlowContext, NeoChannel, NeoReply, NeoState, NeoSupabase, PendingConfirm } from "./types";
 
 export type { NeoReply, NeoState, NeoChannel } from "./types";
@@ -45,6 +46,9 @@ export async function runNeo({ supabase, userId, message, channel, state }: RunN
     if (state.kind === "flow") {
       return continueFlow(supabase, userId, state.ctx, message, channel);
     }
+    if (state.kind === "clarify_learn") {
+      return continueClarifyLearn(supabase, userId, state.original, message, channel);
+    }
     // Confirmaciones pendientes (WhatsApp): sí/no/número.
     return continueConfirm(supabase, userId, state, message);
   }
@@ -78,8 +82,63 @@ export async function runNeo({ supabase, userId, message, channel, state }: RunN
     return reply;
   }
 
-  // Realmente desconocido → clarify (0 tokens).
-  return respondFlow(supabase, userId, { flow: "clarify" }, channel);
+  // Reglas Y Haiku fallaron → preguntar de forma abierta y APRENDER de la respuesta.
+  return {
+    text: "Mmm, no te entendí del todo 🤔 ¿Me lo explicás con otras palabras?\n(ej: \"gasté 5000 en X\" o \"me ingresaron Y\")",
+    state: { kind: "clarify_learn", original: message },
+  };
+}
+
+// El usuario explica lo que no se entendió → reinterpretamos, registramos y
+// APRENDEMOS la keyword del mensaje ORIGINAL para no volver a usar Haiku.
+async function continueClarifyLearn(
+  supabase: NeoSupabase,
+  userId: string,
+  original: string,
+  message: string,
+  channel: NeoChannel
+): Promise<NeoReply> {
+  if (isCancelMsg(message)) return { text: "Dale, lo dejamos por ahora.", state: null };
+
+  // 1) ¿La explicación ya es una transacción clara por reglas?
+  const learned = await loadLearnedKeywords(supabase, userId);
+  const intent = detectIntent(message, learned);
+  if (intent.type === "flow" && (intent.ctx.flow === "expense" || intent.ctx.flow === "income") && intent.ctx.amount) {
+    const reply = await respondFlow(supabase, userId, intent.ctx, channel);
+    if (reply.effects?.some((e) => e.type === "refresh")) {
+      const currency = await primaryCurrency(supabase, userId);
+      await learnFromConfirmation(supabase, userId, original, {
+        type: intent.ctx.flow, amount: intent.ctx.amount, currency_code: currency,
+        description: intent.ctx.description ?? "", category_name: intent.ctx.category ?? undefined,
+        confidence: 100, needs_confirmation: false,
+      } as ParsedTransaction);
+    }
+    return { ...reply, state: reply.state ?? null };
+  }
+
+  // 2) Dejar que Haiku interprete la explicación (más clara que el original).
+  const { data: cats } = await supabase.from("categories").select("name").eq("user_id", userId);
+  const categoryNames = (cats as { name: string }[] | null)?.map((c) => c.name) ?? [];
+  const fallback = await llmFallback(message, categoryNames);
+  if (fallback) {
+    const reply = await respondFlow(supabase, userId, fallback.ctx, channel);
+    if (reply.effects?.some((e) => e.type === "refresh")) {
+      // Aprende asociando la keyword del ORIGINAL al resultado.
+      await learnFromConfirmation(supabase, userId, original, fallback.parsed);
+    }
+    return { ...reply, state: reply.state ?? null };
+  }
+
+  // 3) Sigo sin entender → soltar sin loop.
+  return {
+    text: "Perdón, sigo sin captarlo 😅. Probá registrándolo directo, ej: \"gasté 5000 en super\".",
+    state: null,
+  };
+}
+
+async function primaryCurrency(supabase: NeoSupabase, userId: string): Promise<string> {
+  const { data } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
+  return (data as { primary_currency?: string } | null)?.primary_currency ?? "ARS";
 }
 
 // Continuación de un flujo de slot-filling.

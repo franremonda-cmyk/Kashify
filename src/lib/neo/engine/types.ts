@@ -68,6 +68,7 @@ export type PendingConfirm =
 // confirmación pendiente.
 export type NeoState =
   | { kind: "flow"; ctx: FlowContext }
+  | { kind: "clarify_learn"; original: string }
   | PendingConfirm;
 
 // ─── Efectos de UI (solo los consume la web) ─────────────────────────────────
@@ -98,4 +99,5 @@ export interface LearnedKeyword {
   keyword: string;
   type: "expense" | "income";
   currency_code: string | null;
+  category: string | null;
 }
