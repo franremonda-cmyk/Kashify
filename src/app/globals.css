@@ -739,7 +739,7 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
 
 /* El monto escala con el ancho REAL de la card (container query) — nunca se
    sale, sin importar cuán grande sea el número. La card es el container. */
-.metric-value { font-size: clamp(0.82rem, 10cqi, 1.85rem); }
+.metric-value { font-size: clamp(0.9rem, 13.5cqi, 2.2rem); }
 
 /* Tablet (768–1023): no sidebar yet — just give the column room to breathe */
 @media (min-width: 768px) and (max-width: 1023px) {
