@@ -731,6 +731,10 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
     gap: 12px;
   }
   .metric-value { font-size: 2rem !important; }
+  /* Transacciones se estira para coincidir con la columna derecha
+     (metas + cuotas) — bordes inferiores alineados. */
+  .dashboard-shell > .dash-tx-tile { align-self: stretch; }
+  .dash-tx-tile .dash-tx-card { flex: 1; }
 }
 
 /* Tablet (768–1023): no sidebar yet — just give the column room to breathe */

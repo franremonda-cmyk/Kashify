@@ -391,12 +391,12 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
 
       {/* Últimas transacciones — máx 5 con botón ver todas */}
       {recent.length > 0 && (
-        <section className="flex flex-col gap-2 enter-up" data-delay="4">
+        <section className="dash-tx-tile flex flex-col gap-2 enter-up" data-delay="4">
           <div className="section-head" style={{ marginBottom: 0 }}>
             <p className="section-title">Últimas transacciones</p>
             <Link href="/historial" className="section-link">Ver todo →</Link>
           </div>
-          <div className="card-glass" style={{ overflow: "hidden" }}>
+          <div className="card-glass dash-tx-card" style={{ overflow: "hidden" }}>
             {visibleTx.map((t, i) => {
               const cat = t.categories as { name?: string; icon?: string; color?: string } | null;
               const isIncome  = t.type === "income";
