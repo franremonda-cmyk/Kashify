@@ -4,24 +4,11 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
 import Logo, { LogoMark } from "@/components/Logo";
+import { toWhatsappFrom } from "@/lib/phone";
 const ImportFlow = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 
 const CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU", "CLP", "GBP", "CHF"];
 const STEPS = 4;
-
-// Normaliza un teléfono al formato exacto que WhatsApp manda en `message.from`
-// para celulares argentinos: 549 + área + número. El worker hace el lookup por
-// ese valor, así que guardamos canónico para que coincida siempre.
-// (App AR-only por ahora — el placeholder es +54 9 11…)
-function toWhatsappFrom(raw: string): string {
-  let d = raw.replace(/\D/g, "");
-  if (!d) return "";
-  if (d.startsWith("00")) d = d.slice(2);        // prefijo internacional 00
-  if (d.startsWith("0")) d = d.slice(1);         // trunk nacional AR (0)
-  if (d.startsWith("549")) return d;             // ya canónico
-  if (d.startsWith("54")) return "549" + d.slice(2);
-  return "549" + d;                              // número local sin código de país
-}
 
 const inp: React.CSSProperties = {
   background: "var(--raised)",
@@ -181,11 +168,17 @@ export default function OnboardingPage() {
 
         <input
           style={inp}
-          placeholder="+54 9 11 1234-5678"
+          placeholder="+54 11 1234-5678"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           type="tel"
+          inputMode="tel"
+          autoComplete="tel"
         />
+        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: -12, lineHeight: 1.4 }}>
+          Importante: ingresá tu número <strong style={{ color: "var(--ink)" }}>sin el 9</strong> después
+          del código de país (ej: <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 11 …</span>, no <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 9 11 …</span>).
+        </p>
 
         <div style={{
           padding: "12px 14px", borderRadius: 12,
