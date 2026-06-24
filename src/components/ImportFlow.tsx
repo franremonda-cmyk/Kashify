@@ -1,7 +1,11 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
-import { parseFile, autoDetectMapping, mapRows } from "@/lib/importParser";
+import { useState, useRef, useCallback, useMemo } from "react";
+import { parseFile, parseAllSheets, autoDetectMapping, mapRows } from "@/lib/importParser";
 import type { RawRow, ColumnMapping, ParsedTransaction } from "@/lib/importParser";
+import {
+  detectMatrix, unpivotAll, resolveYear, looseItemToTransaction, MONTH_NAMES_ES,
+} from "@/lib/matrixImport";
+import type { MatrixDetectionResult } from "@/lib/matrixImport";
 
 const KASHIFY_FIELDS: { key: keyof ColumnMapping; label: string; required?: boolean; desc: string }[] = [
   { key: "date",        label: "Fecha",        required: true,  desc: "Cuándo ocurrió" },
@@ -25,12 +29,12 @@ interface Props {
   inline?: boolean; // true = embedded in onboarding, no outer modal wrapper
 }
 
-type Step = "upload" | "map" | "preview" | "importing" | "result";
+type Step = "upload" | "detect" | "map" | "preview" | "importing" | "result";
 
 // ─── Step 1: Upload ────────────────────────────────────────────────────────────
 
 function UploadStep({ onParsed, onCancel }: {
-  onParsed: (headers: string[], rows: RawRow[]) => void;
+  onParsed: (args: { headers: string[]; rows: RawRow[]; matrix: MatrixDetectionResult | null; year: number | null }) => void;
   onCancel?: () => void;
 }) {
   const [dragging, setDragging] = useState(false);
@@ -41,9 +45,18 @@ function UploadStep({ onParsed, onCancel }: {
   async function handleFile(file: File) {
     setError(""); setLoading(true);
     try {
+      // Detección de formato matriz (tabla mensual) sobre todas las hojas.
+      const sheets = await parseAllSheets(file);
+      const matrix = detectMatrix(sheets);
+      if (matrix.hasMatrix) {
+        // El año de los encabezados-fecha manda sobre el del nombre del archivo.
+        onParsed({ headers: [], rows: [], matrix, year: matrix.suggestedYear ?? resolveYear(file.name) });
+        return;
+      }
+      // Formato largo clásico (banco / app de finanzas).
       const { headers, rows } = await parseFile(file);
       if (rows.length === 0) throw new Error("El archivo está vacío o no tiene filas de datos.");
-      onParsed(headers, rows);
+      onParsed({ headers, rows, matrix: null, year: null });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -187,6 +200,155 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
       <div style={{ display: "flex", gap: 8 }}>
         <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
         <button onClick={onNext} disabled={!canProceed} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: canProceed ? 1 : 0.4 }}>
+          Ver preview →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step (matriz): Detección de formato tabla mensual ─────────────────────────
+
+interface LooseChoice { selected: boolean; type: "income" | "expense"; month: number }
+
+function DetectStep({ matrix, initialYear, defaultCurrency, onContinue, onBack }: {
+  matrix: MatrixDetectionResult;
+  initialYear: number | null;
+  defaultCurrency: string;
+  onContinue: (txs: ParsedTransaction[]) => void;
+  onBack: () => void;
+}) {
+  const [year, setYear]         = useState(initialYear ? String(initialYear) : "");
+  const [currency, setCurrency] = useState(defaultCurrency);
+  const [loose, setLoose]       = useState<LooseChoice[]>(
+    matrix.looseItems.map(it => ({ selected: false, type: it.type, month: 1 }))
+  );
+
+  const yearNum = parseInt(year, 10);
+  const yearValid = /^\d{4}$/.test(year) && yearNum >= 2000 && yearNum <= 2100;
+
+  // Estimación de movimientos de las hojas matriz (sin contar loose).
+  const estimated = useMemo(
+    () => yearValid ? unpivotAll(matrix.matrixSheets, yearNum, currency).length : 0,
+    [matrix.matrixSheets, yearNum, yearValid, currency]
+  );
+
+  const incomeSheets  = matrix.matrixSheets.filter(s => s.type === "income").map(s => s.sheet.name);
+  const expenseSheets = matrix.matrixSheets.filter(s => s.type === "expense").map(s => s.sheet.name);
+
+  function setLooseAt(i: number, patch: Partial<LooseChoice>) {
+    setLoose(loose.map((l, idx) => idx === i ? { ...l, ...patch } : l));
+  }
+
+  function handleContinue() {
+    if (!yearValid) return;
+    const matrixTxs = unpivotAll(matrix.matrixSheets, yearNum, currency);
+    const looseTxs = matrix.looseItems
+      .map((it, i) => loose[i].selected
+        ? looseItemToTransaction(it, loose[i].type, yearNum, loose[i].month, currency, matrixTxs.length + i)
+        : null)
+      .filter((t): t is ParsedTransaction => t !== null);
+    onContinue([...matrixTxs, ...looseTxs]);
+  }
+
+  const selStyle: React.CSSProperties = {
+    background: "var(--raised)", border: "0.5px solid var(--glass-border)",
+    borderRadius: 9, padding: "7px 10px", color: "var(--ink)", fontSize: 13, outline: "none",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div>
+        <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>Detectamos una tabla mensual</h2>
+        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4, lineHeight: 1.5 }}>
+          Tu planilla tiene los montos agrupados por mes. Vamos a convertir cada total en un movimiento.
+          {estimated > 0 && <> Estimamos <b style={{ color: "var(--ink)" }}>{estimated}</b> movimientos.</>}
+        </p>
+      </div>
+
+      {/* Resumen de hojas */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", borderRadius: 10, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
+        {incomeSheets.length > 0 && <p style={{ fontSize: 12, color: "var(--positive)" }}>↑ Ingresos: {incomeSheets.join(", ")}</p>}
+        {expenseSheets.length > 0 && <p style={{ fontSize: 12, color: "var(--negative)" }}>↓ Gastos: {expenseSheets.join(", ")}</p>}
+      </div>
+
+      {/* Año */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Año</label>
+        <input
+          value={year}
+          onChange={e => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          type="text" inputMode="numeric" placeholder="2025"
+          style={{ ...selStyle, width: 110 }}
+        />
+        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>
+          {initialYear
+            ? "Lo tomamos del nombre del archivo. Cambialo si no es correcto."
+            : "No encontré el año en el nombre del archivo, ¿de qué año son estos datos?"}
+          {" "}Cada total se registra el día 1 de su mes (editable después).
+        </p>
+      </div>
+
+      {/* Moneda */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Moneda</label>
+        <select value={currency} onChange={e => setCurrency(e.target.value)} style={{ ...selStyle, width: 110 }}>
+          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Se aplica a todos los movimientos. Podés ajustarla por fila en el preview.</p>
+      </div>
+
+      {/* Bloques sueltos */}
+      {matrix.looseItems.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Items sueltos ({matrix.looseItems.length})</p>
+            <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>
+              Estos no tienen mes. Tildá los que quieras registrar y elegí tipo y mes.
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: "28dvh", overflowY: "auto" }}>
+            {matrix.looseItems.map((it, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 10,
+                border: `0.5px solid ${loose[i].selected ? "var(--glass-border)" : "var(--glass-border-dim)"}`,
+                background: loose[i].selected ? "var(--raised)" : "transparent",
+                opacity: loose[i].selected ? 1 : 0.6,
+              }}>
+                <button onClick={() => setLooseAt(i, { selected: !loose[i].selected })} style={{
+                  width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                  background: loose[i].selected ? "var(--accent)" : "var(--raised)",
+                  border: loose[i].selected ? "none" : "1.5px solid var(--glass-border-hover)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {loose[i].selected && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#FFF" strokeWidth="2"><polyline points="2 6 5 9 10 3"/></svg>}
+                </button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.description}</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>{it.sourceLabel} · {it.amount}</p>
+                </div>
+                {loose[i].selected && (
+                  <>
+                    <select value={loose[i].type} onChange={e => setLooseAt(i, { type: e.target.value as "income" | "expense" })}
+                      style={{ fontSize: 12, background: "transparent", border: "0.5px solid var(--glass-border)", borderRadius: 6, padding: "3px 5px", color: "var(--ink-muted)" }}>
+                      <option value="expense">Gasto</option>
+                      <option value="income">Ingreso</option>
+                    </select>
+                    <select value={loose[i].month} onChange={e => setLooseAt(i, { month: parseInt(e.target.value, 10) })}
+                      style={{ fontSize: 12, background: "transparent", border: "0.5px solid var(--glass-border)", borderRadius: 6, padding: "3px 5px", color: "var(--ink-muted)" }}>
+                      {MONTH_NAMES_ES.map((m, mi) => <option key={mi} value={mi + 1}>{m.slice(0, 3)}</option>)}
+                    </select>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
+        <button onClick={handleContinue} disabled={!yearValid} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: yearValid ? 1 : 0.4 }}>
           Ver preview →
         </button>
       </div>
@@ -392,11 +554,20 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [result, setResult]           = useState({ inserted: 0, duplicates: 0, errors: 0 });
+  const [matrix, setMatrix]           = useState<MatrixDetectionResult | null>(null);
+  const [detectedYear, setDetectedYear] = useState<number | null>(null);
 
-  const handleParsed = useCallback((h: string[], rows: RawRow[]) => {
-    setHeaders(h);
-    setRawRows(rows);
-    setMapping(autoDetectMapping(h));
+  const handleParsed = useCallback((args: { headers: string[]; rows: RawRow[]; matrix: MatrixDetectionResult | null; year: number | null }) => {
+    if (args.matrix) {
+      setMatrix(args.matrix);
+      setDetectedYear(args.year);
+      setStep("detect");
+      return;
+    }
+    setMatrix(null);
+    setHeaders(args.headers);
+    setRawRows(args.rows);
+    setMapping(autoDetectMapping(args.headers));
     setStep("map");
   }, []);
 
@@ -452,10 +623,20 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
     switch (step) {
       case "upload":
         return <UploadStep onParsed={handleParsed} onCancel={onCancel} />;
+      case "detect":
+        return matrix ? (
+          <DetectStep
+            matrix={matrix}
+            initialYear={detectedYear}
+            defaultCurrency={defaultCurrency}
+            onContinue={(txs) => { setTransactions(txs); setStep("preview"); }}
+            onBack={() => setStep("upload")}
+          />
+        ) : null;
       case "map":
         return <MapStep headers={headers} rows={rawRows} mapping={mapping} onChange={setMapping} onNext={handleMapNext} onBack={() => setStep("upload")} />;
       case "preview":
-        return <PreviewStep transactions={transactions} onChange={setTransactions} onImport={handleImport} onBack={() => setStep("map")} />;
+        return <PreviewStep transactions={transactions} onChange={setTransactions} onImport={handleImport} onBack={() => setStep(matrix ? "detect" : "map")} />;
       case "importing":
         return <ImportingStep progress={importProgress} total={transactions.filter(t => t._selected).length} />;
       case "result":
@@ -464,7 +645,7 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
   };
 
   // Step indicator
-  const STEP_ORDER: Step[] = ["upload", "map", "preview", "importing", "result"];
+  const STEP_ORDER: Step[] = ["upload", matrix ? "detect" : "map", "preview", "importing", "result"];
   const stepIdx = STEP_ORDER.indexOf(step);
 
   if (inline) {

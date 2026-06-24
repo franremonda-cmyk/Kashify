@@ -2,6 +2,10 @@ import Papa from "papaparse";
 
 export interface RawRow { [key: string]: string }
 
+// Una hoja cruda: filas como matriz de celdas string, sin asumir encabezado.
+// La usa el modo "tabla mensual" (matrixImport) para inspeccionar estructura.
+export interface SheetData { name: string; rows: string[][] }
+
 export interface ColumnMapping {
   date: string;
   description: string;
@@ -71,6 +75,46 @@ async function parseExcel(file: File): Promise<{ headers: string[]; rows: RawRow
   return { headers, rows };
 }
 
+// ─── Todas las hojas (modo tabla mensual) ──────────────────────────────────────
+
+// Convierte una celda a string. Las fechas (cellDates) se vuelven ISO YYYY-MM-DD
+// usando la fecha LOCAL (sin shift de timezone), para que los encabezados de mes
+// con valor de fecha sean reconocibles por matrixImport.
+function cellToString(c: unknown): string {
+  if (c instanceof Date && !isNaN(c.getTime())) {
+    const y = c.getFullYear();
+    const m = String(c.getMonth() + 1).padStart(2, "0");
+    const d = String(c.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return String(c ?? "");
+}
+
+// Devuelve TODAS las hojas del archivo como filas crudas (sin asumir encabezado),
+// para que matrixImport pueda detectar el formato matriz. Para CSV devuelve una
+// sola "hoja" con el nombre del archivo.
+export async function parseAllSheets(file: File): Promise<SheetData[]> {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".csv")) {
+    const text = await file.text();
+    const result = Papa.parse<string[]>(text, { skipEmptyLines: false });
+    const rows = (result.data ?? []).map(r => (r as unknown[]).map(c => String(c ?? "")));
+    return [{ name: file.name, rows }];
+  }
+  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+    const XLSX = await import("xlsx");
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: "array", cellDates: true });
+    return wb.SheetNames.map((sheetName) => {
+      const sheet = wb.Sheets[sheetName];
+      const raw: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+      const rows = raw.map(r => (r as unknown[]).map(cellToString));
+      return { name: sheetName, rows };
+    });
+  }
+  throw new Error("Formato no soportado. Usá CSV, XLSX o XLS.");
+}
+
 // ─── Auto-detect column mapping ────────────────────────────────────────────────
 
 const DATE_PATTERNS        = /^(fecha|date|f\.|dia|día|when|periodo)/i;
@@ -136,7 +180,7 @@ function parseDate(raw: string): string | null {
 
 // ─── Amount parsing ───────────────────────────────────────────────────────────
 
-function parseAmount(raw: string): number | null {
+export function parseAmount(raw: string): number | null {
   if (!raw?.trim()) return null;
   // Remove currency symbols, spaces, quotes
   let s = raw.replace(/[^\d.,\-]/g, "");
