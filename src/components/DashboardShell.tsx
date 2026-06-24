@@ -109,7 +109,7 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
       <p className="mono metric-value" style={{
         fontSize: "clamp(1.15rem, 4.2vw, 1.5rem)",
         fontWeight: 700, color, letterSpacing: "-0.02em",
-        fontVariantNumeric: "tabular-nums", lineHeight: 1,
+        fontVariantNumeric: "tabular-nums", lineHeight: 1.05, whiteSpace: "nowrap",
       }}>
         {sym} {full}
       </p>
