@@ -100,6 +100,40 @@ function phoneLookupVariants(from: string): string[] {
   return [...set];
 }
 
+// Extrae el texto del primer mensaje del payload de Meta (si es de texto).
+function extractText(payload: unknown): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const m = (payload as any)?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    return m?.type === "text" ? (m.text?.body ?? "") : "";
+  } catch {
+    return "";
+  }
+}
+
+// Guarda/actualiza el número que escribió sin estar registrado, para vincularlo
+// luego cuando cree su cuenta. Falla en silencio (no debe romper el flujo).
+async function rememberContact(fromPhone: string, firstMessage: string, env: Env): Promise<void> {
+  try {
+    await fetch(`${env.SUPABASE_URL}/rest/v1/pending_contacts?on_conflict=phone_number`, {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        phone_number: fromPhone.replace(/\D/g, ""),
+        first_message: firstMessage.slice(0, 500),
+        last_contact_at: new Date().toISOString(),
+      }),
+    });
+  } catch {
+    /* no-op */
+  }
+}
+
 async function enqueueAndProcess(fromPhone: string, messageId: string | undefined, payload: unknown, env: Env): Promise<void> {
   // Buscar user_id por número de teléfono (probando ambas variantes AR)
   const variants = phoneLookupVariants(fromPhone);
@@ -117,11 +151,17 @@ async function enqueueAndProcess(fromPhone: string, messageId: string | undefine
   const phones = await lookupRes.json() as { user_id: string }[];
   const userId = phones[0]?.user_id ?? null;
 
-  // Si el número no está registrado, avisar y no encolar trabajo de parseo.
+  // Si el número no está registrado: bienvenida + link, y RECORDAR el número
+  // (para vincularlo cuando se registre desde la web).
   if (!userId) {
+    const firstText = extractText(payload);
+    await rememberContact(fromPhone, firstText, env);
     await sendWhatsAppMessage(
       fromPhone,
-      "Hola! Para usar Neo, primero necesitás registrarte en " + env.APP_URL,
+      "¡Hola! 👋 Soy Neo, tu asistente de finanzas por WhatsApp.\n\n" +
+      "Para empezar a registrar tus gastos hablándome, primero creá tu cuenta gratis acá:\n" +
+      env.APP_URL + "\n\n" +
+      "Cuando termines, volvé y escribime tu primer gasto (ej: \"almuerzo 850\") 💚",
       env
     );
     return;

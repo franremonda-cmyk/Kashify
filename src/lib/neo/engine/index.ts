@@ -19,6 +19,23 @@ function isAffirmative(s: string): boolean {
   return /^(si|sí|s|dale|ok|oka|okey|obvio|confirmo|confirmar|eliminalo|borralo|saldalo|hacelo|claro|sip)\b/.test(normalize(s));
 }
 
+// Saludo / pedido de ayuda → bienvenida con el "cómo usarlo".
+function isGreeting(norm: string): boolean {
+  return /^(hola|holis|holaa|buenas|buen[oa]s? ?(dias|d[ií]as|tardes|noches)?|hey|hello|hi|empez[ao]r?|empecemos|ayuda|help|menu|men[uú]|info|que pod[eé]s hacer|qu[eé] pod[eé]s hacer|como funciona|c[oó]mo funciona|que sos|qu[eé] sos)\b/.test(norm.trim());
+}
+
+const WELCOME_TEXT =
+  "¡Hola! 👋 Soy *Neo*, tu asistente de finanzas.\n\n" +
+  "Contame tus gastos e ingresos como le hablarías a un amigo:\n" +
+  "• _almuerzo 850_\n" +
+  "• _uber 1200_\n" +
+  "• _cobré 50000 de sueldo_\n\n" +
+  "Y preguntame lo que quieras:\n" +
+  "• _¿cuánto gasté este mes?_\n" +
+  "• _¿cuál es mi saldo?_\n" +
+  "• _¿cómo van mis metas?_\n\n" +
+  "Probá mandándome tu primer gasto 💚";
+
 // Punto de entrada único del motor de Neo. Agnóstico del canal.
 export async function runNeo({ supabase, userId, message, channel, state }: RunNeoArgs): Promise<NeoReply> {
   if (!message.trim()) return { text: "Escribime algo 😊" };
@@ -30,6 +47,11 @@ export async function runNeo({ supabase, userId, message, channel, state }: RunN
     }
     // Confirmaciones pendientes (WhatsApp): sí/no/número.
     return continueConfirm(supabase, userId, state, message);
+  }
+
+  // ── Saludo / ayuda (sin número) → bienvenida con el "cómo usarlo" ──
+  if (isGreeting(normalize(message)) && !/\d/.test(message)) {
+    return { text: WELCOME_TEXT };
   }
 
   // ── Mensaje nuevo: detección por reglas (0 tokens) ──

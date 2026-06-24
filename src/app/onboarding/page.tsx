@@ -100,6 +100,9 @@ export default function OnboardingPage() {
         phone_number: phoneDigits,
         verified: true,
       });
+      // Bienvenida proactiva por WhatsApp (requiere template aprobado en Meta).
+      // Fire-and-forget: no bloquea ni rompe el onboarding si falla.
+      fetch("/api/whatsapp/welcome", { method: "POST" }).catch(() => {});
     }
 
     // Usuario nuevo: habilitar el tour guiado una sola vez en el dashboard
