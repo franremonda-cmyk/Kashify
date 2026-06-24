@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -93,6 +93,32 @@ function useCounter(target: number, duration = 600) {
   return value;
 }
 
+// Escala el texto para que nunca se salga del ancho disponible (montos grandes).
+function FitText({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const parent = el?.parentElement;
+    if (!el || !parent) return;
+    const fit = () => {
+      el.style.transform = "scale(1)";
+      const avail = parent.clientWidth;
+      const natural = el.scrollWidth;
+      setScale(natural > avail && avail > 0 ? Math.max(0.4, avail / natural) : 1);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, [children]);
+  return (
+    <span ref={ref} style={{ display: "inline-block", transformOrigin: "left center", transform: `scale(${scale})`, whiteSpace: "nowrap" }}>
+      {children}
+    </span>
+  );
+}
+
 function MetricCard({ label, value, sym, isIncome, onClick }: {
   label: string; value: number; sym: string; isIncome: boolean; onClick?: () => void;
 }) {
@@ -109,9 +135,9 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
       <p className="mono metric-value" style={{
         fontSize: "clamp(1.15rem, 4.2vw, 1.5rem)",
         fontWeight: 700, color, letterSpacing: "-0.02em",
-        fontVariantNumeric: "tabular-nums", lineHeight: 1.05, whiteSpace: "nowrap",
+        fontVariantNumeric: "tabular-nums", lineHeight: 1.05, overflow: "hidden",
       }}>
-        {sym} {full}
+        <FitText>{sym} {full}</FitText>
       </p>
       {onClick && <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 8, fontWeight: 500 }}>Ver desglose →</p>}
     </button>

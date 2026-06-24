@@ -736,12 +736,9 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
   .dash-tx-tile .dash-tx-card { flex: 1; }
 }
 
-/* Tablet: número de Ingresos/Gastos más chico (las columnas son angostas) */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .metric-value { font-size: 1.3rem !important; }
-}
-/* Desktop: número grande */
-@media (min-width: 1024px) {
+/* Tablet/desktop: número grande como base; el auto-fit (JS) lo achica si
+   no entra en la card, así nunca se sale sin importar el monto. */
+@media (min-width: 768px) {
   .metric-value { font-size: 2rem !important; }
 }
 
