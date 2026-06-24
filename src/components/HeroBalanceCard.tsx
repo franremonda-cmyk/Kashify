@@ -105,7 +105,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
             color: isNeg ? "var(--negative)" : "var(--hero-ink)",
             fontVariantNumeric: "tabular-nums", wordBreak: "keep-all",
           }}>
-            {isNeg ? "−" : ""}<span style={{ color: "var(--hero-symbol)" }}>{symbol}</span> {formatted}
+            {isNeg ? "−" : ""}{symbol} {formatted}
           </div>
           <p style={{ fontSize: 13, color: "var(--hero-ink-soft)", marginTop: 8, fontWeight: 500 }}>
             {NAMES[selected] ?? selected}

@@ -9,6 +9,8 @@ export interface Profile {
   user_id: string;
   display_name: string | null;
   primary_currency: string;
+  theme?: string | null;
+  icon_style?: string | null;
   created_at: string;
 }
 

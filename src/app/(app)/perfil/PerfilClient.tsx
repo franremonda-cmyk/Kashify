@@ -185,6 +185,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     localStorage.setItem("kashify-theme", t);
     if (t === "arctic") document.documentElement.removeAttribute("data-theme");
     else document.documentElement.setAttribute("data-theme", t);
+    // Persistir en la DB para que siga al usuario entre dispositivos.
+    if (profile?.user_id) {
+      supabase.from("profiles").update({ theme: t }).eq("user_id", profile.user_id).then(() => {});
+    }
   }
 
   async function saveName() {
