@@ -722,9 +722,10 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
   /* Drop the metrics down so the cards' TOP lines up with the chips
      (below the "Límites" title), and grow them so the BOTTOM lines up
      with the end of the second chip row. */
-  .dashboard-shell > .dash-metrics { margin-top: 32px; }
+  .dashboard-shell > .dash-metrics { margin-top: 32px; align-self: stretch; }
   .dash-metrics > button {
     min-height: 196px;
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -736,11 +737,9 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
   .dash-tx-tile .dash-tx-card { flex: 1; }
 }
 
-/* Tablet/desktop: número grande como base; el auto-fit (JS) lo achica si
-   no entra en la card, así nunca se sale sin importar el monto. */
-@media (min-width: 768px) {
-  .metric-value { font-size: 2rem !important; }
-}
+/* El monto escala con el ancho REAL de la card (container query) — nunca se
+   sale, sin importar cuán grande sea el número. La card es el container. */
+.metric-value { font-size: clamp(0.82rem, 10cqi, 1.85rem); }
 
 /* Tablet (768–1023): no sidebar yet — just give the column room to breathe */
 @media (min-width: 768px) and (max-width: 1023px) {
