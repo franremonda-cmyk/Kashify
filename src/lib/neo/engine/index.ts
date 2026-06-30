@@ -1,7 +1,7 @@
 import { learnFromConfirmation, loadLearnedKeywords } from "@/lib/neo/learning";
 import { detectIntent, normalize } from "./intent";
 import { fillSlot, interpretClarify, isCancelMsg } from "./flow";
-import { domainHint, executeConfirm, executeIntent, respondFlow } from "./actions";
+import { domainHint, executeConfirm, executeIntent, respondFlow, loadUserSpaces, resolveSpaceReply, spaceQuestion } from "./actions";
 import { llmFallback } from "./llm-fallback";
 import type { ParsedTransaction } from "@/types";
 import type { FlowContext, NeoChannel, NeoReply, NeoState, NeoSupabase, PendingConfirm } from "./types";
@@ -14,6 +14,9 @@ interface RunNeoArgs {
   message: string;
   channel: NeoChannel;
   state?: NeoState | null;
+  // Espacio activo seleccionado en la web (uuid). Si está, los movimientos van
+  // ahí sin preguntar. En WhatsApp o en vista "Total" va undefined → Neo pregunta.
+  activeSpaceId?: string | null;
 }
 
 function isAffirmative(s: string): boolean {
@@ -38,16 +41,16 @@ const WELCOME_TEXT =
   "Probá mandándome tu primer gasto 💚";
 
 // Punto de entrada único del motor de Neo. Agnóstico del canal.
-export async function runNeo({ supabase, userId, message, channel, state }: RunNeoArgs): Promise<NeoReply> {
+export async function runNeo({ supabase, userId, message, channel, state, activeSpaceId }: RunNeoArgs): Promise<NeoReply> {
   if (!message.trim()) return { text: "Escribime algo 😊" };
 
   // ── Continuación: el usuario responde a una pregunta/confirmación previa ──
   if (state) {
     if (state.kind === "flow") {
-      return continueFlow(supabase, userId, state.ctx, message, channel);
+      return continueFlow(supabase, userId, state.ctx, message, channel, activeSpaceId);
     }
     if (state.kind === "clarify_learn") {
-      return continueClarifyLearn(supabase, userId, state.original, message, channel);
+      return continueClarifyLearn(supabase, userId, state.original, message, channel, activeSpaceId);
     }
     // Confirmaciones pendientes (WhatsApp): sí/no/número.
     return continueConfirm(supabase, userId, state, message);
@@ -62,8 +65,8 @@ export async function runNeo({ supabase, userId, message, channel, state }: RunN
   const learnedKeywords = await loadLearnedKeywords(supabase, userId);
   const intent = detectIntent(message, learnedKeywords);
 
-  if (intent.type === "flow") return respondFlow(supabase, userId, intent.ctx, channel);
-  if (intent.type !== "unknown") return executeIntent(supabase, userId, intent, channel);
+  if (intent.type === "flow") return respondFlow(supabase, userId, intent.ctx, channel, activeSpaceId);
+  if (intent.type !== "unknown") return executeIntent(supabase, userId, intent, channel, activeSpaceId);
 
   // ── No se entendió → hint de dominio → fallback Haiku → clarify ──
   const hint = domainHint(message);
@@ -74,7 +77,7 @@ export async function runNeo({ supabase, userId, message, channel, state }: RunN
 
   const fallback = await llmFallback(message, categoryNames);
   if (fallback) {
-    const reply = await respondFlow(supabase, userId, fallback.ctx, channel);
+    const reply = await respondFlow(supabase, userId, fallback.ctx, channel, activeSpaceId);
     // Aprendizaje: si Haiku resolvió y se creó, guardamos la regla para no
     // volver a gastar tokens con este patrón.
     const created = reply.effects?.some((e) => e.type === "refresh");
@@ -96,7 +99,8 @@ async function continueClarifyLearn(
   userId: string,
   original: string,
   message: string,
-  channel: NeoChannel
+  channel: NeoChannel,
+  activeSpaceId?: string | null
 ): Promise<NeoReply> {
   if (isCancelMsg(message)) return { text: "Dale, lo dejamos por ahora.", state: null };
 
@@ -104,7 +108,7 @@ async function continueClarifyLearn(
   const learned = await loadLearnedKeywords(supabase, userId);
   const intent = detectIntent(message, learned);
   if (intent.type === "flow" && (intent.ctx.flow === "expense" || intent.ctx.flow === "income") && intent.ctx.amount) {
-    const reply = await respondFlow(supabase, userId, intent.ctx, channel);
+    const reply = await respondFlow(supabase, userId, intent.ctx, channel, activeSpaceId);
     if (reply.effects?.some((e) => e.type === "refresh")) {
       const currency = await primaryCurrency(supabase, userId);
       await learnFromConfirmation(supabase, userId, original, {
@@ -121,7 +125,7 @@ async function continueClarifyLearn(
   const categoryNames = (cats as { name: string }[] | null)?.map((c) => c.name) ?? [];
   const fallback = await llmFallback(message, categoryNames);
   if (fallback) {
-    const reply = await respondFlow(supabase, userId, fallback.ctx, channel);
+    const reply = await respondFlow(supabase, userId, fallback.ctx, channel, activeSpaceId);
     if (reply.effects?.some((e) => e.type === "refresh")) {
       // Aprende asociando la keyword del ORIGINAL al resultado.
       await learnFromConfirmation(supabase, userId, original, fallback.parsed);
@@ -147,27 +151,39 @@ async function continueFlow(
   userId: string,
   ctx: FlowContext,
   message: string,
-  channel: NeoChannel
+  channel: NeoChannel,
+  activeSpaceId?: string | null
 ): Promise<NeoReply> {
   if (isCancelMsg(message)) {
     return { text: "Dale, cancelado.", state: null, effects: [{ type: "cancel_pending" }] };
   }
 
+  // Neo preguntó a qué espacio va el movimiento y el usuario respondió.
+  if ((ctx.flow === "expense" || ctx.flow === "income") && ctx.awaitingSpace) {
+    const spaces = await loadUserSpaces(supabase, userId);
+    const chosen = resolveSpaceReply(message, spaces);
+    if (!chosen) {
+      const q = spaceQuestion(spaces);
+      return { text: `No te entendí 🙂 ${q.text}`, options: q.options, state: { kind: "flow", ctx } };
+    }
+    return respondFlow(supabase, userId, { ...ctx, space_id: chosen.id, awaitingSpace: false }, channel, activeSpaceId);
+  }
+
   if (ctx.flow === "clarify") {
     const switched = interpretClarify(message);
-    if (switched) return respondFlow(supabase, userId, switched, channel);
+    if (switched) return respondFlow(supabase, userId, switched, channel, activeSpaceId);
     if (/consult|ver|saldo|cuanto|cuánto/.test(normalize(message)) && detectIntent(message).type === "unknown") {
       return { text: 'Decime qué querés consultar:\n• "mi saldo"\n• "cuánto gasté este mes"\n• "mis metas" / "mis cuotas" / "mis límites"' };
     }
     // No es una elección de clarify → procesar como mensaje nuevo.
-    return runNeo({ supabase, userId, message, channel, state: null });
+    return runNeo({ supabase, userId, message, channel, state: null, activeSpaceId });
   }
 
   const filled = fillSlot(ctx, message);
   const changed = JSON.stringify(filled) !== JSON.stringify(ctx);
   // Si no se pudo llenar el slot, re-preguntar (no caer a detección nueva, que
   // secuestraría el flujo).
-  return respondFlow(supabase, userId, changed ? filled : ctx, channel);
+  return respondFlow(supabase, userId, changed ? filled : ctx, channel, activeSpaceId);
 }
 
 // Continuación de una confirmación pendiente (WhatsApp).

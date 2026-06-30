@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import type { Balance } from "@/types";
+import type { BalanceView } from "@/types";
 
 const SYMBOLS: Record<string, string> = {
   ARS: "$", USD: "US$", EUR: "€", CHF: "Fr", BRL: "R$",
@@ -35,7 +35,7 @@ function useCounter(target: number, duration = 700) {
 }
 
 interface Props {
-  balances: Balance[];
+  balances: BalanceView[];
   primaryCurrency: string;
   selectedCurrency?: string;
   onSelectCurrency?: (c: string) => void;

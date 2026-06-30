@@ -6,6 +6,7 @@ import {
   detectMatrix, unpivotAll, resolveYear, looseItemToTransaction, MONTH_NAMES_ES,
 } from "@/lib/matrixImport";
 import type { MatrixDetectionResult } from "@/lib/matrixImport";
+import { useSpaces } from "@/context/SpaceContext";
 
 const KASHIFY_FIELDS: { key: keyof ColumnMapping; label: string; required?: boolean; desc: string }[] = [
   { key: "date",        label: "Fecha",        required: true,  desc: "Cuándo ocurrió" },
@@ -547,6 +548,9 @@ function ResultStep({ inserted, duplicates, errors, onDone }: {
 // ─── Main ImportFlow ───────────────────────────────────────────────────────────
 
 export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, inline }: Props) {
+  const { spaces, activeId } = useSpaces();
+  const defaultSpaceId = spaces.find((s) => s.is_default)?.id ?? spaces[0]?.id ?? "";
+  const [spaceId, setSpaceId]         = useState(activeId && activeId !== "total" ? activeId : defaultSpaceId);
   const [step, setStep]               = useState<Step>("upload");
   const [headers, setHeaders]         = useState<string[]>([]);
   const [rawRows, setRawRows]         = useState<RawRow[]>([]);
@@ -601,7 +605,7 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
       const res = await fetch("/api/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: chunk }),
+        body: JSON.stringify({ rows: chunk, spaceId }),
       });
       if (res.ok) {
         const json = await res.json();
@@ -617,7 +621,22 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
     setResult({ inserted, duplicates, errors });
     setStep("result");
     window.dispatchEvent(new Event("transaction-added"));
-  }, [transactions]);
+  }, [transactions, spaceId]);
+
+  // Selector de espacio destino (solo si hay más de uno y estás configurando el import).
+  const spaceSelector = spaces.length > 1 && ["detect", "map", "preview"].includes(step) ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ fontSize: 13, color: "var(--ink-muted)", flexShrink: 0 }}>Importar a</span>
+      <select
+        value={spaceId}
+        onChange={(e) => setSpaceId(e.target.value)}
+        aria-label="Espacio destino del import"
+        style={{ flex: 1, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "9px 12px", color: "var(--ink)", fontSize: 13, outline: "none" }}
+      >
+        {spaces.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+      </select>
+    </div>
+  ) : null;
 
   const content = () => {
     switch (step) {
@@ -657,6 +676,7 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
             <div key={i} style={{ width: i === Math.min(stepIdx, 2) ? 20 : 5, height: 5, borderRadius: 999, background: i <= Math.min(stepIdx, 2) ? "var(--accent)" : "var(--glass-border)", transition: "all 260ms ease-out" }}/>
           ))}
         </div>
+        {spaceSelector}
         {content()}
       </div>
     );
@@ -690,7 +710,8 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
           </div>
         </div>
 
-        <div style={{ overflowY: "auto", padding: "16px 18px", paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+        <div style={{ overflowY: "auto", padding: "16px 18px", paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", gap: 14 }}>
+          {spaceSelector}
           {content()}
         </div>
       </div>

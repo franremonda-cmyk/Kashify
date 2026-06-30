@@ -8,6 +8,7 @@ const NAV = [
   { href: "/dashboard", label: "Inicio",    icon: HomeIcon },
   { href: "/historial", label: "Actividad", icon: ActivityIcon },
   { href: "/neo",       label: "Neo",       icon: NeoIcon },
+  { href: "/espacios",  label: "Espacios",  icon: SpacesIcon },
   { href: "/perfil",    label: "Perfil",    icon: UserIcon },
 ];
 
@@ -231,6 +232,17 @@ function UserIcon({ active }: { active: boolean }) {
       strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
       <circle cx="12" cy="7" r="4"/>
+    </svg>
+  );
+}
+function SpacesIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5"/>
     </svg>
   );
 }

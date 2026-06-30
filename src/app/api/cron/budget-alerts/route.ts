@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   let alerts = 0;
 
   for (const budget of budgets as Array<{
-    user_id: string; category_id: string; monthly_limit: number; currency_code: string;
+    user_id: string; space_id: string; category_id: string; monthly_limit: number; currency_code: string;
     categories: { name: string; icon: string } | null;
     user_phones: { phone_number: string } | { phone_number: string }[] | null;
   }>) {
@@ -33,10 +33,12 @@ export async function GET(request: Request) {
       : budget.user_phones?.phone_number;
     if (!phone) continue;
 
+    // El gasto se cuenta solo dentro del espacio del presupuesto.
     const { data: spent } = await supabase
       .from("transactions")
       .select("amount")
       .eq("user_id", budget.user_id)
+      .eq("space_id", budget.space_id)
       .eq("category_id", budget.category_id)
       .is("deleted_at", null)
       .gte("date", monthStart)
@@ -48,7 +50,7 @@ export async function GET(request: Request) {
     for (const threshold of [80, 100]) {
       if (pct < threshold) continue;
 
-      const alertType = `budget_${budget.category_id}_${threshold}_${now.getFullYear()}_${now.getMonth()}`;
+      const alertType = `budget_${budget.space_id}_${budget.category_id}_${threshold}_${now.getFullYear()}_${now.getMonth()}`;
       const { data: existing } = await supabase
         .from("notification_log")
         .select("id")

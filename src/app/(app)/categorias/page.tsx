@@ -4,8 +4,9 @@ import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
 import { useIconStyle } from "@/context/IconStyleContext";
 import { BackButton } from "@/components/ui/BackButton";
+import { useSpaces } from "@/context/SpaceContext";
 
-interface Budget { monthly_limit: number; currency_code: string; period_type?: PeriodType; applies_months?: number[] | null }
+interface Budget { space_id?: string; monthly_limit: number; currency_code: string; period_type?: PeriodType; applies_months?: number[] | null }
 interface Category {
   id: string; name: string; icon: string; color: string; is_default: boolean;
   category_budgets?: Budget[];
@@ -58,6 +59,9 @@ const inp: React.CSSProperties = {
 
 export default function CategoriasPage() {
   const { iconStyle } = useIconStyle();
+  const { activeId, spaces } = useSpaces();
+  // Los presupuestos son por espacio; en vista "Total" gestionamos los del espacio por defecto.
+  const effectiveSpaceId = activeId !== "total" ? activeId : (spaces.find(s => s.is_default)?.id ?? spaces[0]?.id ?? "");
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCat, setEditingCat] = useState<Category | "new" | null>(null);
@@ -91,7 +95,7 @@ export default function CategoriasPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        category_id: catId, monthly_limit: parseFloat(b.limit), currency_code: b.currency,
+        category_id: catId, monthly_limit: parseFloat(b.limit), currency_code: b.currency, space_id: effectiveSpaceId,
         period_type: b.period, applies_months: b.period === "specific_months" ? b.months : null,
       }),
     });
@@ -105,7 +109,7 @@ export default function CategoriasPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        category_id: newBudgetCatId, monthly_limit: parseFloat(newBudgetLimit), currency_code: newBudgetCurrency,
+        category_id: newBudgetCatId, monthly_limit: parseFloat(newBudgetLimit), currency_code: newBudgetCurrency, space_id: effectiveSpaceId,
         period_type: newBudgetPeriod, applies_months: newBudgetPeriod === "specific_months" ? newBudgetMonths : null,
       }),
     });
@@ -118,8 +122,10 @@ export default function CategoriasPage() {
     load();
   }
 
-  // Categorías sin límite para el dropdown de "nuevo límite"
-  const catsWithoutBudget = categories.filter(c => !c.category_budgets?.length);
+  // Presupuesto de una categoría EN el espacio activo (los budgets son por espacio).
+  const budgetFor = (c: Category) => c.category_budgets?.find(b => b.space_id === effectiveSpaceId);
+  // Categorías sin límite (en este espacio) para el dropdown de "nuevo límite"
+  const catsWithoutBudget = categories.filter(c => !budgetFor(c));
 
   return (
     <div className="flex flex-col gap-6">
@@ -143,7 +149,7 @@ export default function CategoriasPage() {
       ) : (
         <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
           {categories.map((cat, i) => {
-            const budget = cat.category_budgets?.[0];
+            const budget = budgetFor(cat);
             const isEditing = editBudget?.id === cat.id;
             return (
               <div key={cat.id} style={{ borderBottom: i < categories.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
@@ -275,7 +281,7 @@ export default function CategoriasPage() {
               // Si había un límite pendiente, asignarlo a la nueva categoría
               if (newBudgetLimit && res.ok) {
                 const newCat = await res.json();
-                await fetch("/api/budgets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category_id: newCat.id, monthly_limit: parseFloat(newBudgetLimit), currency_code: newBudgetCurrency }) });
+                await fetch("/api/budgets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category_id: newCat.id, monthly_limit: parseFloat(newBudgetLimit), currency_code: newBudgetCurrency, space_id: effectiveSpaceId }) });
                 setShowNewBudget(false);
                 setNewBudgetCatId("");
                 setNewBudgetLimit("");

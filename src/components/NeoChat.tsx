@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { PendingTransaction } from "@/types";
+import { useSpaces } from "@/context/SpaceContext";
 import NeoOrb from "./NeoOrb";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -92,6 +93,7 @@ function pendingToMessage(p: PendingTransaction): ChatMessage {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function NeoChat({ notifications, pending, hasPhone, phoneNumber }: Props) {
+  const { activeId } = useSpaces();
   const initialMessages: ChatMessage[] = [
     ...notifications.map(notifToMessage),
     ...pending.map(pendingToMessage),
@@ -242,7 +244,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     setIsActive(true);
     setThinking(true);
 
-    const body: Record<string, unknown> = { message: text.trim() };
+    const body: Record<string, unknown> = { message: text.trim(), spaceId: activeId };
     if (pendingCtxRef.current) body.pendingContext = pendingCtxRef.current;
     setQuickReplies(null);
 

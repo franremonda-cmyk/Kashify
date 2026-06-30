@@ -14,8 +14,11 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const message: string = body.message ?? "";
   const state: NeoState | null = body.pendingContext ?? null;
+  // Espacio activo de la web. "total" o vacío = sin espacio concreto → Neo pregunta.
+  const rawSpace: string | undefined = body.spaceId;
+  const activeSpaceId = rawSpace && rawSpace !== "total" ? rawSpace : undefined;
 
-  const reply = await runNeo({ supabase, userId: user.id, message, channel: "web", state });
+  const reply = await runNeo({ supabase, userId: user.id, message, channel: "web", state, activeSpaceId });
 
   // Mapear el resultado canónico al contrato JSON que espera NeoChat.tsx:
   //   text, pending (estado a reenviar), options, action (primer efecto de UI).

@@ -1,5 +1,6 @@
 import { generatePaymentDates } from "@/lib/installments/calculator";
 import { categoryForText } from "@/lib/neo-keywords";
+import { scopeForSpace } from "@/lib/space-scope";
 import { normalize } from "./intent";
 import { missingSlot, slotQuestion } from "./flow";
 import type {
@@ -58,13 +59,47 @@ async function primaryCurrency(supabase: NeoSupabase, userId: string): Promise<s
   return profile?.primary_currency ?? "ARS";
 }
 
+// ─── Espacios ────────────────────────────────────────────────────────────────
+
+export interface SpaceRow { id: string; name: string; is_default: boolean; include_in_total: boolean }
+
+export async function loadUserSpaces(supabase: NeoSupabase, userId: string): Promise<SpaceRow[]> {
+  const { data } = await supabase.from("spaces").select("id, name, is_default, include_in_total")
+    .eq("user_id", userId).order("sort_order").order("created_at");
+  return (data as SpaceRow[] | null) ?? [];
+}
+
+function defaultSpaceFrom(spaces: SpaceRow[]): string | undefined {
+  return (spaces.find((s) => s.is_default) ?? spaces[0])?.id;
+}
+
+// Espacio destino para una escritura no-movimiento (meta/presupuesto/cuota):
+// el espacio activo de la web si lo hay, sino el espacio por defecto del usuario.
+async function getWriteSpaceId(supabase: NeoSupabase, userId: string, activeSpaceId?: string | null): Promise<string | undefined> {
+  if (activeSpaceId) return activeSpaceId;
+  return defaultSpaceFrom(await loadUserSpaces(supabase, userId));
+}
+
+export function spaceQuestion(spaces: SpaceRow[]): { text: string; options: string[] } {
+  const list = spaces.map((s, i) => `${i + 1}) ${s.name}`).join("\n");
+  return { text: `¿A qué espacio lo sumo?\n${list}`, options: spaces.map((s) => s.name) };
+}
+
+export function resolveSpaceReply(message: string, spaces: SpaceRow[]): SpaceRow | null {
+  const m = normalize(message);
+  const num = parseInt(m.match(/\d+/)?.[0] ?? "", 10);
+  if (!isNaN(num) && num >= 1 && num <= spaces.length) return spaces[num - 1];
+  return spaces.find((s) => normalize(s.name).includes(m) || m.includes(normalize(s.name))) ?? null;
+}
+
 // ─── Flow execution (slot-filling → action) ─────────────────────────────────
 
 export async function respondFlow(
   supabase: NeoSupabase,
   userId: string,
   ctx: FlowContext,
-  channel: NeoChannel
+  channel: NeoChannel,
+  activeSpaceId?: string | null
 ): Promise<NeoReply> {
   // Cuotas: en web abren un formulario; en WhatsApp se completan por texto.
   if (ctx.flow === "installment" && channel === "web") {
@@ -84,12 +119,22 @@ export async function respondFlow(
   switch (ctx.flow) {
     case "expense":
     case "income": {
+      // Movimientos: si hay >1 espacio y no se eligió uno, Neo pregunta a cuál.
+      let spaceId = ctx.space_id ?? activeSpaceId ?? undefined;
+      if (!spaceId) {
+        const spaces = await loadUserSpaces(supabase, userId);
+        if (spaces.length <= 1) spaceId = spaces[0]?.id;
+        else {
+          const q = spaceQuestion(spaces);
+          return { text: q.text, options: q.options, state: { kind: "flow", ctx: { ...ctx, awaitingSpace: true } } };
+        }
+      }
       const currency = await primaryCurrency(supabase, userId);
       const catName = ctx.category ?? (ctx.description ? categoryForText(ctx.description) : null);
       const catId = catName ? await resolveCategoryId(supabase, userId, catName) : null;
       const desc = ctx.description || (ctx.flow === "income" ? "Ingreso" : "Gasto");
       const { error } = await supabase.from("transactions").insert({
-        user_id: userId, type: ctx.flow, amount: ctx.amount,
+        user_id: userId, space_id: spaceId, type: ctx.flow, amount: ctx.amount,
         currency_code: currency, description: desc,
         date: new Date().toISOString().split("T")[0], category_id: catId,
       });
@@ -100,13 +145,14 @@ export async function respondFlow(
     case "installment": {
       // WhatsApp: crear el plan directamente (sin formulario), con primer pago hoy.
       const ic = ctx as Extract<FlowContext, { flow: "installment" }>;
+      const spaceId = await getWriteSpaceId(supabase, userId, ic.space_id ?? activeSpaceId);
       const currency = await primaryCurrency(supabase, userId);
       const n = ic.nInstallments!;
       const each = ic.installmentAmount!;
       const total = n * each;
       const firstDate = new Date();
       const { data: plan, error } = await supabase.from("installment_plans").insert({
-        user_id: userId, name: ic.name, total_amount: total, currency_code: currency,
+        user_id: userId, space_id: spaceId, name: ic.name, total_amount: total, currency_code: currency,
         n_installments: n, installment_amount: each, interest_type: "none",
         first_payment_date: firstDate.toISOString().split("T")[0], status: "active",
       }).select().single();
@@ -121,9 +167,10 @@ export async function respondFlow(
       return { text: `✅ Creé la cuota "${ic.name}": ${n} cuotas de ${fmt(each, currency)}.\nTotal: ${fmt(total, currency)}.`, effects: [{ type: "refresh" }] };
     }
     case "goal": {
+      const spaceId = await getWriteSpaceId(supabase, userId, ctx.space_id ?? activeSpaceId);
       const currency = await primaryCurrency(supabase, userId);
       const { error } = await supabase.from("savings_goals").insert({
-        user_id: userId, name: ctx.name, target_amount: ctx.target ?? 0,
+        user_id: userId, space_id: spaceId, name: ctx.name, target_amount: ctx.target ?? 0,
         current_amount: 0, currency_code: currency, status: "active",
       });
       if (error) return { text: "No pude crear la meta. Intentá desde la sección Metas." };
@@ -132,10 +179,11 @@ export async function respondFlow(
     case "budget": {
       const match = await findCategory(supabase, userId, ctx.category!);
       if (!match) return { text: `No encontré la categoría "${ctx.category}". Revisá el nombre en Categorías.` };
+      const spaceId = await getWriteSpaceId(supabase, userId, ctx.space_id ?? activeSpaceId);
       const currency = await primaryCurrency(supabase, userId);
       await supabase.from("category_budgets").upsert(
-        { user_id: userId, category_id: match.id, monthly_limit: ctx.amount, currency_code: currency, period_type: "always" },
-        { onConflict: "user_id,category_id" }
+        { user_id: userId, space_id: spaceId, category_id: match.id, monthly_limit: ctx.amount, currency_code: currency, period_type: "always" },
+        { onConflict: "user_id,space_id,category_id" }
       );
       return { text: `✅ Puse un límite de ${fmt(ctx.amount!, currency)} por mes en ${match.name}.`, effects: [{ type: "refresh" }] };
     }
@@ -173,8 +221,13 @@ export async function executeIntent(
   supabase: NeoSupabase,
   userId: string,
   intent: Intent,
-  channel: NeoChannel
+  channel: NeoChannel,
+  activeSpaceId?: string | null
 ): Promise<NeoReply> {
+  // Scope para las preguntas de plata: el espacio activo (web) o, por defecto,
+  // los espacios con include_in_total (no contamina con espacios aislados).
+  const scope = scopeForSpace(await loadUserSpaces(supabase, userId), activeSpaceId ?? "total");
+
   switch (intent.type) {
     case "greeting": {
       const opts = [
@@ -193,7 +246,7 @@ export async function executeIntent(
 
     case "balance_query": {
       const { data: balances } = await supabase.from("transactions")
-        .select("amount, currency_code, type").eq("user_id", userId).is("deleted_at", null)
+        .select("amount, currency_code, type").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
         .in("type", ["income", "expense", "installment-payment"]);
       if (!balances?.length) return { text: "Todavía no tenés transacciones registradas." };
       const byCurrency: Record<string, number> = {};
@@ -209,7 +262,7 @@ export async function executeIntent(
     case "spending_query": {
       const range = intent.period === "week" ? weekRange() : intent.period === "today" ? todayRange() : monthRange();
       let query = supabase.from("transactions")
-        .select("amount, currency_code, categories(name)").eq("user_id", userId).is("deleted_at", null)
+        .select("amount, currency_code, categories(name)").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
         .in("type", ["expense", "installment-payment"]).gte("date", range.from).lte("date", range.to);
       if (intent.category) {
         const match = await findCategory(supabase, userId, intent.category);
@@ -229,7 +282,7 @@ export async function executeIntent(
       const range = intent.period === "week" ? weekRange() : intent.period === "today" ? todayRange() : monthRange();
       const periodLabel = intent.period === "week" ? "esta semana" : intent.period === "today" ? "hoy" : "este mes";
       const { data: txs } = await supabase.from("transactions")
-        .select("amount, currency_code").eq("user_id", userId).is("deleted_at", null)
+        .select("amount, currency_code").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
         .eq("type", "income").gte("date", range.from).lte("date", range.to);
       if (!txs?.length) return { text: `No registraste ingresos ${periodLabel}.` };
       const byCurrency: Record<string, number> = {};
@@ -241,7 +294,7 @@ export async function executeIntent(
     case "summary_query": {
       const { from, to } = monthRange();
       const { data: txs } = await supabase.from("transactions")
-        .select("amount, currency_code, type").eq("user_id", userId).is("deleted_at", null)
+        .select("amount, currency_code, type").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
         .in("type", ["income", "expense", "installment-payment"]).gte("date", from).lte("date", to);
       if (!txs?.length) return { text: "No hay movimientos este mes todavía." };
       const inc: Record<string, number> = {}, exp: Record<string, number> = {};
@@ -322,10 +375,11 @@ export async function executeIntent(
     case "edit_budget": {
       const match = await findCategory(supabase, userId, intent.category);
       if (!match) return { text: `No encontré la categoría "${intent.category}". Revisá el nombre en la sección Categorías.` };
+      const spaceId = await getWriteSpaceId(supabase, userId, activeSpaceId);
       const currency = await primaryCurrency(supabase, userId);
       await supabase.from("category_budgets").upsert(
-        { user_id: userId, category_id: match.id, monthly_limit: intent.amount, currency_code: currency, period_type: "always" },
-        { onConflict: "user_id,category_id" }
+        { user_id: userId, space_id: spaceId, category_id: match.id, monthly_limit: intent.amount, currency_code: currency, period_type: "always" },
+        { onConflict: "user_id,space_id,category_id" }
       );
       return { text: `✅ Listo. Actualicé el límite de ${match.name} a ${fmt(intent.amount, currency)} por mes.`, effects: [{ type: "refresh" }] };
     }
@@ -333,7 +387,10 @@ export async function executeIntent(
     case "delete_budget": {
       const match = await findCategory(supabase, userId, intent.category);
       if (!match) return { text: `No encontré la categoría "${intent.category}".` };
-      const { error } = await supabase.from("category_budgets").delete().eq("user_id", userId).eq("category_id", match.id);
+      const spaceId = await getWriteSpaceId(supabase, userId, activeSpaceId);
+      let del = supabase.from("category_budgets").delete().eq("user_id", userId).eq("category_id", match.id);
+      if (spaceId) del = del.eq("space_id", spaceId);
+      const { error } = await del;
       if (error) return { text: "No pude eliminar el límite. Intentá desde Categorías." };
       return { text: `Eliminé el límite mensual de ${match.name}.`, effects: [{ type: "refresh" }] };
     }
@@ -357,9 +414,10 @@ export async function executeIntent(
     }
 
     case "create_goal": {
+      const spaceId = await getWriteSpaceId(supabase, userId, activeSpaceId);
       const currency = await primaryCurrency(supabase, userId);
       const { error } = await supabase.from("savings_goals").insert({
-        user_id: userId, name: intent.name, target_amount: intent.amount ?? 0,
+        user_id: userId, space_id: spaceId, name: intent.name, target_amount: intent.amount ?? 0,
         current_amount: 0, currency_code: currency, status: "active",
       });
       if (error) return { text: "No pude crear la meta. Intentá desde la sección Metas." };
@@ -383,14 +441,14 @@ export async function executeIntent(
     }
 
     case "pay_installment": {
-      const { data: plans } = await supabase.from("installment_plans").select("id, name, installment_amount, currency_code, n_installments").eq("user_id", userId).eq("status", "active");
+      const { data: plans } = await supabase.from("installment_plans").select("id, space_id, name, installment_amount, currency_code, n_installments").eq("user_id", userId).eq("status", "active");
       const nameNorm = normalize(intent.name);
-      const match = (plans as { id: string; name: string; installment_amount: number; currency_code: string; n_installments: number }[] | null)?.find((p) => normalize(p.name).includes(nameNorm) || nameNorm.includes(normalize(p.name)));
+      const match = (plans as { id: string; space_id: string; name: string; installment_amount: number; currency_code: string; n_installments: number }[] | null)?.find((p) => normalize(p.name).includes(nameNorm) || nameNorm.includes(normalize(p.name)));
       if (!match) return { text: `No encontré una cuota activa llamada "${intent.name}".` };
       const { data: next } = await supabase.from("installment_payments").select("id, payment_number, amount").eq("plan_id", match.id).eq("user_id", userId).eq("status", "pending").order("payment_number", { ascending: true }).limit(1).single();
       if (!next) return { text: `No hay cuotas pendientes para "${match.name}".` };
       const { data: tx } = await supabase.from("transactions").insert({
-        user_id: userId, type: "installment-payment", amount: next.amount, currency_code: match.currency_code,
+        user_id: userId, space_id: match.space_id, type: "installment-payment", amount: next.amount, currency_code: match.currency_code,
         description: `${match.name} — cuota ${next.payment_number}/${match.n_installments}`, date: new Date().toISOString().split("T")[0],
       }).select().single();
       await supabase.from("installment_payments").update({ status: "paid", transaction_id: tx?.id ?? null }).eq("id", next.id).eq("user_id", userId);

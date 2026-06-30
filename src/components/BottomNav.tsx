@@ -8,6 +8,7 @@ import Fuse from "fuse.js";
 import CategoryModal from "@/components/CategoryModal";
 import NeoOrb from "@/components/NeoOrb";
 import { useIconStyle } from "@/context/IconStyleContext";
+import { useSpaces } from "@/context/SpaceContext";
 
 const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "PYG", "BOB", "COP", "PEN", "GBP"];
 
@@ -239,6 +240,8 @@ function guessCategory(description: string, categories: Category[]): string {
 
 function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose: () => void; onSaved: () => void; initialType?: "expense" | "income" }) {
   const { iconStyle } = useIconStyle();
+  const { spaces, activeId } = useSpaces();
+  const defaultSpaceId = spaces.find((s) => s.is_default)?.id ?? spaces[0]?.id ?? "";
   const [categories, setCategories] = useState<Category[]>([]);
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [showNewCat, setShowNewCat] = useState(false);
@@ -248,6 +251,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     amount: "",
     currency_code: "ARS",
     category_id: "",
+    space_id: activeId && activeId !== "total" ? activeId : defaultSpaceId,
     date: new Date().toISOString().slice(0, 10),
   });
   const [saving, setSaving] = useState(false);
@@ -443,6 +447,18 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
               style={{ ...inp, width: 42, flexShrink: 0, fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", padding: "0" }}
             >+</button>
           </div>
+
+          {/* Espacio (solo si hay más de uno) */}
+          {spaces.length > 1 && (
+            <select
+              style={inp}
+              aria-label="Espacio"
+              value={form.space_id}
+              onChange={(e) => setForm((f) => ({ ...f, space_id: e.target.value }))}
+            >
+              {spaces.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+            </select>
+          )}
 
           {/* Fecha */}
           <input

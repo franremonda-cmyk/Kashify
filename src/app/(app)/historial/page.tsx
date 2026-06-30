@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
+import { useSpaces } from "@/context/SpaceContext";
 import dynamic from "next/dynamic";
 const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 import TransactionSheet from "@/components/TransactionSheet";
@@ -367,6 +368,7 @@ function sortTransactions(txs: Transaction[], sort: string): Transaction[] {
 }
 
 export default function ActividadPage() {
+  const { activeId } = useSpaces();
   const [transactions, setTransactions]     = useState<Transaction[]>([]);
   const [categories, setCategories]         = useState<Category[]>([]);
   const [search, setSearch]                 = useState("");
@@ -429,7 +431,7 @@ export default function ActividadPage() {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
     const from = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
-    fetch(`/api/transactions?currency=${selectedCurrency}&from=${from}&sort_by=date&sort_dir=asc&page=1&limit=1000`)
+    fetch(`/api/transactions?currency=${selectedCurrency}&from=${from}&space=${activeId}&sort_by=date&sort_dir=asc&page=1&limit=1000`)
       .then(r => r.ok ? r.json() : { data: [] })
       .then((json: { data?: { amount: number; type: string; date: string }[] }) => {
         const txs = json.data ?? [];
@@ -450,14 +452,14 @@ export default function ActividadPage() {
         setChartMonths(months);
       })
       .catch(() => setChartMonths([]));
-  }, [selectedCurrency]);
+  }, [selectedCurrency, activeId]);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     const from = `${viewYear}-${String(viewMonth).padStart(2,"0")}-01`;
     const lastDay = new Date(viewYear, viewMonth, 0).getDate();
     const to = `${viewYear}-${String(viewMonth).padStart(2,"0")}-${lastDay}`;
-    const params = new URLSearchParams({ page: String(page), from, to });
+    const params = new URLSearchParams({ page: String(page), from, to, space: activeId });
     if (search) params.set("search", search);
     if (filters.categories.length === 1) params.set("category_id", filters.categories[0]);
     if (filters.types.length === 1) params.set("type", filters.types[0]);
@@ -466,7 +468,7 @@ export default function ActividadPage() {
     setTransactions(json.data ?? []);
     setTotal(json.count ?? 0);
     setLoading(false);
-  }, [page, search, filters.categories, filters.types, viewYear, viewMonth]);
+  }, [page, search, filters.categories, filters.types, viewYear, viewMonth, activeId]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 

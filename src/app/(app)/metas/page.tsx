@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -7,6 +7,7 @@ import { CATEGORY_COLORS } from "@/lib/iconList";
 import { useIconStyle } from "@/context/IconStyleContext";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import { BackButton } from "@/components/ui/BackButton";
+import { useSpaces } from "@/context/SpaceContext";
 import type { SavingsGoal } from "@/types";
 
 const IconPicker = dynamic(() => import("@/components/IconPicker"), { ssr: false });
@@ -29,6 +30,7 @@ function fmt(n: number, currency: string) {
 }
 
 export default function MetasPage() {
+  const { activeId } = useSpaces();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -36,14 +38,14 @@ export default function MetasPage() {
   const [contributing, setContributing] = useState<string | null>(null);
   const [addAmount, setAddAmount] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/goals");
+    const res = await fetch(`/api/goals?space=${activeId}`);
     if (res.ok) setGoals(await res.json());
     setLoading(false);
-  }
+  }, [activeId]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("new") === "1") setShowNew(true);
   }, []);
@@ -210,6 +212,7 @@ function GoalModal({
   onSaved: () => void;
 }) {
   const { iconStyle } = useIconStyle();
+  const { activeId } = useSpaces();
   const isEdit = !!goal;
   const [name, setName]     = useState(goal?.name ?? "");
   const [target, setTarget] = useState(goal ? String(goal.target_amount) : "");
@@ -250,6 +253,7 @@ function GoalModal({
           target_date: date || null,
           color,
           icon,
+          space_id: activeId,
         }),
       });
     }

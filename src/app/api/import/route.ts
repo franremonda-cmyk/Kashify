@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { resolveSpaceId } from "@/lib/spaces";
 
 // Importaciones grandes: dar más tiempo a la función serverless.
 export const maxDuration = 60;
@@ -19,10 +20,13 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { rows }: { rows: ImportRow[] } = await request.json();
+  const { rows, spaceId }: { rows: ImportRow[]; spaceId?: string } = await request.json();
   if (!Array.isArray(rows) || rows.length === 0) {
     return NextResponse.json({ error: "No rows provided" }, { status: 400 });
   }
+
+  // Todas las filas importadas caen en el espacio elegido (o el por defecto).
+  const space_id = await resolveSpaceId(supabase, user.id, spaceId);
 
   // Resolve category names → ids (create if missing)
   const { data: existingCats } = await supabase
@@ -71,6 +75,7 @@ export async function POST(request: Request) {
 
     toInsert.push({
       user_id: user.id,
+      space_id,
       description: row.description,
       amount: row.amount,
       currency_code: row.currency_code,

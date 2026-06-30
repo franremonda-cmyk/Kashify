@@ -1,8 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import DashboardShell from "@/components/DashboardShell";
 import DashboardClient from "./DashboardClient";
+import SpaceSwitcher from "@/components/SpaceSwitcher";
+import { computeBalances } from "@/lib/ledger/balances";
+import { scopeForSpace, SPACE_COOKIE } from "@/lib/space-scope";
 import type { ChartMonth } from "@/components/SpendingChart";
+import type { Space } from "@/types";
 
 const MONTH_LABELS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -15,28 +20,40 @@ export default async function DashboardPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const yearAgo    = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().split("T")[0];
 
-  const [balancesRes, profileRes, pendingRes, txMonthRes, txHistoryRes, goalsRes, budgetsRes, installmentsRes] = await Promise.all([
-    supabase.from("balances").select("*").eq("user_id", user.id).order("currency_code"),
+  // Espacio activo (cookie sincronizada por SpaceContext). "total" = agregado de
+  // los espacios con include_in_total; un uuid = solo ese espacio.
+  const activeSpace = (await cookies()).get(SPACE_COOKIE)?.value ?? "total";
+  const { data: spacesData } = await supabase.from("spaces").select("*").eq("user_id", user.id).order("sort_order").order("created_at");
+  const spaces = (spacesData as Space[] | null) ?? [];
+  const scopeIds = scopeForSpace(spaces, activeSpace);
+
+  const [profileRes, pendingRes, txMonthRes, txHistoryRes, txAllRes, goalsRes, budgetsRes, installmentsRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", user.id).single(),
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
     supabase.from("transactions")
       .select("id, category_id, amount, currency_code, type, description, date, categories(name, icon, color)")
-      .eq("user_id", user.id).is("deleted_at", null)
+      .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", monthStart)
       .order("created_at", { ascending: false })
       .limit(50),
     supabase.from("transactions")
       .select("amount, currency_code, type, date")
-      .eq("user_id", user.id).is("deleted_at", null)
+      .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", yearAgo)
       .order("date", { ascending: true }),
-    supabase.from("savings_goals").select("*").eq("user_id", user.id).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
-    supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id),
-    supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(status), categories(name, color, icon)").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }),
+    // Balance: todos los movimientos no borrados del scope (incluye conversiones).
+    // ponytail: scan O(n) sobre las tx del usuario; si alguien acumula decenas de
+    // miles, reintroducir un cache de balance por espacio.
+    supabase.from("transactions")
+      .select("amount, currency_code, type, to_currency_code, to_amount")
+      .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds),
+    supabase.from("savings_goals").select("*").eq("user_id", user.id).in("space_id", scopeIds).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
+    supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds),
+    supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(status), categories(name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds).eq("status", "active").order("created_at", { ascending: false }),
   ]);
 
-  const balances   = balancesRes.data ?? [];
+  const balances   = computeBalances(txAllRes.data ?? []);
   const profile    = profileRes.data;
   const pending    = pendingRes.data ?? [];
   const txAll      = txMonthRes.data ?? [];
@@ -160,6 +177,9 @@ export default async function DashboardPage() {
           {(firstName?.[0] ?? "K").toUpperCase()}
         </div>
       </div>
+
+      {/* Selector de espacio (se autoesconde si hay uno solo) */}
+      <SpaceSwitcher />
 
       {/* Pending Neo confirmations */}
       <DashboardClient pending={pending} userId={user.id} />

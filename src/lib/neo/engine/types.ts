@@ -39,11 +39,13 @@ export type Intent =
 // ─── Flow context (slot-filling) ─────────────────────────────────────────────
 
 // Una acción parcialmente completada que espera sus slots faltantes.
+// space_id: espacio destino ya resuelto. awaitingSpace: Neo preguntó a qué
+// espacio y espera la respuesta (solo gastos/ingresos preguntan).
 export type FlowContext =
-  | { flow: "expense" | "income"; description?: string; amount?: number; category?: string | null }
-  | { flow: "installment"; name?: string; nInstallments?: number; installmentAmount?: number }
-  | { flow: "goal"; name?: string; target?: number }
-  | { flow: "budget"; category?: string; amount?: number }
+  | { flow: "expense" | "income"; description?: string; amount?: number; category?: string | null; space_id?: string; awaitingSpace?: boolean }
+  | { flow: "installment"; name?: string; nInstallments?: number; installmentAmount?: number; space_id?: string }
+  | { flow: "goal"; name?: string; target?: number; space_id?: string }
+  | { flow: "budget"; category?: string; amount?: number; space_id?: string }
   | { flow: "clarify" };
 
 export interface DeleteCandidate {

@@ -445,6 +445,18 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         </div>
       </Accordion>
 
+      {/* Espacios */}
+      <Accordion label="Espacios" {...sec("espacios")}>
+        <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>
+          Separá tus finanzas (personal, freelance, un emprendimiento…), cada una con su moneda.
+          Las que sumás al total aparecen en tu balance personal; las aisladas quedan aparte.
+        </p>
+        <Link href="/espacios"
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--glass-border)", color: "var(--accent)", textDecoration: "none", marginTop: 10 }}>
+          Administrar espacios →
+        </Link>
+      </Accordion>
+
       {/* ③ Categorías + Límites */}
       <Accordion label="Categorías" {...sec("categorias")}>
         {/* Sub-botón: Mis categorías */}

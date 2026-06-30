@@ -1,9 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import InstallmentForm from "@/components/InstallmentForm";
 import type { InstallmentFormData } from "@/components/InstallmentForm";
 import { BackButton } from "@/components/ui/BackButton";
 import CategoryIcon from "@/components/CategoryIcon";
+import { useSpaces } from "@/context/SpaceContext";
 import type { InstallmentPlan, InstallmentPayment } from "@/types";
 
 type PlanWithPayments = InstallmentPlan & {
@@ -12,15 +13,16 @@ type PlanWithPayments = InstallmentPlan & {
 };
 
 export default function CuotasPage() {
+  const { activeId } = useSpaces();
   const [plans, setPlans] = useState<PlanWithPayments[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PlanWithPayments | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  function load() {
-    fetch("/api/installments").then((r) => r.json()).then(setPlans).catch(() => {});
-  }
-  useEffect(() => { load(); }, []);
+  const load = useCallback(() => {
+    fetch(`/api/installments?space=${activeId}`).then((r) => r.json()).then(setPlans).catch(() => {});
+  }, [activeId]);
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("new") === "1") { setShowForm(true); setEditingPlan(null); }
   }, []);
@@ -30,7 +32,7 @@ export default function CuotasPage() {
     const res = await fetch("/api/installments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, space_id: activeId }),
     });
     if (res.ok) {
       setShowForm(false);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { spaceBelongsTo } from "@/lib/spaces";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -13,6 +14,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const patch: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) patch[key] = body[key];
+  }
+  // Reasignar a otro espacio: solo si el espacio pertenece al usuario.
+  if (body.space_id && await spaceBelongsTo(supabase, user.id, body.space_id)) {
+    patch.space_id = body.space_id;
   }
 
   const { data, error } = await supabase

@@ -10,7 +10,7 @@ const SpendingChart = dynamic(() => import("./SpendingChart"), { ssr: false, loa
 import TransactionSheet from "./TransactionSheet";
 import BudgetDetailModal from "./BudgetDetailModal";
 import TxBreakdownModal from "./TxBreakdownModal";
-import type { Balance, SavingsGoal } from "@/types";
+import type { BalanceView, SavingsGoal } from "@/types";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; }
 interface RecentTx {
@@ -57,7 +57,7 @@ interface InstallmentEntry {
 }
 
 interface Props {
-  balances: Balance[];
+  balances: BalanceView[];
   primaryCurrency: string;
   metrics: CurrencyMetrics[];
   chartData: Record<string, ChartMonth[]>;

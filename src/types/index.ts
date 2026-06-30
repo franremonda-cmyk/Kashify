@@ -14,6 +14,19 @@ export interface Profile {
   created_at: string;
 }
 
+export interface Space {
+  id: string;
+  user_id: string;
+  name: string;
+  primary_currency: string;
+  include_in_total: boolean;
+  is_default: boolean;
+  color: string;
+  icon: string;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface Balance {
   id: string;
   user_id: string;
@@ -21,6 +34,9 @@ export interface Balance {
   amount: number;
   updated_at: string;
 }
+
+// Balance mínimo para mostrar (lo que devuelve computeBalances, sin metadata de fila).
+export type BalanceView = Pick<Balance, "currency_code" | "amount">;
 
 export interface Category {
   id: string;
@@ -35,6 +51,7 @@ export interface Category {
 export interface CategoryBudget {
   id: string;
   user_id: string;
+  space_id: string;
   category_id: string;
   monthly_limit: number;
   currency_code: string;
@@ -43,6 +60,7 @@ export interface CategoryBudget {
 export interface Transaction {
   id: string;
   user_id: string;
+  space_id: string;
   type: TransactionType;
   amount: number;
   currency_code: string;
@@ -62,6 +80,7 @@ export interface Transaction {
 export interface InstallmentPlan {
   id: string;
   user_id: string;
+  space_id: string;
   name: string;
   total_amount: number;
   currency_code: string;
@@ -129,6 +148,7 @@ export type SavingsGoalStatus = "active" | "reached" | "archived";
 export interface SavingsGoal {
   id: string;
   user_id: string;
+  space_id: string;
   name: string;
   target_amount: number;
   current_amount: number;

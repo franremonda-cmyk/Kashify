@@ -117,9 +117,11 @@ function check(name: string, cond: boolean, detail = "") {
 }
 
 const USER = "user-1";
+const SPACE = "space-personal";
 function seed(): DB {
   return {
     profiles: [{ user_id: USER, primary_currency: "ARS", display_name: "Fran" }],
+    spaces: [{ id: SPACE, user_id: USER, name: "Personal", is_default: true, include_in_total: true, primary_currency: "ARS", sort_order: 0, created_at: "2026-01-01" }],
     transactions: [],
     categories: [{ id: "cat-comida", user_id: USER, name: "Comida" }],
     category_budgets: [],
@@ -146,7 +148,7 @@ async function main() {
   {
     const db = seed();
     const today = new Date().toISOString().split("T")[0];
-    db.transactions.push({ id: "t1", user_id: USER, type: "expense", amount: 1000, currency_code: "ARS", date: today });
+    db.transactions.push({ id: "t1", user_id: USER, space_id: SPACE, type: "expense", amount: 1000, currency_code: "ARS", date: today });
     const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "cuánto gasté este mes", channel: "whatsapp" });
     check("cuánto gasté este mes → reporta total", r.text.includes("1.000") || r.text.toLowerCase().includes("gastaste"));
   }
@@ -154,8 +156,8 @@ async function main() {
   // 3) Saldo
   {
     const db = seed();
-    db.transactions.push({ id: "t1", user_id: USER, type: "income", amount: 5000, currency_code: "ARS", date: "2026-06-01" });
-    db.transactions.push({ id: "t2", user_id: USER, type: "expense", amount: 2000, currency_code: "ARS", date: "2026-06-02" });
+    db.transactions.push({ id: "t1", user_id: USER, space_id: SPACE, type: "income", amount: 5000, currency_code: "ARS", date: "2026-06-01" });
+    db.transactions.push({ id: "t2", user_id: USER, space_id: SPACE, type: "expense", amount: 2000, currency_code: "ARS", date: "2026-06-02" });
     const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "cuánto tengo", channel: "whatsapp" });
     check("cuánto tengo → balance acumulado", r.text.toLowerCase().includes("balance"));
   }
@@ -174,7 +176,7 @@ async function main() {
   {
     const db = seed();
     const today = new Date().toISOString().split("T")[0];
-    db.transactions.push({ id: "tx-del", user_id: USER, type: "expense", amount: 999, currency_code: "ARS", description: "netflix", date: today });
+    db.transactions.push({ id: "tx-del", user_id: USER, space_id: SPACE, type: "expense", amount: 999, currency_code: "ARS", description: "netflix", date: today });
     const stub = makeStub(db);
     const r1 = await runNeo({ supabase: stub, userId: USER, message: "borrá el gasto de netflix", channel: "whatsapp" });
     check("borrá netflix → pide confirmación (sí/no)", !!r1.state && r1.text.toLowerCase().includes("elimino"));
@@ -186,7 +188,7 @@ async function main() {
   {
     const db = seed();
     const today = new Date().toISOString().split("T")[0];
-    db.transactions.push({ id: "tx-keep", user_id: USER, type: "expense", amount: 999, currency_code: "ARS", description: "spotify", date: today });
+    db.transactions.push({ id: "tx-keep", user_id: USER, space_id: SPACE, type: "expense", amount: 999, currency_code: "ARS", description: "spotify", date: today });
     const stub = makeStub(db);
     const r1 = await runNeo({ supabase: stub, userId: USER, message: "borrá el gasto de spotify", channel: "whatsapp" });
     const r2 = await runNeo({ supabase: stub, userId: USER, message: "no", channel: "whatsapp", state: r1.state as NeoState });
@@ -197,7 +199,7 @@ async function main() {
   {
     const db = seed();
     const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "xyzqwerty foobar", channel: "whatsapp" });
-    check("desconocido sin fallback → clarify, 0 transacciones", db.transactions.length === 0 && r.text.toLowerCase().includes("no entendí"));
+    check("desconocido sin fallback → clarify, 0 transacciones", db.transactions.length === 0 && r.text.toLowerCase().includes("no te entend"));
   }
 
   // 8) Keyword aprendida → resuelve en 0 tokens
@@ -212,10 +214,10 @@ async function main() {
   {
     const db = seed();
     const today = new Date().toISOString().split("T")[0];
-    db.transactions.push({ id: "i1", user_id: USER, type: "income", amount: 7000, currency_code: "ARS", date: today });
+    db.transactions.push({ id: "i1", user_id: USER, space_id: SPACE, type: "income", amount: 7000, currency_code: "ARS", date: today });
     const r1 = await runNeo({ supabase: makeStub(db), userId: USER, message: "Cuál fue mi ingreso este mes?", channel: "whatsapp" });
     check("'cuál fue mi ingreso este mes' → reporta ingreso", r1.text.toLowerCase().includes("ingresaste"), `reply: ${r1.text}`);
-    db.transactions.push({ id: "e1", user_id: USER, type: "expense", amount: 300, currency_code: "ARS", date: today });
+    db.transactions.push({ id: "e1", user_id: USER, space_id: SPACE, type: "expense", amount: 300, currency_code: "ARS", date: today });
     const r2 = await runNeo({ supabase: makeStub(db), userId: USER, message: "cuál fue mi gasto este mes?", channel: "whatsapp" });
     check("'cuál fue mi gasto este mes' → reporta gasto", r2.text.toLowerCase().includes("gastaste"), `reply: ${r2.text}`);
   }
@@ -224,9 +226,35 @@ async function main() {
   {
     const db = seed();
     const today = new Date().toISOString().split("T")[0];
-    db.transactions.push({ id: "tx-w", user_id: USER, type: "expense", amount: 100, currency_code: "ARS", description: "uber", date: today });
+    db.transactions.push({ id: "tx-w", user_id: USER, space_id: SPACE, type: "expense", amount: 100, currency_code: "ARS", description: "uber", date: today });
     const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "borrá el gasto de uber", channel: "web" });
     check("web: borrado → effect confirm_delete (no state)", !r.state && r.effects?.[0]?.type === "confirm_delete");
+  }
+
+  // 10) Multi-espacio (WhatsApp): Neo pregunta a qué espacio va el movimiento
+  {
+    const db = seed();
+    db.spaces.push({ id: "space-freelance", user_id: USER, name: "Freelance", is_default: false, include_in_total: true, primary_currency: "USD", sort_order: 1, created_at: "2026-02-01" });
+    const stub = makeStub(db);
+    const r1 = await runNeo({ supabase: stub, userId: USER, message: "compré café 800", channel: "whatsapp" });
+    check("multi-espacio: pregunta a qué espacio (no crea aún)", !!r1.state && r1.text.toLowerCase().includes("espacio") && db.transactions.length === 0, `reply: ${r1.text}`);
+    const r2 = await runNeo({ supabase: stub, userId: USER, message: "2", channel: "whatsapp", state: r1.state as NeoState });
+    check("multi-espacio: '2' crea el gasto en Freelance", db.transactions.length === 1 && db.transactions[0].space_id === "space-freelance", `reply: ${r2.text}`);
+  }
+
+  // 11) Un solo espacio: NO pregunta, usa el único
+  {
+    const db = seed();
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "compré café 800", channel: "whatsapp" });
+    check("un espacio: crea directo sin preguntar", db.transactions.length === 1 && db.transactions[0].space_id === SPACE, `reply: ${r.text}`);
+  }
+
+  // 12) Web con espacio activo: no pregunta, usa el activo
+  {
+    const db = seed();
+    db.spaces.push({ id: "space-freelance", user_id: USER, name: "Freelance", is_default: false, include_in_total: true, primary_currency: "USD", sort_order: 1, created_at: "2026-02-01" });
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "compré café 800", channel: "web", activeSpaceId: "space-freelance" });
+    check("web activeSpace: crea directo en el espacio activo", db.transactions.length === 1 && db.transactions[0].space_id === "space-freelance", `reply: ${r.text}`);
   }
 
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);

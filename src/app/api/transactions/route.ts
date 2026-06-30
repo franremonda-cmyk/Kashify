@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { resolveSpaceId } from "@/lib/spaces";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
   const offset = (page - 1) * limit;
   const category = searchParams.get("category");
   const currency = searchParams.get("currency");
+  const space = searchParams.get("space");
   const type = searchParams.get("type");
   const search = searchParams.get("search");
   const from = searchParams.get("from");
@@ -35,6 +37,7 @@ export async function GET(request: Request) {
 
   if (category) query = query.eq("category_id", category);
   if (currency) query = query.eq("currency_code", currency);
+  if (space && space !== "total") query = query.eq("space_id", space);
   if (type) {
     const types = type.split(",").map(t => t.trim()).filter(Boolean);
     if (types.length === 1) query = query.eq("type", types[0]);
@@ -55,9 +58,10 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  const space_id = await resolveSpaceId(supabase, user.id, body.space_id);
   const { data, error } = await supabase
     .from("transactions")
-    .insert({ ...body, user_id: user.id })
+    .insert({ ...body, user_id: user.id, space_id })
     .select()
     .single();
 
