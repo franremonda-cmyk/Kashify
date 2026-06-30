@@ -5,6 +5,10 @@ import { CATEGORY_COLORS } from "@/lib/iconList";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import type { Space } from "@/types";
 
+// Paleta de emojis para el espacio: elegir tocando (más confiable que un input
+// de texto con maxLength, que rompe con emojis de >1 unidad UTF-16).
+const SPACE_EMOJIS = ["💼", "🏠", "💰", "🎨", "🚀", "🛒", "🏢", "💻", "📊", "🎮", "✈️", "🍔", "❤️", "🎓", "🏦", "💡"];
+
 const CURRENCIES: { code: string; label: string }[] = [
   { code: "ARS", label: "Peso argentino ($)" },
   { code: "USD", label: "Dólar (US$)" },
@@ -89,14 +93,26 @@ export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) 
             <div style={{ width: 56, height: 56, borderRadius: 16, flexShrink: 0, background: color + "22", border: `1.5px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
               {icon || "💼"}
             </div>
-            <div style={{ flex: 1 }}>
-              <input style={{ ...inp, fontSize: 22, textAlign: "center", padding: "6px" }} value={icon} maxLength={2} onChange={(e) => setIcon(e.target.value)} aria-label="Emoji del espacio" />
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                {CATEGORY_COLORS.map((c) => (
-                  <button key={c} onClick={() => setColor(c)} aria-label={`Color ${c}`}
-                    style={{ width: 20, height: 20, borderRadius: "50%", background: c, border: color === c ? "3px solid var(--ink)" : "2px solid transparent", outline: color === c ? `2px solid ${c}` : "none", outlineOffset: 1 }} />
-                ))}
-              </div>
+            <div style={{ flex: 1, display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {CATEGORY_COLORS.map((c) => (
+                <button key={c} type="button" onClick={() => setColor(c)} aria-label={`Color ${c}`}
+                  style={{ width: 22, height: 22, borderRadius: "50%", background: c, border: color === c ? "3px solid var(--ink)" : "2px solid transparent", outline: color === c ? `2px solid ${c}` : "none", outlineOffset: 1 }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Paleta de emojis (tocar para elegir) */}
+          <div>
+            <p style={label}>Ícono</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 6 }}>
+              {SPACE_EMOJIS.map((e) => (
+                <button key={e} type="button" onClick={() => setIcon(e)} aria-label={`Ícono ${e}`} aria-pressed={icon === e}
+                  style={{ aspectRatio: "1", borderRadius: 10, fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: icon === e ? "var(--accent-soft)" : "var(--raised)",
+                    border: icon === e ? "1px solid var(--accent)" : "0.5px solid var(--glass-border)" }}>
+                  {e}
+                </button>
+              ))}
             </div>
           </div>
 
