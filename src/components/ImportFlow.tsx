@@ -548,9 +548,11 @@ function ResultStep({ inserted, duplicates, errors, onDone }: {
 // ─── Main ImportFlow ───────────────────────────────────────────────────────────
 
 export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, inline }: Props) {
-  const { spaces, activeId } = useSpaces();
+  const { spaces, activeId, reloadSpaces } = useSpaces();
   const defaultSpaceId = spaces.find((s) => s.is_default)?.id ?? spaces[0]?.id ?? "";
   const [spaceId, setSpaceId]         = useState(activeId && activeId !== "total" ? activeId : defaultSpaceId);
+  const [newSpaceName, setNewSpaceName] = useState("");
+  const [creatingSpace, setCreatingSpace] = useState(false);
   const [step, setStep]               = useState<Step>("upload");
   const [headers, setHeaders]         = useState<string[]>([]);
   const [rawRows, setRawRows]         = useState<RawRow[]>([]);
@@ -605,7 +607,7 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
       const res = await fetch("/api/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: chunk, spaceId }),
+        body: JSON.stringify({ rows: chunk, spaceId: spaceId === "__new__" ? defaultSpaceId : spaceId }),
       });
       if (res.ok) {
         const json = await res.json();
@@ -621,20 +623,53 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
     setResult({ inserted, duplicates, errors });
     setStep("result");
     window.dispatchEvent(new Event("transaction-added"));
-  }, [transactions, spaceId]);
+  }, [transactions, spaceId, defaultSpaceId]);
 
-  // Selector de espacio destino (solo si hay más de uno y estás configurando el import).
-  const spaceSelector = spaces.length > 1 && ["detect", "map", "preview"].includes(step) ? (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: 13, color: "var(--ink-muted)", flexShrink: 0 }}>Importar a</span>
-      <select
-        value={spaceId}
-        onChange={(e) => setSpaceId(e.target.value)}
-        aria-label="Espacio destino del import"
-        style={{ flex: 1, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "9px 12px", color: "var(--ink)", fontSize: 13, outline: "none" }}
-      >
-        {spaces.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
-      </select>
+  const createSpace = useCallback(async () => {
+    const name = newSpaceName.trim();
+    if (!name || creatingSpace) return;
+    setCreatingSpace(true);
+    try {
+      const res = await fetch("/api/spaces", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+      if (res.ok) {
+        const sp = await res.json();
+        await reloadSpaces();
+        setSpaceId(sp.id);       // importar al espacio recién creado
+        setNewSpaceName("");
+      }
+    } finally {
+      setCreatingSpace(false);
+    }
+  }, [newSpaceName, creatingSpace, reloadSpaces]);
+
+  // Selector de espacio destino (incluye "crear nuevo") al configurar el import.
+  const inputStyle: React.CSSProperties = { flex: 1, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: 16, outline: "none" };
+  const spaceSelector = ["detect", "map", "preview"].includes(step) ? (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 13, color: "var(--ink-muted)", flexShrink: 0 }}>Importar a</span>
+        <select value={spaceId} onChange={(e) => setSpaceId(e.target.value)} aria-label="Espacio destino del import" style={inputStyle}>
+          {spaces.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+          <option value="__new__">＋ Crear nuevo espacio…</option>
+        </select>
+      </div>
+      {spaceId === "__new__" && (
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={newSpaceName}
+            onChange={(e) => setNewSpaceName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") createSpace(); }}
+            placeholder="Nombre (ej: Freelance)"
+            autoFocus
+            aria-label="Nombre del nuevo espacio"
+            style={inputStyle}
+          />
+          <button onClick={createSpace} disabled={!newSpaceName.trim() || creatingSpace}
+            style={{ flexShrink: 0, padding: "0 16px", borderRadius: 10, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: (!newSpaceName.trim() || creatingSpace) ? 0.5 : 1 }}>
+            {creatingSpace ? "…" : "Crear"}
+          </button>
+        </div>
+      )}
     </div>
   ) : null;
 
