@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 import TransactionSheet from "@/components/TransactionSheet";
 import SpaceSwitcher from "@/components/SpaceSwitcher";
+import ExportSheet from "@/components/ExportSheet";
 import BudgetDetailModal from "@/components/BudgetDetailModal";
 import TxBreakdownModal from "@/components/TxBreakdownModal";
 import type { ChartMonth } from "@/components/SpendingChart";
@@ -401,7 +402,7 @@ export default function ActividadPage() {
   const [selectedCurrency, setSelectedCurrency] = useState<string>("ARS");
   const [selectedTx, setSelectedTx]         = useState<Transaction | null>(null);
   const [showImport, setShowImport]         = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showExport, setShowExport]         = useState(false);
   const [showAllTx, setShowAllTx]           = useState(false);
   const [viewYear, setViewYear]             = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth]           = useState(() => new Date().getMonth() + 1);
@@ -576,6 +577,8 @@ export default function ActividadPage() {
         />
       )}
 
+      {showExport && <ExportSheet onClose={() => setShowExport(false)} />}
+
       {selectedTx && (
         <TransactionSheet
           tx={selectedTx}
@@ -590,37 +593,7 @@ export default function ActividadPage() {
         <h1 className="page-title">Actividad</h1>
         <div className="flex gap-2" style={{ position: "relative" }}>
           <button onClick={() => setShowImport(true)} style={{ fontSize: 13, minHeight: 40, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setShowExportMenu(v => !v)}
-              style={{ fontSize: 13, minHeight: 40, padding: "0 12px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-              ↓ Exportar
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ opacity: 0.6 }}>
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            {showExportMenu && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setShowExportMenu(false)} />
-                <div style={{
-                  position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 20,
-                  background: "var(--base)", border: "0.5px solid var(--glass-border)",
-                  borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
-                  minWidth: 130, overflow: "hidden",
-                }}>
-                  <button onClick={() => { window.open("/api/export?format=csv"); setShowExportMenu(false); }}
-                    style={{ display: "block", width: "100%", padding: "10px 14px", textAlign: "left", fontSize: 12, color: "var(--ink)", background: "transparent" }}>
-                    CSV
-                  </button>
-                  <div style={{ height: "0.5px", background: "var(--glass-border)" }} />
-                  <button onClick={() => { window.open("/api/export?format=xlsx"); setShowExportMenu(false); }}
-                    style={{ display: "block", width: "100%", padding: "10px 14px", textAlign: "left", fontSize: 12, color: "var(--ink)", background: "transparent" }}>
-                    Excel (.xlsx)
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <button onClick={() => setShowExport(true)} style={{ fontSize: 13, minHeight: 40, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>↓ Exportar</button>
         </div>
       </div>
 
