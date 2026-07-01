@@ -9,6 +9,7 @@ import { useSpaces } from "@/context/SpaceContext";
 import dynamic from "next/dynamic";
 const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 import TransactionSheet from "@/components/TransactionSheet";
+import SpaceSwitcher from "@/components/SpaceSwitcher";
 import BudgetDetailModal from "@/components/BudgetDetailModal";
 import TxBreakdownModal from "@/components/TxBreakdownModal";
 import type { ChartMonth } from "@/components/SpendingChart";
@@ -622,6 +623,9 @@ export default function ActividadPage() {
           </div>
         </div>
       </div>
+
+      {/* Selector de espacio (se autoesconde si hay uno solo) */}
+      <SpaceSwitcher />
 
       {/* Navegador de meses */}
       {(() => {
