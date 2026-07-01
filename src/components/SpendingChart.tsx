@@ -46,6 +46,8 @@ function bezierPath(points: [number, number][]): string {
 export default function SpendingChart({ data, currencySymbol = "$", spaceStacks = [] }: Props) {
   const [period, setPeriod] = useState<Period>("6M");
   const [mode, setMode] = useState<"total" | "space">("total");
+  const [active, setActive] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const uid = useId().replace(/:/g, "");
 
   const hasSpaceMode = spaceStacks.length >= 2;
@@ -111,6 +113,25 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
 
   const gridVals = [0, 0.25, 0.5, 0.75, 1].map((f) => maxVal * f);
   const step = Math.max(1, Math.ceil(slice.length / 4));
+
+  // ── Tooltip: mes activo (tap/hover) → valores exactos ──
+  const fmtFull = (v: number) => `${currencySymbol}${Math.round(v).toLocaleString("es-AR")}`;
+  const idxFromEvent = (clientX: number): number => {
+    const el = svgRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    const xUnits = ((clientX - rect.left) / rect.width) * W;
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < slice.length; i++) {
+      const d = Math.abs(xOf(i) - xUnits);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  };
+  const ai = active !== null && active < slice.length ? active : null;  // índice activo válido
+  const tipLeftPct = ai !== null ? (Math.min(Math.max(xOf(ai), 64), W - 64) / W) * 100 : 0;
+  const last = slice[slice.length - 1];
+  const ariaSummary = `Evolución mensual. ${last.label}: ingresos ${fmtFull(last.income)}, gastos ${fmtFull(last.expense)}.`;
 
   return (
     <div ref={wrapRef} className="glass" style={{ borderRadius: 16, padding: "16px 16px 12px" }}>
@@ -183,12 +204,19 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
         </div>
       )}
 
-      {/* SVG */}
+      {/* SVG + tooltip interactivo */}
+      <div style={{ position: "relative" }}>
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
         width={W}
         height={H}
-        style={{ width: "100%", height: H, display: "block" }}
+        role="img"
+        aria-label={ariaSummary}
+        onPointerDown={(e) => setActive(idxFromEvent(e.clientX))}
+        onPointerMove={(e) => setActive(idxFromEvent(e.clientX))}
+        onPointerLeave={(e) => { if (e.pointerType === "mouse") setActive(null); }}
+        style={{ width: "100%", height: H, display: "block", touchAction: "pan-y", cursor: "crosshair" }}
       >
         <defs>
           <linearGradient id={`ig-${uid}`} x1="0" y1="0" x2="0" y2="1">
@@ -274,7 +302,62 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
             {d.label}
           </text>
         ))}
+
+        {/* Guía + marcadores del mes activo */}
+        {ai !== null && (
+          <g pointerEvents="none">
+            <line x1={xOf(ai)} y1={PAD.top} x2={xOf(ai)} y2={PAD.top + chartH}
+              stroke="var(--ink-muted)" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
+            {activeMode === "space" ? (
+              <circle cx={xOf(ai)} cy={yOf(monthTotals[ai])} r={4} fill="var(--ink)" stroke="var(--base)" strokeWidth={1.5} />
+            ) : (
+              <>
+                <circle cx={xOf(ai)} cy={yOf(slice[ai].income)}  r={4.5} fill="#30D158" stroke="var(--base)" strokeWidth={1.5} />
+                <circle cx={xOf(ai)} cy={yOf(slice[ai].expense)} r={4.5} fill="#FF453A" stroke="var(--base)" strokeWidth={1.5} />
+              </>
+            )}
+          </g>
+        )}
       </svg>
+
+      {/* Tooltip con valores exactos */}
+      {ai !== null && (
+        <div style={{
+          position: "absolute", top: 2, left: `${tipLeftPct}%`, transform: "translateX(-50%)",
+          pointerEvents: "none", zIndex: 2, minWidth: 122,
+          background: "var(--base)", border: "0.5px solid var(--glass-border)",
+          borderRadius: 10, padding: "8px 10px", boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+        }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-muted)", marginBottom: 6, textTransform: "capitalize" }}>{slice[ai].label}</p>
+          {activeMode === "space" ? (
+            <>
+              {stackVals.map((st) => (
+                <div key={st.name} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: st.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1, whiteSpace: "nowrap" }}>{st.name}</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(st.vals[ai] ?? 0)}</span>
+                </div>
+              ))}
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 5, paddingTop: 5, borderTop: "0.5px solid var(--glass-border-dim)" }}>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--ink-muted)" }}>Total</span>
+                <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(monthTotals[ai])}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 3 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--ink-muted)" }}><span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--positive)" }} />Ingresos</span>
+                <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--positive)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(slice[ai].income)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--ink-muted)" }}><span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--negative)" }} />Gastos</span>
+                <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(slice[ai].expense)}</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      </div>
     </div>
   );
 }
