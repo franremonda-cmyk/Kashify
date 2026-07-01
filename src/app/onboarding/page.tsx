@@ -337,6 +337,9 @@ export default function OnboardingPage() {
             ))}
           </div>
         )}
+        <p style={{ fontSize: 12, color: "var(--ink-dim)", lineHeight: 1.5 }}>
+          Tip: más adelante podés separar tus finanzas en <span style={{ color: "var(--ink-muted)", fontWeight: 600 }}>espacios</span> (Personal, Freelance, un emprendimiento) desde el menú.
+        </p>
       </div>
     ),
   };
