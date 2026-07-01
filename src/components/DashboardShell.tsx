@@ -80,6 +80,12 @@ function useCounter(target: number, duration = 600) {
   const raf = useRef<number>(0);
   const from = useRef(target);
   useEffect(() => {
+    // Respeta prefers-reduced-motion: sin conteo animado, salta al valor final.
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      cancelAnimationFrame(raf.current);
+      raf.current = requestAnimationFrame(() => { setValue(target); from.current = target; });
+      return () => cancelAnimationFrame(raf.current);
+    }
     const start = performance.now();
     const startVal = from.current;
     cancelAnimationFrame(raf.current);
@@ -209,7 +215,7 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
   return (
     <section className="flex flex-col gap-2 enter-up" data-delay="3">
       <div className="section-head" style={{ marginBottom: 0 }}>
-        <p className="section-title">Metas de ahorro</p>
+        <h2 className="section-title">Metas de ahorro</h2>
         <Link href="/metas" className="section-link">Ver todo →</Link>
       </div>
       <div className="card-glass" style={{ overflow: "hidden" }}>
@@ -254,7 +260,7 @@ function CuotasWidget({ installments }: { installments: InstallmentEntry[] }) {
   return (
     <section className="desktop-only flex flex-col gap-2 enter-up" data-delay="5">
       <div className="section-head" style={{ marginBottom: 0 }}>
-        <p className="section-title">Cuotas activas</p>
+        <h2 className="section-title">Cuotas activas</h2>
         <Link href="/cuotas" className="section-link">Ver todo →</Link>
       </div>
       <div className="card-glass" style={{ overflow: "hidden" }}>
@@ -298,7 +304,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   return (
     <section className="enter-up" data-delay="4" data-tour="budgets">
       <div className="section-head">
-        <p className="section-title">Límites por categoría</p>
+        <h2 className="section-title">Límites por categoría</h2>
         <Link href="/categorias" className="section-link">Ver todo →</Link>
       </div>
       {/* 1 row on mobile, 2 rows on tablet/desktop (CSS max-height clips the rest) */}
@@ -403,7 +409,7 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
       {recent.length > 0 && (
         <section className="dash-tx-tile flex flex-col gap-2 enter-up" data-delay="4">
           <div className="section-head" style={{ marginBottom: 0 }}>
-            <p className="section-title">Últimas transacciones</p>
+            <h2 className="section-title">Últimas transacciones</h2>
             <Link href="/historial" className="section-link">Ver todo →</Link>
           </div>
           <div className="card-glass dash-tx-card" style={{ overflow: "hidden" }}>

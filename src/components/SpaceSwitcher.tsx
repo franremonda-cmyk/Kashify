@@ -24,7 +24,7 @@ export default function SpaceSwitcher() {
             aria-pressed={active}
             style={{
               display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
-              padding: "7px 14px", borderRadius: "var(--radius-pill)", fontSize: 13, fontWeight: 600,
+              minHeight: 40, padding: "0 16px", borderRadius: "var(--radius-pill)", fontSize: 13, fontWeight: 600,
               border: active ? "0.5px solid var(--accent)" : "0.5px solid var(--glass-border)",
               background: active ? "var(--accent-soft)" : "var(--raised)",
               color: active ? "var(--accent)" : "var(--ink-muted)",

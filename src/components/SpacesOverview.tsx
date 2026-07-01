@@ -33,8 +33,8 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
   return (
     <section className="enter-up" data-delay="1">
       <div className="section-head" style={{ marginBottom: 8, alignItems: "baseline", gap: 8 }}>
-        <p className="section-title">Tus espacios</p>
-        <span style={{ fontSize: 12, color: "var(--ink-dim)", fontWeight: 500 }}>ingresos / gastos de este mes</span>
+        <h2 className="section-title">Tus espacios</h2>
+        <span style={{ fontSize: 12, color: "var(--ink-muted)", fontWeight: 500 }}>ingresos / gastos de este mes</span>
       </div>
       <div
         style={{

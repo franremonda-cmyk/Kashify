@@ -68,7 +68,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
   if (slice.length === 0) {
     return (
       <div className="glass" style={{ borderRadius: 16, padding: 20, textAlign: "center" }}>
-        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Sin datos para este período</p>
+        <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>Sin datos para este período</p>
       </div>
     );
   }
@@ -126,9 +126,10 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
               key={p}
               onClick={() => setPeriod(p)}
               style={{
-                padding: "3px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                minHeight: 40, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                padding: "0 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
                 background: period === p ? "rgba(0,230,118,0.18)" : "transparent",
-                color: period === p ? "var(--accent)" : "var(--ink-dim)",
+                color: period === p ? "var(--accent)" : "var(--ink-muted)",
                 border: period === p ? "0.5px solid rgba(0,230,118,0.30)" : "none",
               }}
             >
@@ -146,9 +147,10 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
               key={mo}
               onClick={() => setMode(mo)}
               style={{
-                padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                minHeight: 40, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                padding: "0 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
                 background: activeMode === mo ? "var(--base)" : "transparent",
-                color: activeMode === mo ? "var(--accent)" : "var(--ink-dim)",
+                color: activeMode === mo ? "var(--accent)" : "var(--ink-muted)",
                 boxShadow: activeMode === mo ? "var(--shadow-sm)" : "none",
               }}
             >
@@ -164,7 +166,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
           {stackVals.map((st) => (
             <div key={st.name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 10, height: 10, borderRadius: 3, background: st.color }} />
-              <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>{st.name}</span>
+              <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{st.name}</span>
             </div>
           ))}
         </div>
@@ -172,11 +174,11 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
         <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--positive)" }} />
-            <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>Ingresos</span>
+            <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>Ingresos</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--negative)" }} />
-            <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>Gastos</span>
+            <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>Gastos</span>
           </div>
         </div>
       )}
@@ -222,7 +224,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
             y={yOf(v) + 4}
             fontSize={12}
             fontWeight={500}
-            fill="var(--ink-dim)"
+            fill="var(--ink-muted)"
             textAnchor="end"
           >
             {currencySymbol}{compact(v)}
@@ -232,7 +234,9 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
         {activeMode === "space" ? (
           /* Bandas apiladas por espacio */
           stackAreas.map((a, i) => (
-            <path key={i} d={a.d} fill={a.color} fillOpacity={0.85} clipPath={`url(#clip-${uid})`} />
+            <path key={i} d={a.d} fill={a.color} fillOpacity={0.85}
+              stroke="var(--glass-border)" strokeWidth={0.75}
+              clipPath={`url(#clip-${uid})`} />
           ))
         ) : (
           <>
@@ -264,7 +268,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
             y={H - 8}
             fontSize={12}
             fontWeight={500}
-            fill="var(--ink-dim)"
+            fill="var(--ink-muted)"
             textAnchor="middle"
           >
             {d.label}

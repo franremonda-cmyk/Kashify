@@ -18,6 +18,12 @@ function useCounter(target: number, duration = 700) {
   const raf = useRef<number>(0);
   const from = useRef(target);
   useEffect(() => {
+    // Respeta prefers-reduced-motion: sin conteo animado, salta al valor final.
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      cancelAnimationFrame(raf.current);
+      raf.current = requestAnimationFrame(() => { setValue(target); from.current = target; });
+      return () => cancelAnimationFrame(raf.current);
+    }
     const start = performance.now();
     const startVal = from.current;
     cancelAnimationFrame(raf.current);
