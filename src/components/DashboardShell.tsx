@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import HeroBalanceCard from "./HeroBalanceCard";
+import SpacesOverview, { type SpaceCardData } from "./SpacesOverview";
 import CategoryIcon from "./CategoryIcon";
 import type { ChartMonth } from "./SpendingChart";
 const SpendingChart = dynamic(() => import("./SpendingChart"), { ssr: false, loading: () => <div style={{ height: 200 }} /> });
@@ -59,6 +60,7 @@ interface InstallmentEntry {
 interface Props {
   balances: BalanceView[];
   primaryCurrency: string;
+  spacesOverview?: SpaceCardData[];
   metrics: CurrencyMetrics[];
   chartData: Record<string, ChartMonth[]>;
   recent: RecentTx[];
@@ -337,7 +339,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, metrics, chartData, recent, goals = [], budgets = [], installments = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, chartData, recent, goals = [], budgets = [], installments = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -380,6 +382,13 @@ export default function DashboardShell({ balances, primaryCurrency, metrics, cha
           onSelectCurrency={setSelectedCurrency}
         />
       </div>
+
+      {/* Vista Total: desglose por espacio (cards horizontales) */}
+      {spacesOverview.length > 1 && (
+        <div className="dash-full">
+          <SpacesOverview cards={spacesOverview} />
+        </div>
+      )}
 
       <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
         <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />

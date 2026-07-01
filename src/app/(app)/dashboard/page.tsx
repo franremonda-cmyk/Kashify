@@ -32,7 +32,7 @@ export default async function DashboardPage() {
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
     supabase.from("transactions")
-      .select("id, category_id, amount, currency_code, type, description, date, categories(name, icon, color)")
+      .select("id, category_id, amount, currency_code, type, description, date, space_id, categories(name, icon, color)")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", monthStart)
       .order("created_at", { ascending: false })
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     // ponytail: scan O(n) sobre las tx del usuario; si alguien acumula decenas de
     // miles, reintroducir un cache de balance por espacio.
     supabase.from("transactions")
-      .select("amount, currency_code, type, to_currency_code, to_amount")
+      .select("amount, currency_code, type, to_currency_code, to_amount, space_id")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds),
     supabase.from("savings_goals").select("*").eq("user_id", user.id).in("space_id", scopeIds).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
     supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds),
@@ -154,6 +154,25 @@ export default async function DashboardPage() {
     categories:   t.categories ?? null,
   }));
 
+  // Vista "Total": tarjetas por espacio (solo los incluidos; los aislados se ven
+  // al seleccionarlos en el switcher). Cada card en su propia moneda (sin FX).
+  const includedSpaces = spaces.filter((s) => s.include_in_total);
+  const spacesOverview = activeSpace === "total" && includedSpaces.length > 1
+    ? includedSpaces.map((sp) => {
+        const spBalances = computeBalances((txAllRes.data ?? []).filter((t) => t.space_id === sp.id));
+        const pick = spBalances.find((b) => b.currency_code === sp.primary_currency)
+          ?? [...spBalances].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0];
+        const cur = pick?.currency_code ?? sp.primary_currency;
+        const spMonth = (txMonthRes.data ?? []).filter((t) => t.space_id === sp.id && t.currency_code === cur);
+        return {
+          id: sp.id, name: sp.name, icon: sp.icon, color: sp.color, currency: cur,
+          balance: pick?.amount ?? 0,
+          income:  spMonth.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0),
+          expense: spMonth.filter((t) => ["expense", "installment-payment"].includes(t.type)).reduce((s, t) => s + Number(t.amount), 0),
+        };
+      })
+    : [];
+
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
 
   return (
@@ -188,6 +207,7 @@ export default async function DashboardPage() {
       <DashboardShell
         balances={sortedBalances}
         primaryCurrency={primaryCurrency}
+        spacesOverview={spacesOverview}
         metrics={metrics}
         chartData={chartData}
         recent={recent}
