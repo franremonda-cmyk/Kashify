@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import DashboardShell from "@/components/DashboardShell";
 import DashboardClient from "./DashboardClient";
 import SpaceSwitcher from "@/components/SpaceSwitcher";
+import SpacesHintCard from "@/components/SpacesHintCard";
 import { computeBalances } from "@/lib/ledger/balances";
 import { scopeForSpace, SPACE_COOKIE } from "@/lib/space-scope";
 import type { ChartMonth } from "@/components/SpendingChart";
@@ -221,6 +222,9 @@ export default async function DashboardPage() {
 
       {/* Selector de espacio (se autoesconde si hay uno solo) */}
       <SpaceSwitcher />
+
+      {/* Aviso de descubrimiento de espacios (solo con 1 espacio, descartable) */}
+      <SpacesHintCard />
 
       {/* Pending Neo confirmations */}
       <DashboardClient pending={pending} userId={user.id} />
