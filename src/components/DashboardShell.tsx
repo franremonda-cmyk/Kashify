@@ -383,17 +383,17 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
         />
       </div>
 
+      <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
+        <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />
+        <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} onClick={() => setBreakdownType("expense")} />
+      </div>
+
       {/* Vista Total: desglose por espacio (cards horizontales) */}
       {spacesOverview.length > 1 && (
         <div className="dash-full">
           <SpacesOverview cards={spacesOverview} />
         </div>
       )}
-
-      <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
-        <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />
-        <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} onClick={() => setBreakdownType("expense")} />
-      </div>
 
       {/* Franja de límites por categoría */}
       <BudgetStrip budgets={budgets} currency={selectedCurrency} onSelect={setSelectedBudget} />

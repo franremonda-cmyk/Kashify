@@ -32,8 +32,9 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
 
   return (
     <section className="enter-up" data-delay="1">
-      <div className="section-head" style={{ marginBottom: 8 }}>
+      <div className="section-head" style={{ marginBottom: 8, alignItems: "baseline", gap: 8 }}>
         <p className="section-title">Tus espacios</p>
+        <span style={{ fontSize: 12, color: "var(--ink-dim)", fontWeight: 500 }}>ingresos / gastos de este mes</span>
       </div>
       <div
         style={{
@@ -69,9 +70,17 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
               <p className="mono" style={{ fontSize: "clamp(1rem, 5.5vw, 1.35rem)", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", lineHeight: 1.05 }}>
                 {sym} {c.balance.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
               </p>
-              <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
-                <span style={{ fontSize: 12, color: "var(--positive)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>↑ {fmtc(c.income)}</span>
-                <span style={{ fontSize: 12, color: "var(--negative)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>↓ {fmtc(c.expense)}</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--positive)", flexShrink: 0 }} />
+                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1 }}>Ingresos</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--positive)", fontVariantNumeric: "tabular-nums" }}>{sym} {fmtc(c.income)}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--negative)", flexShrink: 0 }} />
+                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1 }}>Gastos</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{sym} {fmtc(c.expense)}</span>
+                </div>
               </div>
             </button>
           );
