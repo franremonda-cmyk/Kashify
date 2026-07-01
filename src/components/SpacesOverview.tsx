@@ -56,30 +56,32 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
               aria-label={`Ver espacio ${c.name}`}
               style={{
                 flex: "0 0 auto",
-                width: "clamp(150px, 44vw, 188px)",
+                width: "clamp(158px, 46vw, 194px)",
                 scrollSnapAlign: "start",
-                padding: 16, borderRadius: 18, textAlign: "left", cursor: "pointer",
+                padding: "18px 18px", borderRadius: 18, textAlign: "left", cursor: "pointer",
+                containerType: "inline-size", overflow: "hidden",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, minWidth: 0 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 9, background: color + "22", border: `1px solid ${color}33`, display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0 }}>
                   <CategoryIcon icon={c.icon} name={c.name} color={color} size={16} />
                 </div>
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
+                <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{c.name}</span>
               </div>
-              <p className="mono" style={{ fontSize: "clamp(1rem, 5.5vw, 1.35rem)", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", lineHeight: 1.05 }}>
+              {/* cqi: el monto escala con el ancho real de la card → nunca se sale */}
+              <p className="mono" style={{ fontSize: "clamp(0.85rem, 11cqi, 1.4rem)", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "clip", maxWidth: "100%", lineHeight: 1.1 }}>
                 {sym} {c.balance.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                   <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--positive)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1 }}>Ingresos</span>
-                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--positive)", fontVariantNumeric: "tabular-nums" }}>{sym} {fmtc(c.income)}</span>
+                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Ingresos</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--positive)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{sym} {fmtc(c.income)}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                   <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--negative)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1 }}>Gastos</span>
-                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{sym} {fmtc(c.expense)}</span>
+                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Gastos</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--negative)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{sym} {fmtc(c.expense)}</span>
                 </div>
               </div>
             </button>
