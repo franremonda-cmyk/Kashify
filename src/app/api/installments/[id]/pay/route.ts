@@ -34,6 +34,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
     .from("transactions")
     .insert({
       user_id: user.id,
+      space_id: plan.space_id,
       type: "installment-payment",
       amount: next.amount,
       currency_code: plan.currency_code,

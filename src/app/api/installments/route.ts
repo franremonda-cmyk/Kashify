@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { resolveSpaceId } from "@/lib/spaces";
+import { resolveSpaceId, includedSpaceIds } from "@/lib/spaces";
 import {
   calculateFrenchInstallment,
   calculateNoInterest,
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     .select("*, installment_payments(*), categories(name, color, icon)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
-  if (space && space !== "total") query = query.eq("space_id", space);
+  query = query.in("space_id", await includedSpaceIds(supabase, user.id, space));
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

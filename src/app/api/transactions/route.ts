@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { resolveSpaceId } from "@/lib/spaces";
+import { resolveSpaceId, includedSpaceIds } from "@/lib/spaces";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
   if (category) query = query.eq("category_id", category);
   if (currency) query = query.eq("currency_code", currency);
-  if (space && space !== "total") query = query.eq("space_id", space);
+  query = query.in("space_id", await includedSpaceIds(supabase, user.id, space));
   if (type) {
     const types = type.split(",").map(t => t.trim()).filter(Boolean);
     if (types.length === 1) query = query.eq("type", types[0]);

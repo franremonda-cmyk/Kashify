@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   const { data: duePayments } = await supabase
     .from("installment_payments")
-    .select("*, installment_plans(name, currency_code, category_id, user_id)")
+    .select("*, installment_plans(name, currency_code, category_id, user_id, space_id)")
     .eq("status", "pending")
     .eq("due_date", today);
 
@@ -22,13 +22,14 @@ export async function GET(request: Request) {
   let processed = 0;
   for (const payment of duePayments) {
     const plan = payment.installment_plans as {
-      name: string; currency_code: string; category_id: string | null; user_id: string;
+      name: string; currency_code: string; category_id: string | null; user_id: string; space_id: string | null;
     };
 
     const { data: tx } = await supabase
       .from("transactions")
       .insert({
         user_id: plan.user_id,
+        space_id: plan.space_id,
         type: "installment-payment",
         amount: payment.amount,
         currency_code: plan.currency_code,

@@ -368,7 +368,10 @@ function sortTransactions(txs: Transaction[], sort: string): Transaction[] {
 }
 
 export default function ActividadPage() {
-  const { activeId } = useSpaces();
+  const { activeId, spaces } = useSpaces();
+  // Presupuestos/metas/cuotas son por espacio; en "total" usamos el espacio por
+  // defecto (igual que la página de Categorías).
+  const effectiveSpaceId = activeId !== "total" ? activeId : (spaces.find(s => s.is_default)?.id ?? spaces[0]?.id ?? "");
   const [transactions, setTransactions]     = useState<Transaction[]>([]);
   const [categories, setCategories]         = useState<Category[]>([]);
   const [search, setSearch]                 = useState("");
@@ -395,21 +398,25 @@ export default function ActividadPage() {
   const currencyInitialized = useRef(false);
 
   const loadCatsWithBudget = useCallback(() => {
-    fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string; category_budgets?: { monthly_limit: number; currency_code: string; period_type?: "always" | "specific_months"; applies_months?: number[] | null }[] }[]) => {
-      setCatsWithBudget(cats.filter(c => c.category_budgets && c.category_budgets.length > 0).map(c => ({
-        id: c.id, category_id: c.id, name: c.name, color: c.color, icon: c.icon,
-        monthly_limit: c.category_budgets![0].monthly_limit,
-        currency_code: c.category_budgets![0].currency_code,
-        period_type: c.category_budgets![0].period_type,
-        applies_months: c.category_budgets![0].applies_months,
-      })));
+    fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string; category_budgets?: { space_id?: string; monthly_limit: number; currency_code: string; period_type?: "always" | "specific_months"; applies_months?: number[] | null }[] }[]) => {
+      setCatsWithBudget(cats.flatMap(c => {
+        const b = c.category_budgets?.find(x => x.space_id === effectiveSpaceId);
+        if (!b) return [];
+        return [{
+          id: c.id, category_id: c.id, name: c.name, color: c.color, icon: c.icon,
+          monthly_limit: b.monthly_limit,
+          currency_code: b.currency_code,
+          period_type: b.period_type,
+          applies_months: b.applies_months,
+        }];
+      }));
     }).catch(() => {});
-  }, []);
+  }, [effectiveSpaceId]);
 
   useEffect(() => {
-    // Extra widgets data
-    fetch("/api/goals").then(r => r.ok ? r.json() : []).then(setGoals).catch(() => {});
-    fetch("/api/installments").then(r => r.ok ? r.json() : []).then(setInstallmentPlans).catch(() => {});
+    // Extra widgets data (scoped al espacio activo)
+    fetch(`/api/goals?space=${activeId}`).then(r => r.ok ? r.json() : []).then(setGoals).catch(() => {});
+    fetch(`/api/installments?space=${activeId}`).then(r => r.ok ? r.json() : []).then(setInstallmentPlans).catch(() => {});
     loadCatsWithBudget();
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -423,7 +430,7 @@ export default function ActividadPage() {
           }
         });
     });
-  }, [loadCatsWithBudget]);
+  }, [loadCatsWithBudget, activeId]);
 
   // Tendencia mensual (12 meses) para la moneda seleccionada
   useEffect(() => {
