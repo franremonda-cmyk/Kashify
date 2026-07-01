@@ -200,32 +200,48 @@ function BarChart({ data, total }: { data: ChartEntry[]; total: number }) {
   );
 }
 
-function ExpenseBreakdown({ data, incomeData, allCurrencies }: { data: Record<string, ChartEntry[]>; incomeData: Record<string, number>; allCurrencies: string[] }) {
+const segBtn = (on: boolean): React.CSSProperties => ({
+  minHeight: 40, display: "inline-flex", alignItems: "center", justifyContent: "center",
+  padding: "0 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+  background: on ? "var(--base)" : "transparent",
+  color: on ? "var(--accent)" : "var(--ink-muted)",
+  boxShadow: on ? "var(--shadow-sm)" : "none",
+});
+
+function ExpenseBreakdown({ data, spaceData, incomeData, allCurrencies, canSplitBySpace }: {
+  data: Record<string, ChartEntry[]>; spaceData?: Record<string, ChartEntry[]>;
+  incomeData: Record<string, number>; allCurrencies: string[]; canSplitBySpace?: boolean;
+}) {
   const [mode, setMode]         = useState<"donut" | "bar">("donut");
+  const [groupBy, setGroupBy]   = useState<"categoria" | "espacio">("categoria");
   const [currency, setCurrency] = useState(allCurrencies[0] ?? "ARS");
-  const active = data[currency] ?? [];
+  const group  = canSplitBySpace ? groupBy : "categoria";
+  const active = (group === "espacio" ? (spaceData ?? {}) : data)[currency] ?? [];
   const total  = active.reduce((s, d) => s + d.amount, 0);
   if (allCurrencies.length === 0 || total === 0) return null;
   return (
     <div style={{ borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", padding: "14px 16px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Gastos por categoría</p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{group === "espacio" ? "Gastos por espacio" : "Gastos por categoría"}</p>
         <div style={{ display: "flex", gap: 1, background: "var(--raised)", borderRadius: 7, padding: 2 }}>
           {(["donut","bar"] as const).map((m) => (
-            <button key={m} onClick={() => setMode(m)} style={{
-              padding: "3px 10px", borderRadius: 5, fontSize: 12, fontWeight: 600,
-              background: mode === m ? "var(--base)" : "transparent",
-              color: mode === m ? "var(--accent)" : "var(--ink-muted)",
-              boxShadow: mode === m ? "var(--shadow-sm)" : "none",
-            }}>{m === "donut" ? "Circular" : "Barras"}</button>
+            <button key={m} onClick={() => setMode(m)} style={segBtn(mode === m)}>{m === "donut" ? "Circular" : "Barras"}</button>
           ))}
         </div>
       </div>
+      {canSplitBySpace && (
+        <div style={{ display: "flex", gap: 1, background: "var(--raised)", borderRadius: 7, padding: 2, marginBottom: 12, width: "fit-content" }}>
+          {(["categoria","espacio"] as const).map((g) => (
+            <button key={g} onClick={() => setGroupBy(g)} style={segBtn(group === g)}>{g === "categoria" ? "Categoría" : "Espacio"}</button>
+          ))}
+        </div>
+      )}
       {allCurrencies.length > 1 && (
         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
           {allCurrencies.map((c) => (
             <button key={c} onClick={() => setCurrency(c)} style={{
-              padding: "4px 12px", borderRadius: 999, fontSize: 13, fontWeight: 600,
+              minHeight: 40, display: "inline-flex", alignItems: "center",
+              padding: "0 14px", borderRadius: 999, fontSize: 13, fontWeight: 600,
               background: currency === c ? "var(--accent)" : "var(--raised)",
               color: currency === c ? "#FFFFFF" : "var(--ink-muted)",
               border: currency === c ? "none" : "0.5px solid var(--glass-border)",
@@ -522,6 +538,25 @@ export default function ActividadPage() {
     chartDataByCurrency[cur] = Object.values(byName).sort((a, b) => b.amount - a.amount);
   }
   const chartCurrencies = Object.keys(chartDataByCurrency);
+
+  // Gastos agrupados por espacio (toggle Categoría/Espacio en Total).
+  const includedSpacesCount = spaces.filter(s => s.include_in_total).length;
+  const canSplitBySpace = activeId === "total" && includedSpacesCount > 1;
+  const spaceChartByCurrency: Record<string, ChartEntry[]> = {};
+  if (canSplitBySpace) {
+    const byId: Record<string, ChartEntry> = {};
+    filtered.forEach(t => {
+      if (t.type !== "expense" && t.type !== "installment-payment") return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sid = (t as any).space_id ?? "none";
+      const sp = spaces.find(s => s.id === sid);
+      if (!byId[sid]) byId[sid] = { name: sp?.name ?? "Sin espacio", amount: 0, color: sp?.color ?? "#6b7280" };
+      byId[sid].amount += Number(t.amount);
+    });
+    const arr = Object.values(byId).sort((a, b) => b.amount - a.amount);
+    if (arr.length) spaceChartByCurrency[selectedCurrency] = arr;
+  }
+
   const activeFilters   = filters.categories.length + filters.types.length;
   const activeSort      = filters.sort !== "date_desc";
 
@@ -553,11 +588,11 @@ export default function ActividadPage() {
       <div className="flex items-center justify-between enter-up" style={{ position: "relative", zIndex: 10 }}>
         <h1 className="page-title">Actividad</h1>
         <div className="flex gap-2" style={{ position: "relative" }}>
-          <button onClick={() => setShowImport(true)} style={{ fontSize: 13, padding: "5px 10px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
+          <button onClick={() => setShowImport(true)} style={{ fontSize: 13, minHeight: 40, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setShowExportMenu(v => !v)}
-              style={{ fontSize: 13, padding: "5px 10px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+              style={{ fontSize: 13, minHeight: 40, padding: "0 12px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", gap: 4 }}>
               ↓ Exportar
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ opacity: 0.6 }}>
                 <polyline points="6 9 12 15 18 9"/>
@@ -609,7 +644,7 @@ export default function ActividadPage() {
         return (
           <div className="enter-up flex items-center justify-between" style={{ background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 14, padding: "6px 10px", boxShadow: "var(--shadow-sm)" }}>
             <button onClick={prevMonth} aria-label="Mes anterior"
-              style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
+              style={{ width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <div style={{ textAlign: "center" }}>
@@ -620,7 +655,7 @@ export default function ActividadPage() {
             </div>
             <button onClick={nextMonth} aria-label="Mes siguiente"
               disabled={isCurrentMonth}
-              style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: isCurrentMonth ? "var(--ink-dim)" : "var(--ink-muted)", opacity: isCurrentMonth ? 0.4 : 1 }}>
+              style={{ width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: isCurrentMonth ? "var(--ink-dim)" : "var(--ink-muted)", opacity: isCurrentMonth ? 0.4 : 1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
@@ -633,7 +668,8 @@ export default function ActividadPage() {
             <button key={c}
               onClick={() => setSelectedCurrency(c)}
               style={{
-                padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                minHeight: 40, display: "inline-flex", alignItems: "center",
+                padding: "0 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
                 background: selectedCurrency === c ? "var(--accent)" : "var(--raised)",
                 color: selectedCurrency === c ? "#FFFFFF" : "var(--ink-muted)",
                 border: selectedCurrency === c ? "none" : "0.5px solid var(--glass-border)",
@@ -671,7 +707,7 @@ export default function ActividadPage() {
         </div>
       )}
 
-      {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies}/>}
+      {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} spaceData={spaceChartByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies} canSplitBySpace={canSplitBySpace}/>}
 
       <div className="flex gap-2 enter-up" data-delay="2">
         <input style={{ ...inp, borderRadius: 12, flex: 1 }} placeholder="Buscar…"
@@ -694,7 +730,7 @@ export default function ActividadPage() {
 
       <div className="flex flex-col gap-2">
         <div className="section-head" style={{ marginBottom: 0 }}>
-          <p className="section-title">Transacciones</p>
+          <h2 className="section-title">Transacciones</h2>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }))}
             className="section-link"
@@ -785,7 +821,7 @@ export default function ActividadPage() {
         return (
           <section className="flex flex-col gap-2">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <p className="section-title">Límites por categoría</p>
+              <h2 className="section-title">Límites por categoría</h2>
               <Link href="/categorias" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>+ Agregar límite</Link>
             </div>
             {catsWithBudget.length === 0 ? (
@@ -858,7 +894,7 @@ export default function ActividadPage() {
       {goals.length > 0 && (
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p className="section-title">Metas de ahorro</p>
+            <h2 className="section-title">Metas de ahorro</h2>
             <Link href="/metas" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar meta</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
@@ -897,7 +933,7 @@ export default function ActividadPage() {
       {installmentPlans.filter(p => p.status === "active").length > 0 && (
         <section className="flex flex-col gap-2">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p className="section-title">Cuotas activas</p>
+            <h2 className="section-title">Cuotas activas</h2>
             <Link href="/cuotas" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar cuota</Link>
           </div>
           <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
