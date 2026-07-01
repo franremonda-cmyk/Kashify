@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import HeroBalanceCard from "./HeroBalanceCard";
 import SpacesOverview, { type SpaceCardData } from "./SpacesOverview";
 import CategoryIcon from "./CategoryIcon";
-import type { ChartMonth } from "./SpendingChart";
+import type { ChartMonth, SpaceExpenseStack } from "./SpendingChart";
 const SpendingChart = dynamic(() => import("./SpendingChart"), { ssr: false, loading: () => <div style={{ height: 200 }} /> });
 import TransactionSheet from "./TransactionSheet";
 import BudgetDetailModal from "./BudgetDetailModal";
@@ -63,6 +63,7 @@ interface Props {
   spacesOverview?: SpaceCardData[];
   metrics: CurrencyMetrics[];
   chartData: Record<string, ChartMonth[]>;
+  spaceStacksData?: Record<string, SpaceExpenseStack[]>;
   recent: RecentTx[];
   goals?: SavingsGoal[];
   budgets?: BudgetEntry[];
@@ -339,7 +340,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, chartData, recent, goals = [], budgets = [], installments = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, chartData, spaceStacksData = {}, recent, goals = [], budgets = [], installments = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -453,7 +454,7 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
 
       {/* Gráfico de líneas mensual */}
       <div className="dash-full enter-up" data-delay="6">
-        <SpendingChart data={chartMonths} currencySymbol={sym} />
+        <SpendingChart data={chartMonths} currencySymbol={sym} spaceStacks={spaceStacksData[selectedCurrency] ?? []} />
       </div>
 
       {selectedTx && (

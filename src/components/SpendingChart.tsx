@@ -7,17 +7,24 @@ export interface ChartMonth {
   expense: number;
 }
 
+// Serie de gasto mensual de un espacio (alineada 1:1 con `data` por índice de mes).
+export interface SpaceExpenseStack {
+  name: string;
+  color: string;
+  expense: number[];
+}
+
 interface Props {
   data: ChartMonth[];
   currencySymbol?: string;
+  spaceStacks?: SpaceExpenseStack[];
 }
 
 const PERIODS = ["1M", "3M", "6M", "1A"] as const;
 type Period = typeof PERIODS[number];
 
-function periodSlice(data: ChartMonth[], period: Period): ChartMonth[] {
-  const n = period === "1M" ? 1 : period === "3M" ? 3 : period === "6M" ? 6 : 12;
-  return data.slice(-n);
+function periodN(period: Period): number {
+  return period === "1M" ? 1 : period === "3M" ? 3 : period === "6M" ? 6 : 12;
 }
 
 function compact(n: number): string {
@@ -36,9 +43,13 @@ function bezierPath(points: [number, number][]): string {
   }, "");
 }
 
-export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
+export default function SpendingChart({ data, currencySymbol = "$", spaceStacks = [] }: Props) {
   const [period, setPeriod] = useState<Period>("6M");
+  const [mode, setMode] = useState<"total" | "space">("total");
   const uid = useId().replace(/:/g, "");
+
+  const hasSpaceMode = spaceStacks.length >= 2;
+  const activeMode = hasSpaceMode ? mode : "total";
 
   // Measure real pixel width so 1 SVG unit = 1px → text stays a constant
   // size regardless of how wide the card gets (mobile vs desktop).
@@ -52,7 +63,8 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
     return () => ro.disconnect();
   }, []);
 
-  const slice = periodSlice(data, period);
+  const n = periodN(period);
+  const slice = data.slice(-n);
   if (slice.length === 0) {
     return (
       <div className="glass" style={{ borderRadius: 16, padding: 20, textAlign: "center" }}>
@@ -66,25 +78,38 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
 
-  const allVals = slice.flatMap((d) => [d.income, d.expense]).filter((v) => v > 0);
-  const maxVal = allVals.length ? Math.max(...allVals) * 1.12 : 1;
+  // Stacked (por espacio): mismos meses que `slice`.
+  const stackVals = activeMode === "space"
+    ? spaceStacks.map((s) => ({ name: s.name, color: s.color, vals: s.expense.slice(-slice.length) }))
+    : [];
+  const monthTotals = slice.map((_, j) => stackVals.reduce((s, st) => s + (st.vals[j] ?? 0), 0));
+
+  const lineVals = slice.flatMap((d) => [d.income, d.expense]).filter((v) => v > 0);
+  const maxVal = activeMode === "space"
+    ? Math.max(1, ...monthTotals) * 1.12
+    : (lineVals.length ? Math.max(...lineVals) * 1.12 : 1);
 
   const xOf = (i: number) => PAD.left + (slice.length === 1 ? chartW / 2 : (i / (slice.length - 1)) * chartW);
   const yOf = (v: number) => PAD.top + (1 - v / maxVal) * chartH;
 
   const incomePoints = slice.map((d, i) => [xOf(i), yOf(d.income)] as [number, number]);
   const expensePoints = slice.map((d, i) => [xOf(i), yOf(d.expense)] as [number, number]);
-
   const incomePath  = bezierPath(incomePoints);
   const expensePath = bezierPath(expensePoints);
 
   const areaClose = (pts: [number, number][]) =>
     `${bezierPath(pts)} L ${pts[pts.length - 1][0].toFixed(1)} ${(PAD.top + chartH).toFixed(1)} L ${pts[0][0].toFixed(1)} ${(PAD.top + chartH).toFixed(1)} Z`;
 
-  // Y gridlines
-  const gridVals = [0, 0.25, 0.5, 0.75, 1].map((f) => maxVal * f);
+  // Bandas apiladas (de abajo hacia arriba). Polígonos rectos = sin overshoot.
+  // El "piso" de cada banda es la suma de las bandas anteriores en ese mes.
+  const stackAreas = stackVals.map((st, k) => {
+    const bottomAt = (j: number) => stackVals.slice(0, k).reduce((s, prev) => s + (prev.vals[j] ?? 0), 0);
+    const topPts = st.vals.map((v, j) => `${xOf(j).toFixed(1)} ${yOf(bottomAt(j) + v).toFixed(1)}`);
+    const botPts = st.vals.map((v, j) => `${xOf(j).toFixed(1)} ${yOf(bottomAt(j)).toFixed(1)}`).reverse();
+    return { d: `M ${topPts.join(" L ")} L ${botPts.join(" L ")} Z`, color: st.color, name: st.name };
+  });
 
-  // Show subset of x labels
+  const gridVals = [0, 0.25, 0.5, 0.75, 1].map((f) => maxVal * f);
   const step = Math.max(1, Math.ceil(slice.length / 4));
 
   return (
@@ -101,10 +126,7 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
               key={p}
               onClick={() => setPeriod(p)}
               style={{
-                padding: "3px 8px",
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
+                padding: "3px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600,
                 background: period === p ? "rgba(0,230,118,0.18)" : "transparent",
                 color: period === p ? "var(--accent)" : "var(--ink-dim)",
                 border: period === p ? "0.5px solid rgba(0,230,118,0.30)" : "none",
@@ -116,17 +138,48 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
         </div>
       </div>
 
+      {/* Toggle Total / Por espacio (solo en la vista Total con >1 espacio) */}
+      {hasSpaceMode && (
+        <div style={{ display: "flex", gap: 2, background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: 2, marginBottom: 10, width: "fit-content" }}>
+          {(["total", "space"] as const).map((mo) => (
+            <button
+              key={mo}
+              onClick={() => setMode(mo)}
+              style={{
+                padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                background: activeMode === mo ? "var(--base)" : "transparent",
+                color: activeMode === mo ? "var(--accent)" : "var(--ink-dim)",
+                boxShadow: activeMode === mo ? "var(--shadow-sm)" : "none",
+              }}
+            >
+              {mo === "total" ? "Total" : "Por espacio"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Legend */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--positive)" }} />
-          <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>Ingresos</span>
+      {activeMode === "space" ? (
+        <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+          {stackVals.map((st) => (
+            <div key={st.name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: st.color }} />
+              <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>{st.name}</span>
+            </div>
+          ))}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--negative)" }} />
-          <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>Gastos</span>
+      ) : (
+        <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--positive)" }} />
+            <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>Ingresos</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--negative)" }} />
+            <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>Gastos</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* SVG */}
       <svg
@@ -176,24 +229,31 @@ export default function SpendingChart({ data, currencySymbol = "$" }: Props) {
           </text>
         ))}
 
-        {/* Area fills */}
-        <path d={areaClose(incomePoints)}  fill={`url(#ig-${uid})`} clipPath={`url(#clip-${uid})`} />
-        <path d={areaClose(expensePoints)} fill={`url(#eg-${uid})`} clipPath={`url(#clip-${uid})`} />
-
-        {/* Lines */}
-        <path d={incomePath}  fill="none" stroke="#30D158" strokeWidth={2.4} strokeLinecap="round" />
-        <path d={expensePath} fill="none" stroke="#FF453A" strokeWidth={2.4} strokeLinecap="round" />
-
-        {/* Dots on last point */}
-        {incomePoints.length > 0 && (
-          <circle cx={incomePoints[incomePoints.length - 1][0]}
-                  cy={incomePoints[incomePoints.length - 1][1]}
-                  r={4.5} fill="#30D158" />
-        )}
-        {expensePoints.length > 0 && (
-          <circle cx={expensePoints[expensePoints.length - 1][0]}
-                  cy={expensePoints[expensePoints.length - 1][1]}
-                  r={4.5} fill="#FF453A" />
+        {activeMode === "space" ? (
+          /* Bandas apiladas por espacio */
+          stackAreas.map((a, i) => (
+            <path key={i} d={a.d} fill={a.color} fillOpacity={0.85} clipPath={`url(#clip-${uid})`} />
+          ))
+        ) : (
+          <>
+            {/* Area fills */}
+            <path d={areaClose(incomePoints)}  fill={`url(#ig-${uid})`} clipPath={`url(#clip-${uid})`} />
+            <path d={areaClose(expensePoints)} fill={`url(#eg-${uid})`} clipPath={`url(#clip-${uid})`} />
+            {/* Lines */}
+            <path d={incomePath}  fill="none" stroke="#30D158" strokeWidth={2.4} strokeLinecap="round" />
+            <path d={expensePath} fill="none" stroke="#FF453A" strokeWidth={2.4} strokeLinecap="round" />
+            {/* Dots on last point */}
+            {incomePoints.length > 0 && (
+              <circle cx={incomePoints[incomePoints.length - 1][0]}
+                      cy={incomePoints[incomePoints.length - 1][1]}
+                      r={4.5} fill="#30D158" />
+            )}
+            {expensePoints.length > 0 && (
+              <circle cx={expensePoints[expensePoints.length - 1][0]}
+                      cy={expensePoints[expensePoints.length - 1][1]}
+                      r={4.5} fill="#FF453A" />
+            )}
+          </>
         )}
 
         {/* X-axis labels */}

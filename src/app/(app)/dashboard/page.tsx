@@ -38,7 +38,7 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(50),
     supabase.from("transactions")
-      .select("amount, currency_code, type, date")
+      .select("amount, currency_code, type, date, space_id")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", yearAgo)
       .order("date", { ascending: true }),
@@ -173,6 +173,31 @@ export default async function DashboardPage() {
       })
     : [];
 
+  // Series de gasto mensual por espacio (para el modo "Por espacio" del gráfico).
+  // Por moneda → por espacio → 12 valores mensuales (alineados con chartData).
+  // Solo en Total con >1 espacio incluido; se omiten espacios sin gasto en la moneda.
+  const spaceStacksData: Record<string, { id: string; name: string; color: string; expense: number[] }[]> = {};
+  if (activeSpace === "total" && includedSpaces.length > 1) {
+    for (const currency of allCurrencies) {
+      const series = includedSpaces.map((sp) => {
+        const expense: number[] = [];
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const y = d.getFullYear(), mo = d.getMonth();
+          const sum = (txHistoryRes.data ?? [])
+            .filter((t) => t.space_id === sp.id && t.currency_code === currency
+              && (t.type === "expense" || t.type === "installment-payment")
+              && new Date(t.date).getFullYear() === y && new Date(t.date).getMonth() === mo)
+            .reduce((s, t) => s + Number(t.amount), 0);
+          expense.push(sum);
+        }
+        return { id: sp.id, name: sp.name, color: sp.color, expense };
+      });
+      const withData = series.filter((s) => s.expense.some((v) => v > 0));
+      if (withData.length > 1) spaceStacksData[currency] = withData;
+    }
+  }
+
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
 
   return (
@@ -210,6 +235,7 @@ export default async function DashboardPage() {
         spacesOverview={spacesOverview}
         metrics={metrics}
         chartData={chartData}
+        spaceStacksData={spaceStacksData}
         recent={recent}
         goals={goals}
         budgets={budgets}
