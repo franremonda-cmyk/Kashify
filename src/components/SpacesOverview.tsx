@@ -9,8 +9,6 @@ export interface SpaceCardData {
   color?: string;
   currency: string;
   balance: number;
-  income: number;
-  expense: number;
 }
 
 const SYMBOLS: Record<string, string> = {
@@ -18,23 +16,16 @@ const SYMBOLS: Record<string, string> = {
   GBP: "£", UYU: "$U", CLP: "$", COP: "$", PEN: "S/", PYG: "₲", BOB: "Bs",
 };
 
-// Compacto para los chips de ingreso/gasto (los balances van completos).
-function fmtc(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return Math.round(n).toLocaleString("es-AR");
-}
-
-// Cards por espacio en la vista Total. Tap → cambia el espacio activo.
+// Cards por espacio en la vista Total: balance por espacio (las métricas de
+// arriba ya dan ingresos/gastos del mes). Tap → cambia el espacio activo.
 export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
   const { setActiveSpace } = useSpaces();
   if (cards.length <= 1) return null;
 
   return (
     <section className="enter-up" data-delay="1">
-      <div className="section-head" style={{ marginBottom: 8, alignItems: "baseline", gap: 8 }}>
+      <div className="section-head" style={{ marginBottom: 8 }}>
         <h2 className="section-title">Tus espacios</h2>
-        <span style={{ fontSize: 12, color: "var(--ink-muted)", fontWeight: 500 }}>ingresos / gastos de este mes</span>
       </div>
       <div
         style={{
@@ -56,9 +47,9 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
               aria-label={`Ver espacio ${c.name}`}
               style={{
                 flex: "0 0 auto",
-                width: "clamp(158px, 46vw, 194px)",
+                width: "clamp(150px, 44vw, 186px)",
                 scrollSnapAlign: "start",
-                padding: "18px 18px", borderRadius: 18, textAlign: "left", cursor: "pointer",
+                padding: "16px 18px", borderRadius: 18, textAlign: "left", cursor: "pointer",
                 containerType: "inline-size", overflow: "hidden",
               }}
             >
@@ -68,22 +59,11 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
                 </div>
                 <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{c.name}</span>
               </div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 4 }}>Balance</p>
               {/* cqi: el monto escala con el ancho real de la card → nunca se sale */}
-              <p className="mono" style={{ fontSize: "clamp(0.85rem, 11cqi, 1.4rem)", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "clip", maxWidth: "100%", lineHeight: 1.1 }}>
+              <p className="mono" style={{ fontSize: "clamp(0.9rem, 12cqi, 1.5rem)", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "clip", maxWidth: "100%", lineHeight: 1.1 }}>
                 {sym} {c.balance.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--positive)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Ingresos</span>
-                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--positive)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{sym} {fmtc(c.income)}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--negative)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Gastos</span>
-                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--negative)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{sym} {fmtc(c.expense)}</span>
-                </div>
-              </div>
             </button>
           );
         })}

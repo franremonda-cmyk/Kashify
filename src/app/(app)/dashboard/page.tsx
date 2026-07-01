@@ -162,13 +162,10 @@ export default async function DashboardPage() {
         const spBalances = computeBalances((txAllRes.data ?? []).filter((t) => t.space_id === sp.id));
         const pick = spBalances.find((b) => b.currency_code === sp.primary_currency)
           ?? [...spBalances].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0];
-        const cur = pick?.currency_code ?? sp.primary_currency;
-        const spMonth = (txMonthRes.data ?? []).filter((t) => t.space_id === sp.id && t.currency_code === cur);
         return {
-          id: sp.id, name: sp.name, icon: sp.icon, color: sp.color, currency: cur,
+          id: sp.id, name: sp.name, icon: sp.icon, color: sp.color,
+          currency: pick?.currency_code ?? sp.primary_currency,
           balance: pick?.amount ?? 0,
-          income:  spMonth.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0),
-          expense: spMonth.filter((t) => ["expense", "installment-payment"].includes(t.type)).reduce((s, t) => s + Number(t.amount), 0),
         };
       })
     : [];
