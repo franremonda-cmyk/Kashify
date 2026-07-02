@@ -95,13 +95,19 @@ export default async function DashboardPage() {
     ...balances.map((b) => b.currency_code),
   ])];
 
-  const metrics = allCurrencies.map((currency) => ({
-    currency_code: currency,
-    income:  txAll.filter((t) => t.type === "income" && t.currency_code === currency)
-                  .reduce((s, t) => s + Number(t.amount), 0),
-    expense: txAll.filter((t) => ["expense","installment-payment"].includes(t.type) && t.currency_code === currency)
-                  .reduce((s, t) => s + Number(t.amount), 0),
-  }));
+  // Mes anterior (para deltas): rango [prevMonthStart, monthStart) sobre el histórico.
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
+  const isExp = (t: { type: string }) => t.type === "expense" || t.type === "installment-payment";
+  const metrics = allCurrencies.map((currency) => {
+    const prevTx = txHistory.filter((t) => t.currency_code === currency && t.date >= prevMonthStart && t.date < monthStart);
+    return {
+      currency_code: currency,
+      income:  txAll.filter((t) => t.type === "income" && t.currency_code === currency).reduce((s, t) => s + Number(t.amount), 0),
+      expense: txAll.filter((t) => isExp(t) && t.currency_code === currency).reduce((s, t) => s + Number(t.amount), 0),
+      prevIncome:  prevTx.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0),
+      prevExpense: prevTx.filter(isExp).reduce((s, t) => s + Number(t.amount), 0),
+    };
+  });
 
   const chartData: Record<string, ChartMonth[]> = {};
   for (const currency of allCurrencies) {

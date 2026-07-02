@@ -13,7 +13,7 @@ import BudgetDetailModal from "./BudgetDetailModal";
 import TxBreakdownModal from "./TxBreakdownModal";
 import type { BalanceView, SavingsGoal } from "@/types";
 
-interface CurrencyMetrics { currency_code: string; income: number; expense: number; }
+interface CurrencyMetrics { currency_code: string; income: number; expense: number; prevIncome?: number; prevExpense?: number; }
 interface RecentTx {
   id: string;
   description: string; amount: number; currency_code: string;
@@ -102,12 +102,15 @@ function useCounter(target: number, duration = 600) {
   return value;
 }
 
-function MetricCard({ label, value, sym, isIncome, onClick }: {
-  label: string; value: number; sym: string; isIncome: boolean; onClick?: () => void;
+function MetricCard({ label, value, sym, isIncome, deltaPct, onClick }: {
+  label: string; value: number; sym: string; isIncome: boolean; deltaPct?: number | null; onClick?: () => void;
 }) {
   const animated = useCounter(value);
   const color  = isIncome ? "var(--positive)" : "var(--negative)";
   const full   = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+  const hasDelta = deltaPct != null && Number.isFinite(deltaPct);
+  // Para ingresos subir es bueno; para gastos, bajar es bueno.
+  const good = hasDelta ? (isIncome ? deltaPct! >= 0 : deltaPct! <= 0) : null;
 
   return (
     <button onClick={onClick} className="press glow-hover glass-card" style={{ flex: 1, minWidth: 0, containerType: "inline-size", padding: "16px 16px", borderRadius: 18, textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
@@ -122,8 +125,42 @@ function MetricCard({ label, value, sym, isIncome, onClick }: {
       }}>
         {sym} {full}
       </p>
-      {onClick && <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 8, fontWeight: 500 }}>Ver desglose →</p>}
+      {hasDelta ? (
+        <p style={{ fontSize: 12, marginTop: 8, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+          <span style={{ color: good ? "var(--positive)" : "var(--negative)" }}>{deltaPct! >= 0 ? "▲" : "▼"} {Math.abs(deltaPct!).toFixed(0)}%</span>
+          <span style={{ color: "var(--ink-dim)", fontWeight: 500 }}>vs mes ant.</span>
+        </p>
+      ) : onClick ? (
+        <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 8, fontWeight: 500 }}>Ver desglose →</p>
+      ) : null}
     </button>
+  );
+}
+
+// Tasa de ahorro del mes (ingresos vs gastos). Se oculta si no hay ingresos.
+function SavingsCard({ income, expense, sym }: { income: number; expense: number; sym: string }) {
+  if (income <= 0) return null;
+  const saved = income - expense;
+  const rate = (saved / income) * 100;
+  const positive = saved >= 0;
+  const barPct = Math.max(0, Math.min(100, rate));
+  const fmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+  const col = positive ? "var(--positive)" : "var(--negative)";
+  return (
+    <div className="glass-card enter-up" data-delay="2" style={{ padding: "16px 18px", borderRadius: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Tasa de ahorro · este mes</p>
+        <p className="mono" style={{ fontSize: 20, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{Math.round(rate)}%</p>
+      </div>
+      <div style={{ width: "100%", height: 6, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+        <div style={{ width: `${barPct}%`, height: "100%", borderRadius: 999, background: col, transition: "width 500ms ease-out" }} />
+      </div>
+      <p style={{ fontSize: 12.5, color: "var(--ink-dim)" }}>
+        {positive
+          ? `Guardaste ${sym} ${fmt(saved)} de ${sym} ${fmt(income)} de ingresos.`
+          : `Gastaste ${sym} ${fmt(-saved)} más de lo que ingresó este mes.`}
+      </p>
+    </div>
   );
 }
 
@@ -360,8 +397,10 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
   }, []);
 
   const m = metrics.find((x) => x.currency_code === selectedCurrency)
-    ?? { currency_code: selectedCurrency, income: 0, expense: 0 };
+    ?? { currency_code: selectedCurrency, income: 0, expense: 0, prevIncome: 0, prevExpense: 0 };
   const sym = SYMBOLS[selectedCurrency] ?? selectedCurrency;
+  const incomeDelta  = (m.prevIncome ?? 0)  > 0 ? ((m.income  - (m.prevIncome ?? 0))  / (m.prevIncome ?? 1))  * 100 : null;
+  const expenseDelta = (m.prevExpense ?? 0) > 0 ? ((m.expense - (m.prevExpense ?? 0)) / (m.prevExpense ?? 1)) * 100 : null;
   const chartMonths = chartData[selectedCurrency] ?? [];
 
   // Categorías de gasto para el donut (mes actual, moneda seleccionada)
@@ -391,9 +430,12 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
       </div>
 
       <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
-        <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  onClick={() => setBreakdownType("income")} />
-        <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} onClick={() => setBreakdownType("expense")} />
+        <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  deltaPct={incomeDelta}  onClick={() => setBreakdownType("income")} />
+        <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />
       </div>
+
+      {/* Tasa de ahorro del mes */}
+      {m.income > 0 && <div className="dash-full"><SavingsCard income={m.income} expense={m.expense} sym={sym} /></div>}
 
       {/* Vista Total: desglose por espacio (cards horizontales) */}
       {spacesOverview.length > 1 && (
