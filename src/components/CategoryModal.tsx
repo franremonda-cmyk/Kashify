@@ -30,7 +30,7 @@ const inp: React.CSSProperties = {
   borderRadius: 12,
   padding: "12px 14px",
   color: "var(--ink)",
-  fontSize: 14,
+  fontSize: 16,
   width: "100%",
   outline: "none",
 };

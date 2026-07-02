@@ -40,7 +40,7 @@ interface Props {
 
 const inp: React.CSSProperties = {
   background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 12,
-  padding: "12px 14px", color: "var(--ink)", fontSize: 14, width: "100%", outline: "none",
+  padding: "12px 14px", color: "var(--ink)", fontSize: 16, width: "100%", outline: "none",
 };
 
 const label: React.CSSProperties = { fontSize: 13, color: "var(--ink-muted)", marginBottom: 6 };

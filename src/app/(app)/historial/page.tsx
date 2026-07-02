@@ -104,7 +104,7 @@ const inp: React.CSSProperties = {
   background: "var(--base)",
   border: "0.5px solid var(--glass-border)",
   borderRadius: 12, padding: "11px 14px",
-  color: "var(--ink)", fontSize: 14, width: "100%", outline: "none",
+  color: "var(--ink)", fontSize: 16, width: "100%", outline: "none",
 };
 
 const FALLBACK_COLORS = [

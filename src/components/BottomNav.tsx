@@ -314,7 +314,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     borderRadius: 12,
     padding: "11px 14px",
     color: "var(--ink)",
-    fontSize: 15,
+    fontSize: 16,
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,

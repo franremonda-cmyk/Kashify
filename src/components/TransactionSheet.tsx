@@ -59,7 +59,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   const inpSm: React.CSSProperties = {
     background: "var(--raised)", border: "0.5px solid var(--glass-border)",
     borderRadius: 10, padding: "10px 12px", color: "var(--ink)",
-    fontSize: 13, width: "100%", outline: "none", boxSizing: "border-box", maxWidth: "100%",
+    fontSize: 16, width: "100%", outline: "none", boxSizing: "border-box", maxWidth: "100%",
   };
 
   async function handleSave() {
