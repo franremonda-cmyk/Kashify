@@ -52,7 +52,7 @@
   /* Text — warm-neutral near-white scale */
   --ink:       #EDF1EF;
   --ink-muted: rgba(237, 241, 239, 0.60);
-  --ink-dim:   rgba(237, 241, 239, 0.38);
+  --ink-dim:   rgba(237, 241, 239, 0.55);  /* AA: subido de 0.38 para contraste en texto chico */
 
   /* Shadows — soft, deep, neutral */
   --shadow-sm: 0 1px 3px  rgba(0, 0, 0, 0.30);
@@ -528,7 +528,7 @@ button, a, input, select, textarea {
 
   --ink:       #14211A;
   --ink-muted: rgba(20, 33, 26, 0.64);
-  --ink-dim:   rgba(20, 33, 26, 0.44);
+  --ink-dim:   rgba(20, 33, 26, 0.60);  /* AA: subido de 0.44 para contraste en texto chico */
 
   --shadow-sm: 0 1px 2px  rgba(26, 44, 34, 0.06), 0 1px 3px rgba(26, 44, 34, 0.04);
   --shadow-md: 0 4px 16px rgba(26, 44, 34, 0.08), 0 1px 3px rgba(26, 44, 34, 0.05);
