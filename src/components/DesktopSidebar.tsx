@@ -148,7 +148,7 @@ export default function DesktopSidebar() {
               href={item.href}
               style={rowStyle}
               onMouseEnter={(e) => {
-                if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.04)";
+                if (!active) (e.currentTarget as HTMLElement).style.background = "var(--raised)";
               }}
               onMouseLeave={(e) => {
                 if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
