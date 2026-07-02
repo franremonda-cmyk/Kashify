@@ -109,6 +109,10 @@ export default async function DashboardPage() {
     };
   });
 
+  // Para el ritmo/proyección de gasto (pace lineal sobre el mes).
+  const dayOfMonth  = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
   const chartData: Record<string, ChartMonth[]> = {};
   for (const currency of allCurrencies) {
     const months: ChartMonth[] = [];
@@ -241,6 +245,8 @@ export default async function DashboardPage() {
         primaryCurrency={primaryCurrency}
         spacesOverview={spacesOverview}
         metrics={metrics}
+        dayOfMonth={dayOfMonth}
+        daysInMonth={daysInMonth}
         chartData={chartData}
         spaceStacksData={spaceStacksData}
         recent={recent}

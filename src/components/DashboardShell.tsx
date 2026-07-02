@@ -62,6 +62,8 @@ interface Props {
   primaryCurrency: string;
   spacesOverview?: SpaceCardData[];
   metrics: CurrencyMetrics[];
+  dayOfMonth?: number;
+  daysInMonth?: number;
   chartData: Record<string, ChartMonth[]>;
   spaceStacksData?: Record<string, SpaceExpenseStack[]>;
   recent: RecentTx[];
@@ -240,6 +242,28 @@ function MiniDonut({ data, income, sym }: { data: { name: string; amount: number
   );
 }
 
+// Ritmo de gasto: pace lineal → proyección de cierre de mes. Estimación.
+function ProjectionCard({ expense, dayOfMonth, daysInMonth, sym }: { expense: number; dayOfMonth: number; daysInMonth: number; sym: string }) {
+  if (expense <= 0 || dayOfMonth < 1 || dayOfMonth >= daysInMonth) return null;
+  const projected = (expense / dayOfMonth) * daysInMonth;
+  const elapsed = Math.min(100, (dayOfMonth / daysInMonth) * 100);
+  const fmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+  return (
+    <div className="glass-card enter-up" data-delay="3" style={{ padding: "16px 18px", borderRadius: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Ritmo de gasto</p>
+        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>día {dayOfMonth} de {daysInMonth}</p>
+      </div>
+      <div style={{ width: "100%", height: 6, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
+        <div style={{ width: `${elapsed}%`, height: "100%", borderRadius: 999, background: "var(--warning)", transition: "width 500ms ease-out" }} />
+      </div>
+      <p style={{ fontSize: 12.5, color: "var(--ink-dim)", lineHeight: 1.45 }}>
+        Llevás <strong style={{ color: "var(--ink)" }}>{sym} {fmt(expense)}</strong> gastados. A este ritmo cerrás el mes en <strong style={{ color: "var(--ink)" }}>~{sym} {fmt(projected)}</strong>.
+      </p>
+    </div>
+  );
+}
+
 // Widget compacto de metas — máx 2
 function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
   const visible = goals.slice(0, 2);
@@ -383,7 +407,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, chartData, spaceStacksData = {}, recent, goals = [], budgets = [], installments = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, chartData, spaceStacksData = {}, recent, goals = [], budgets = [], installments = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -436,6 +460,9 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
 
       {/* Tasa de ahorro del mes */}
       {m.income > 0 && <div className="dash-full"><SavingsCard income={m.income} expense={m.expense} sym={sym} /></div>}
+
+      {/* Ritmo de gasto / proyección */}
+      {m.expense > 0 && dayOfMonth < daysInMonth && <div className="dash-full"><ProjectionCard expense={m.expense} dayOfMonth={dayOfMonth} daysInMonth={daysInMonth} sym={sym} /></div>}
 
       {/* Vista Total: desglose por espacio (cards horizontales) */}
       {spacesOverview.length > 1 && (
