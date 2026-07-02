@@ -138,7 +138,7 @@ export default function CategoriasPage() {
           </div>
         </div>
         <button onClick={() => setEditingCat("new")}
-          style={{ fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}>
+          style={{ fontSize: 13, fontWeight: 600, minHeight: 40, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}>
           + Nueva
         </button>
       </div>
