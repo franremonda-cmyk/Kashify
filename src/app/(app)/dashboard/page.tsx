@@ -199,7 +199,7 @@ export default async function DashboardPage() {
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 dash-page">
       {/* Header */}
       <div className="flex items-center justify-between enter-up">
         <div>

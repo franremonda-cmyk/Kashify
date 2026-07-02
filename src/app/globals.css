@@ -773,8 +773,11 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
     margin: 0 !important;
     width: 100% !important;
   }
-  /* El contenido se centra/capa adentro del área scrolleable */
-  .app-main > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
+  /* El contenido se centra/capa adentro del área scrolleable.
+     Páginas de una sola columna quedan a ancho legible (760px, igual que tablet
+     y el chat de Neo); solo el dashboard opta por el ancho completo (bento). */
+  .app-main > * { max-width: 760px; margin-left: auto; margin-right: auto; }
+  .app-main > .dash-page { max-width: 1200px; }
   .dashboard-shell {
     grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
     gap: 22px 26px;
