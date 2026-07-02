@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { spaceBelongsTo } from "@/lib/spaces";
+import { learnFromCorrection } from "@/lib/neo/learning";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -29,6 +30,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Aprender de la corrección: si el usuario cambió la categoría (o el tipo) de un
+  // gasto/ingreso, es ground truth → enseñar/sobrescribir la regla (best-effort).
+  if (("category_id" in body || "type" in body) && (data.type === "expense" || data.type === "income")) {
+    await learnFromCorrection(supabase, user.id, data.description ?? "", data.type, data.currency_code, data.category_id ?? null);
+  }
+
   return NextResponse.json(data);
 }
 

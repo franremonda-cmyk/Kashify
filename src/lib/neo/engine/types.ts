@@ -26,6 +26,7 @@ export type Intent =
   | { type: "edit_budget"; category: string; amount: number }
   | { type: "delete_budget"; category: string }
   | { type: "delete_tx"; search: string }
+  | { type: "correct_tx_category"; search?: string; category: string }
   | { type: "create_goal"; name: string; amount?: number }
   | { type: "delete_goal"; name: string }
   | { type: "rename_goal"; oldName: string; newName: string }
@@ -102,4 +103,6 @@ export interface LearnedKeyword {
   type: "expense" | "income";
   currency_code: string | null;
   category: string | null;
+  last_amount?: number | null;  // monto "de siempre" (Fase 3: se ofrece como pregunta)
+  weight?: number;              // confianza × usos, para rankear matches
 }

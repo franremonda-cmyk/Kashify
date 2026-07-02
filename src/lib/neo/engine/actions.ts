@@ -1,5 +1,6 @@
 import { generatePaymentDates } from "@/lib/installments/calculator";
 import { categoryForText } from "@/lib/neo-keywords";
+import { learnFromCorrection } from "@/lib/neo/learning";
 import { scopeForSpace } from "@/lib/space-scope";
 import { normalize } from "./intent";
 import { missingSlot, slotQuestion } from "./flow";
@@ -508,6 +509,31 @@ export async function executeIntent(
         return { text: `¿Seguro que querés saldar el plan "${match.name}"? Se eliminarán los pagos pendientes.`, effects: [{ type: "confirm_cancel_installment", planId: match.id, planName: match.name }] };
       }
       return { text: `¿Seguro que querés saldar el plan "${match.name}"? (sí/no)`, state: { kind: "confirm_cancel_installment", planId: match.id, planName: match.name } };
+    }
+
+    case "correct_tx_category": {
+      const cat = await findCategory(supabase, userId, intent.category);
+      if (!cat) {
+        const { data: cats } = await supabase.from("categories").select("name").eq("user_id", userId);
+        const names = (cats as { name: string }[] | null)?.map((c) => c.name).join(", ") ?? "";
+        return { text: `No encontré la categoría "${intent.category}". Tus categorías: ${names}.` };
+      }
+      const { data: txs } = await supabase.from("transactions")
+        .select("id, description, type, currency_code")
+        .eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
+        .order("date", { ascending: false }).order("created_at", { ascending: false }).limit(15);
+      const list = (txs ?? []) as { id: string; description: string; type: string; currency_code: string }[];
+      let tx: { id: string; description: string; type: string; currency_code: string } | undefined = list[0];
+      if (intent.search) {
+        const s = normalize(intent.search);
+        tx = list.find((t) => normalize(t.description ?? "").includes(s));
+      }
+      if (!tx) return { text: intent.search ? `No encontré un movimiento que coincida con "${intent.search}".` : "No encontré un movimiento reciente para corregir." };
+      await supabase.from("transactions").update({ category_id: cat.id }).eq("id", tx.id).eq("user_id", userId);
+      if (tx.type === "expense" || tx.type === "income") {
+        await learnFromCorrection(supabase, userId, tx.description ?? "", tx.type, tx.currency_code, cat.id);
+      }
+      return { text: `Listo ✅ Moví "${tx.description}" a ${cat.name}. La próxima lo acomodo solo.`, effects: [{ type: "refresh" }] };
     }
 
     default:

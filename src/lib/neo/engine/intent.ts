@@ -106,6 +106,24 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   const deleteMatch = m.match(/(?:elimin[ao]r?|borra[r]?|saca[r]?|quita[r]?|borr[ao]|elimina)\s+(?:el\s+|la\s+)?(?:(?:gasto|pago|ingreso|compra|transaccion)\s+(?:de\s+)?)?(.+)/);
   if (deleteMatch) return { type: "delete_tx", search: deleteMatch[1].trim() };
 
+  // ── Corregir la categoría de un movimiento por chat ───────────────────────
+  // "el último gasto ponelo en Ocio", "ese es Transporte", "cambiá la categoría
+  // de netflix a Ocio", "movelo a Comida". El handler valida la categoría.
+  {
+    const a = m.match(/(?:el\s+)?(?:ultimo|último|reciente|ese)\s+(?:gasto|movimiento|registro|ingreso)?\s*(?:pon[eé]l?[oa]|mov[eé]l?[oa]|cambi[aá]l?[oa]|deber[ií]a\s+ir\s+en|va\s+en|va|es|a|en|como)\s+(.+)$/);
+    if (a && a[1] && a[1].trim().length <= 30) return { type: "correct_tx_category", category: a[1].trim() };
+
+    const b = m.match(/(?:cambi[aá]r?|pon[eé]r?|correg[ií]r?|actualiz[aá]r?|mov[eé]r?)\s+(?:la\s+)?categor[ií]a\s+(?:de[l]?\s+)?(.+?)\s+(?:a|en|como|por)\s+(.+)$/);
+    if (b) {
+      const target = b[1].trim();
+      const isLast = /^(el\s+)?(ultimo|último|reciente|ese)(\s+(gasto|movimiento|registro))?$/.test(target);
+      return { type: "correct_tx_category", search: isLast ? undefined : target, category: b[2].trim() };
+    }
+
+    const c = m.match(/^(?:movel[oa]|cambial[oa]|ponel[oa])\s+(?:a|en|como|para)\s+(.+)$/);
+    if (c && c[1].trim().length <= 30) return { type: "correct_tx_category", category: c[1].trim() };
+  }
+
   // ── Register transaction (explicit) → expense/income flow ────────────────
   if (/registr[ao]r?|anot[ao]r?|guard[ao]r?|carg[ao]r?|apunt[ao]r?/.test(m) && !/cuota|meta|objetivo|l[ií]mite/.test(m)) {
     const txType: "income" | "expense" = /ingreso|sueldo|cobr[eé]/.test(m) ? "income" : "expense";

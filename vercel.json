@@ -11,6 +11,10 @@
     {
       "path": "/api/process-webhook",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/neo-promote",
+      "schedule": "0 8 * * *"
     }
   ]
 }
