@@ -6,6 +6,7 @@ import DashboardClient from "./DashboardClient";
 import SpaceSwitcher from "@/components/SpaceSwitcher";
 import SpacesHintCard from "@/components/SpacesHintCard";
 import { computeBalances } from "@/lib/ledger/balances";
+import { detectRecurring, type RecTx } from "@/lib/recurring";
 import { scopeForSpace, SPACE_COOKIE } from "@/lib/space-scope";
 import type { ChartMonth } from "@/components/SpendingChart";
 import type { Space } from "@/types";
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(50),
     supabase.from("transactions")
-      .select("amount, currency_code, type, date, space_id")
+      .select("amount, currency_code, type, date, space_id, description")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", yearAgo)
       .order("date", { ascending: true }),
@@ -51,7 +52,7 @@ export default async function DashboardPage() {
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds),
     supabase.from("savings_goals").select("*").eq("user_id", user.id).in("space_id", scopeIds).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
     supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds),
-    supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(status), categories(name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds).eq("status", "active").order("created_at", { ascending: false }),
+    supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(status, due_date, amount), categories(name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds).eq("status", "active").order("created_at", { ascending: false }),
   ]);
 
   const balances   = computeBalances(txAllRes.data ?? []);
@@ -81,6 +82,27 @@ export default async function DashboardPage() {
     })
     .filter((p) => p.paid < p.n_installments)
     .slice(0, 2);
+
+  // Próximos pagos: cuotas pendientes que vencen este mes, por moneda.
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().split("T")[0];
+  const upcomingMap: Record<string, { total: number; count: number }> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const p of (installmentsRes.data as any[] ?? [])) {
+    const pays = Array.isArray(p.installment_payments) ? p.installment_payments : [];
+    for (const pay of pays) {
+      if (pay.status === "pending" && pay.due_date >= monthStart && pay.due_date < nextMonthStart) {
+        const cur = p.currency_code;
+        if (!upcomingMap[cur]) upcomingMap[cur] = { total: 0, count: 0 };
+        upcomingMap[cur].total += Number(pay.amount ?? p.installment_amount ?? 0);
+        upcomingMap[cur].count += 1;
+      }
+    }
+  }
+  const upcoming = Object.entries(upcomingMap).map(([currency_code, v]) => ({ currency_code, ...v }));
+
+  // Gastos recurrentes / suscripciones: detectados de los últimos 4 meses del histórico.
+  const recurringStart = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString().split("T")[0];
+  const recurring = detectRecurring((txHistoryRes.data ?? []).filter((t) => t.date >= recurringStart) as unknown as RecTx[]);
 
   if (!profile?.display_name) redirect("/onboarding");
 
@@ -247,6 +269,8 @@ export default async function DashboardPage() {
         metrics={metrics}
         dayOfMonth={dayOfMonth}
         daysInMonth={daysInMonth}
+        upcoming={upcoming}
+        recurring={recurring}
         chartData={chartData}
         spaceStacksData={spaceStacksData}
         recent={recent}

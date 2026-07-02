@@ -7,6 +7,7 @@ import HeroBalanceCard from "./HeroBalanceCard";
 import SpacesOverview, { type SpaceCardData } from "./SpacesOverview";
 import CategoryIcon from "./CategoryIcon";
 import type { ChartMonth, SpaceExpenseStack } from "./SpendingChart";
+import type { RecurringItem } from "@/lib/recurring";
 const SpendingChart = dynamic(() => import("./SpendingChart"), { ssr: false, loading: () => <div style={{ height: 200 }} /> });
 import TransactionSheet from "./TransactionSheet";
 import BudgetDetailModal from "./BudgetDetailModal";
@@ -64,6 +65,8 @@ interface Props {
   metrics: CurrencyMetrics[];
   dayOfMonth?: number;
   daysInMonth?: number;
+  upcoming?: { currency_code: string; total: number; count: number }[];
+  recurring?: RecurringItem[];
   chartData: Record<string, ChartMonth[]>;
   spaceStacksData?: Record<string, SpaceExpenseStack[]>;
   recent: RecentTx[];
@@ -264,6 +267,49 @@ function ProjectionCard({ expense, dayOfMonth, daysInMonth, sym }: { expense: nu
   );
 }
 
+// Próximos pagos: cuotas que vencen este mes (mirada hacia adelante).
+function UpcomingCard({ total, count, sym }: { total: number; count: number; sym: string }) {
+  if (count <= 0) return null;
+  const fmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+  return (
+    <Link href="/cuotas" className="glass-card enter-up press glow-hover" data-delay="3" style={{ display: "block", padding: "16px 18px", borderRadius: 18, textDecoration: "none" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Cuotas por pagar este mes</p>
+        <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>{count} {count === 1 ? "cuota" : "cuotas"}</span>
+      </div>
+      <p className="mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--warning)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{sym} {fmt(total)}</p>
+      <p style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, marginTop: 8 }}>Ver cuotas →</p>
+    </Link>
+  );
+}
+
+// Gastos recurrentes / suscripciones detectados.
+function RecurringCard({ items, sym }: { items: RecurringItem[]; sym: string }) {
+  if (items.length === 0) return null;
+  const total = items.reduce((s, i) => s + i.amount, 0);
+  const top = items.slice(0, 3);
+  const fmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+  return (
+    <div className="glass-card enter-up" data-delay="3" style={{ padding: "16px 18px", borderRadius: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Gastos fijos / suscripciones</p>
+        <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>{items.length}</span>
+      </div>
+      <p className="mono" style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>~{sym} {fmt(total)}<span style={{ fontSize: 13, color: "var(--ink-dim)", fontWeight: 500 }}> /mes</span></p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {top.map((it) => (
+          <div key={it.description} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--accent)", flexShrink: 0 }} />
+            <span style={{ fontSize: 12.5, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{it.description}</span>
+            <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{sym} {fmt(it.amount)}</span>
+          </div>
+        ))}
+        {items.length > 3 && <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>+{items.length - 3} más</p>}
+      </div>
+    </div>
+  );
+}
+
 // Widget compacto de metas — máx 2
 function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
   const visible = goals.slice(0, 2);
@@ -407,7 +453,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, chartData, spaceStacksData = {}, recent, goals = [], budgets = [], installments = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [], installments = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -425,6 +471,8 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
   const sym = SYMBOLS[selectedCurrency] ?? selectedCurrency;
   const incomeDelta  = (m.prevIncome ?? 0)  > 0 ? ((m.income  - (m.prevIncome ?? 0))  / (m.prevIncome ?? 1))  * 100 : null;
   const expenseDelta = (m.prevExpense ?? 0) > 0 ? ((m.expense - (m.prevExpense ?? 0)) / (m.prevExpense ?? 1)) * 100 : null;
+  const up = upcoming.find((u) => u.currency_code === selectedCurrency);
+  const recCur = recurring.filter((r) => r.currency_code === selectedCurrency);
   const chartMonths = chartData[selectedCurrency] ?? [];
 
   // Categorías de gasto para el donut (mes actual, moneda seleccionada)
@@ -463,6 +511,12 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
 
       {/* Ritmo de gasto / proyección */}
       {m.expense > 0 && dayOfMonth < daysInMonth && <div className="dash-full"><ProjectionCard expense={m.expense} dayOfMonth={dayOfMonth} daysInMonth={daysInMonth} sym={sym} /></div>}
+
+      {/* Próximos pagos (cuotas del mes) */}
+      {up && up.count > 0 && <div className="dash-full"><UpcomingCard total={up.total} count={up.count} sym={sym} /></div>}
+
+      {/* Gastos recurrentes / suscripciones */}
+      {recCur.length > 0 && <div className="dash-full"><RecurringCard items={recCur} sym={sym} /></div>}
 
       {/* Vista Total: desglose por espacio (cards horizontales) */}
       {spacesOverview.length > 1 && (
