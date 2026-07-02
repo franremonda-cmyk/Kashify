@@ -27,6 +27,7 @@ export type Intent =
   | { type: "delete_budget"; category: string }
   | { type: "delete_tx"; search: string }
   | { type: "correct_tx_category"; search?: string; category: string }
+  | { type: "ask_amount"; keyword: string; ctype: "expense" | "income"; category: string | null; currency: string | null; lastAmount: number }
   | { type: "create_goal"; name: string; amount?: number }
   | { type: "delete_goal"; name: string }
   | { type: "rename_goal"; oldName: string; newName: string }
@@ -79,10 +80,23 @@ export interface ConfirmTx {
   awaitingCategory?: boolean; // segundo turno: el usuario está eligiendo categoría
 }
 
+// Monto típico: el usuario escribió una keyword conocida sin monto → Neo ofrece
+// el "de siempre" (last_amount) como pregunta (en AR los montos cambian, no autofill).
+export interface ConfirmAmount {
+  kind: "confirm_amount";
+  keyword: string;
+  ctype: "expense" | "income";
+  category: string | null;
+  currency: string | null;
+  lastAmount: number;
+  spaceId?: string | null;
+}
+
 export type NeoState =
   | { kind: "flow"; ctx: FlowContext }
   | { kind: "clarify_learn"; original: string }
   | ConfirmTx
+  | ConfirmAmount
   | PendingConfirm;
 
 // ─── Efectos de UI (solo los consume la web) ─────────────────────────────────

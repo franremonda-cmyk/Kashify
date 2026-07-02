@@ -26,6 +26,14 @@ ok(i3.type === "correct_tx_category" && !(i3 as { search?: string }).search && /
 // no debe confundirse con un gasto normal
 ok(detectIntent("almuerzo 850").type === "flow", "‘almuerzo 850’ sigue siendo un gasto, no corrección");
 
+// ── monto típico (Fase 3): keyword conocida sin monto → ask_amount ──
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const lk: any = [{ keyword: "netflix", type: "expense", currency_code: "ARS", category: "Ocio", last_amount: 2000, weight: 100 }];
+const ia = detectIntent("netflix", lk);
+ok(ia.type === "ask_amount" && (ia as { lastAmount: number }).lastAmount === 2000, "keyword conocida sin monto → ask_amount ($2000)");
+const ib = detectIntent("netflix 3500", lk);
+ok(ib.type === "flow" && (ib as { ctx: { amount?: number } }).ctx.amount === 3500, "keyword con monto → registra directo");
+
 // ── promoteGlobalRules (fake Supabase) ──
 type Row = { user_id: string; pattern: string; type: string; categories: { name: string } };
 function fake(rows: Row[]) {

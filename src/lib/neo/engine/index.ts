@@ -4,7 +4,7 @@ import { fillSlot, interpretClarify, isCancelMsg } from "./flow";
 import { domainHint, executeConfirm, executeIntent, respondFlow, loadUserSpaces, resolveSpaceReply, spaceQuestion } from "./actions";
 import { llmFallback } from "./llm-fallback";
 import type { ParsedTransaction } from "@/types";
-import type { ConfirmTx, FlowContext, NeoChannel, NeoReply, NeoState, NeoSupabase, PendingConfirm } from "./types";
+import type { ConfirmAmount, ConfirmTx, FlowContext, NeoChannel, NeoReply, NeoState, NeoSupabase, PendingConfirm } from "./types";
 
 export type { NeoReply, NeoState, NeoChannel } from "./types";
 
@@ -55,6 +55,9 @@ export async function runNeo({ supabase, userId, message, channel, state, active
     if (state.kind === "confirm_tx") {
       return continueConfirmTx(supabase, userId, state, message, channel, activeSpaceId);
     }
+    if (state.kind === "confirm_amount") {
+      return continueConfirmAmount(supabase, userId, state, message, channel, activeSpaceId);
+    }
     // Confirmaciones pendientes (WhatsApp): sí/no/número.
     return continueConfirm(supabase, userId, state, message);
   }
@@ -69,6 +72,14 @@ export async function runNeo({ supabase, userId, message, channel, state, active
   const intent = detectIntent(message, learnedKeywords);
 
   if (intent.type === "flow") return respondFlow(supabase, userId, intent.ctx, channel, activeSpaceId);
+  if (intent.type === "ask_amount") {
+    const cur = intent.currency ?? await primaryCurrency(supabase, userId);
+    return {
+      text: `¿${intent.keyword} por el mismo de siempre? (${cur} ${intent.lastAmount.toLocaleString("es-AR", { maximumFractionDigits: 0 })})\nDecime "sí", o mandame otro monto.`,
+      options: ["Sí", "Otro monto"],
+      state: { kind: "confirm_amount", keyword: intent.keyword, ctype: intent.ctype, category: intent.category, currency: cur, lastAmount: intent.lastAmount, spaceId: activeSpaceId ?? null },
+    };
+  }
   if (intent.type !== "unknown") return executeIntent(supabase, userId, intent, channel, activeSpaceId);
 
   // ── No se entendió → hint de dominio → fallback Haiku → clarify ──
@@ -199,6 +210,41 @@ async function continueConfirmTx(
 
   // El usuario escribió una categoría directamente → override.
   return create(message.trim(), true);
+}
+
+// Monto típico: "¿el de siempre?" → registra con last_amount, o con el monto que mande.
+async function continueConfirmAmount(
+  supabase: NeoSupabase,
+  userId: string,
+  state: ConfirmAmount,
+  message: string,
+  channel: NeoChannel,
+  activeSpaceId?: string | null,
+): Promise<NeoReply> {
+  const norm = normalize(message);
+  if (isCancelMsg(message) || /^no\b/.test(norm)) return { text: "Dale, no lo anoté 👍", state: null };
+
+  const amtMatch = message.match(/(\d[\d.,]+)/);
+  let amount = state.lastAmount;
+  if (amtMatch) {
+    const parsed = parseFloat(amtMatch[1].replace(/\./g, "").replace(",", "."));
+    if (parsed > 0) amount = parsed;
+  } else if (/otro|otra|distinto|cambi/.test(norm)) {
+    return { text: "¿De cuánto?", state };  // esperamos el número (mismo estado)
+  } else if (!isAffirmative(message)) {
+    return { text: `Decime "sí" para ${state.currency ?? ""} ${state.lastAmount.toLocaleString("es-AR", { maximumFractionDigits: 0 })}, o mandame el monto.`, state };
+  }
+
+  const ctx: FlowContext = { flow: state.ctype, description: state.keyword, amount, category: state.category ?? undefined, space_id: state.spaceId ?? activeSpaceId ?? undefined };
+  const reply = await respondFlow(supabase, userId, ctx, channel, activeSpaceId);
+  if (reply.effects?.some((e) => e.type === "refresh")) {
+    const cur = state.currency ?? await primaryCurrency(supabase, userId);
+    await learnFromConfirmation(supabase, userId, state.keyword, {
+      type: state.ctype, amount, currency_code: cur, description: state.keyword,
+      category_name: state.category ?? undefined, confidence: 100, needs_confirmation: false,
+    } as ParsedTransaction);
+  }
+  return { ...reply, state: reply.state ?? null };
 }
 
 async function primaryCurrency(supabase: NeoSupabase, userId: string): Promise<string> {

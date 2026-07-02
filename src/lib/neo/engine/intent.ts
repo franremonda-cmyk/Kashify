@@ -195,10 +195,10 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
 
   // ── Keywords aprendidas (lo que antes resolvió Haiku, ahora 0 tokens) ──────
   if (learnedKeywords.length) {
-    const amtMatch = m.match(/(\d[\d.,]+)/);
-    if (amtMatch) {
-      const hit = learnedKeywords.find((k) => k.keyword && m.includes(k.keyword));
-      if (hit) {
+    const hit = learnedKeywords.find((k) => k.keyword && m.includes(k.keyword));
+    if (hit) {
+      const amtMatch = m.match(/(\d[\d.,]+)/);
+      if (amtMatch) {
         const amount = parseAmount(amtMatch[1]);
         const desc = m.replace(/\d[\d.,]*/g, "").trim();
         return {
@@ -207,9 +207,16 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
             flow: hit.type,
             description: desc || hit.keyword,
             amount: amount > 0 ? amount : undefined,
-            // categoría aprendida si existe; si no, la deduce de las keywords
             category: hit.category ?? categoryForText(desc),
           },
+        };
+      }
+      // Keyword conocida SIN monto + monto típico → preguntar "¿el de siempre?"
+      if (hit.last_amount && hit.last_amount > 0) {
+        return {
+          type: "ask_amount",
+          keyword: hit.keyword, ctype: hit.type, category: hit.category ?? null,
+          currency: hit.currency_code ?? null, lastAmount: hit.last_amount,
         };
       }
     }
