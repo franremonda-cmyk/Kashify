@@ -1,10 +1,10 @@
-import { learnFromConfirmation, loadLearnedKeywords } from "@/lib/neo/learning";
+import { learnFromConfirmation, learnFromCorrection, loadLearnedKeywords } from "@/lib/neo/learning";
 import { detectIntent, normalize } from "./intent";
 import { fillSlot, interpretClarify, isCancelMsg } from "./flow";
 import { domainHint, executeConfirm, executeIntent, respondFlow, loadUserSpaces, resolveSpaceReply, spaceQuestion } from "./actions";
 import { llmFallback } from "./llm-fallback";
 import type { ParsedTransaction } from "@/types";
-import type { FlowContext, NeoChannel, NeoReply, NeoState, NeoSupabase, PendingConfirm } from "./types";
+import type { ConfirmTx, FlowContext, NeoChannel, NeoReply, NeoState, NeoSupabase, PendingConfirm } from "./types";
 
 export type { NeoReply, NeoState, NeoChannel } from "./types";
 
@@ -52,6 +52,9 @@ export async function runNeo({ supabase, userId, message, channel, state, active
     if (state.kind === "clarify_learn") {
       return continueClarifyLearn(supabase, userId, state.original, message, channel, activeSpaceId);
     }
+    if (state.kind === "confirm_tx") {
+      return continueConfirmTx(supabase, userId, state, message, channel, activeSpaceId);
+    }
     // Confirmaciones pendientes (WhatsApp): sí/no/número.
     return continueConfirm(supabase, userId, state, message);
   }
@@ -77,12 +80,25 @@ export async function runNeo({ supabase, userId, message, channel, state, active
 
   const fallback = await llmFallback(message, categoryNames);
   if (fallback) {
-    const reply = await respondFlow(supabase, userId, fallback.ctx, channel, activeSpaceId);
-    // Aprendizaje: si Haiku resolvió y se creó, guardamos la regla para no
-    // volver a gastar tokens con este patrón.
-    const created = reply.effects?.some((e) => e.type === "refresh");
-    if (created) await learnFromConfirmation(supabase, userId, message, fallback.parsed);
-    return reply;
+    const p = fallback.parsed;
+    // ¿Es OBVIO? Alta confianza + Haiku no pidió confirmar + categoría que existe.
+    const catMatches = !!p.category_name && categoryNames.some((n) => n.toLowerCase() === p.category_name!.toLowerCase());
+    const obvio = (p.confidence ?? 0) >= 85 && !p.needs_confirmation && catMatches;
+
+    if (obvio) {
+      const reply = await respondFlow(supabase, userId, fallback.ctx, channel, activeSpaceId);
+      const created = reply.effects?.some((e) => e.type === "refresh");
+      if (created) await learnFromConfirmation(supabase, userId, message, p);
+      return reply;
+    }
+
+    // No es obvio → PREGUNTAR antes de registrar (mejor que anotar mal).
+    const catLabel = p.category_name ? ` en *${p.category_name}*` : "";
+    return {
+      text: `Entendí: *${p.description}* — ${p.currency_code} ${p.amount.toLocaleString("es-AR", { maximumFractionDigits: 0 })}${catLabel}. ¿Lo anoto así?`,
+      options: ["Sí", "Otra categoría", "No"],
+      state: { kind: "confirm_tx", parsed: { type: p.type as "expense" | "income", amount: p.amount, currency_code: p.currency_code, description: p.description, category_name: p.category_name ?? null }, original: message, spaceId: activeSpaceId ?? null },
+    };
   }
 
   // Reglas Y Haiku fallaron → preguntar de forma abierta y APRENDER de la respuesta.
@@ -138,6 +154,51 @@ async function continueClarifyLearn(
     text: "Perdón, sigo sin captarlo 😅. Probá registrándolo directo, ej: \"gasté 5000 en super\".",
     state: null,
   };
+}
+
+// Confirmación de una transacción interpretada por Haiku (preguntar, no asumir).
+// "Sí" → registra con la categoría de la IA. "Otra categoría" → ofrece las del
+// usuario y aprende el override (ground truth). "No"/cancel → descarta.
+async function continueConfirmTx(
+  supabase: NeoSupabase,
+  userId: string,
+  state: ConfirmTx,
+  message: string,
+  channel: NeoChannel,
+  activeSpaceId?: string | null,
+): Promise<NeoReply> {
+  const norm = normalize(message);
+  if (isCancelMsg(message) || /^no\b/.test(norm)) return { text: "Listo, no lo anoté 👍", state: null };
+
+  const p = state.parsed;
+  const spaceId = state.spaceId ?? activeSpaceId ?? undefined;
+
+  async function create(categoryName: string | null, isOverride: boolean): Promise<NeoReply> {
+    const ctx: FlowContext = { flow: p.type, description: p.description, amount: p.amount, category: categoryName ?? undefined, space_id: spaceId ?? undefined };
+    const reply = await respondFlow(supabase, userId, ctx, channel, activeSpaceId);
+    if (reply.effects?.some((e) => e.type === "refresh")) {
+      if (isOverride && categoryName) {
+        const { data: c } = await supabase.from("categories").select("id").eq("user_id", userId).ilike("name", categoryName).maybeSingle();
+        await learnFromCorrection(supabase, userId, state.original, p.type, p.currency_code, (c as { id: string } | null)?.id ?? null);
+      } else {
+        await learnFromConfirmation(supabase, userId, state.original, { ...p, category_name: categoryName ?? p.category_name } as ParsedTransaction);
+      }
+    }
+    return { ...reply, state: reply.state ?? null };
+  }
+
+  if (state.awaitingCategory) return create(message.trim(), true);
+
+  if (/otra categor|^otra\b|cambiar|otra cat/.test(norm)) {
+    const { data: cats } = await supabase.from("categories").select("name").eq("user_id", userId).order("name");
+    const names = (cats as { name: string }[] | null)?.map((c) => c.name) ?? [];
+    return { text: "¿A qué categoría?", options: names.slice(0, 8), state: { ...state, awaitingCategory: true } };
+  }
+
+  if (isAffirmative(message)) return create(p.category_name ?? null, false);
+
+  // El usuario escribió una categoría directamente → override.
+  return create(message.trim(), true);
 }
 
 async function primaryCurrency(supabase: NeoSupabase, userId: string): Promise<string> {

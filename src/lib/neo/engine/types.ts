@@ -69,9 +69,20 @@ export type PendingConfirm =
 
 // Estado que viaja entre turnos. Puede ser un flujo de slot-filling o una
 // confirmación pendiente.
+// Preguntar antes de asumir: Haiku interpretó algo pero no está seguro → Neo
+// confirma la categoría/tipo antes de registrar (en vez de crear mal).
+export interface ConfirmTx {
+  kind: "confirm_tx";
+  parsed: { type: "expense" | "income"; amount: number; currency_code: string; description: string; category_name?: string | null };
+  original: string;          // mensaje original → keyword para aprender
+  spaceId?: string | null;
+  awaitingCategory?: boolean; // segundo turno: el usuario está eligiendo categoría
+}
+
 export type NeoState =
   | { kind: "flow"; ctx: FlowContext }
   | { kind: "clarify_learn"; original: string }
+  | ConfirmTx
   | PendingConfirm;
 
 // ─── Efectos de UI (solo los consume la web) ─────────────────────────────────
