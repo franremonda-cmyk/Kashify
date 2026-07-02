@@ -531,7 +531,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
           </div>
 
           {/* Message list — the only scrollable area */}
-          <div ref={listRef} className="neo-chat-list" style={{
+          <div ref={listRef} className="neo-chat-list" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversación con Neo" style={{
             flex: 1, minHeight: 0, width: "100%",
             overflowY: "auto", WebkitOverflowScrolling: "touch",
             background: "transparent",
