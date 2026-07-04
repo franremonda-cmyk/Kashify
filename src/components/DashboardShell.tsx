@@ -501,6 +501,27 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
         />
       </div>
 
+      {/* Usuario sin movimientos: guía inicial (el resto de las secciones se ocultan solas) */}
+      {recent.length === 0 && (
+        <div className="dash-full">
+          <div style={{ padding: 28, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <p style={{ fontSize: 14, color: "var(--ink)", maxWidth: 300 }}>Todavía no hay movimientos. Cargá el primero y Kashify se pone en marcha.</p>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }))}
+              className="lift"
+              style={{ padding: "12px 24px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+              + Agregar movimiento
+            </button>
+            <Link href="/historial" style={{ fontSize: 13, color: "var(--ink-muted)", textDecoration: "none" }}>
+              Importar desde un archivo →
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
         <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  deltaPct={incomeDelta}  onClick={() => setBreakdownType("income")} />
         <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />

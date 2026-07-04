@@ -16,7 +16,7 @@ const inp: React.CSSProperties = {
   borderRadius: 14,
   padding: "14px 16px",
   color: "var(--ink)",
-  fontSize: 15,
+  fontSize: 16, // ≥16 evita el auto-zoom de iOS Safari al enfocar
   width: "100%",
   outline: "none",
 };
@@ -382,17 +382,6 @@ export default function OnboardingPage() {
             </button>
           )}
 
-          {/* Paso 1 (WhatsApp): opción de saltear */}
-          {step === 1 && (
-            <button onClick={next}
-              style={{
-                padding: "13px 16px", borderRadius: 14, fontSize: 13, fontWeight: 500,
-                background: "transparent", color: "var(--ink-dim)",
-              }}>
-              Saltear
-            </button>
-          )}
-
           {/* Paso 2 (importar): no muestra botón "Continuar" ya que las opciones actúan de nav */}
           {step !== 2 && (
             step < STEPS - 1 ? (
@@ -404,7 +393,7 @@ export default function OnboardingPage() {
                   background: "var(--accent)", color: "#04130D",
                   opacity: step === 0 && !name.trim() ? 0.35 : 1,
                 }}>
-                Continuar →
+                {step === 1 && !phone.trim() ? "Saltear →" : "Continuar →"}
               </button>
             ) : (
               <button onClick={finishOnboarding} disabled={saving}

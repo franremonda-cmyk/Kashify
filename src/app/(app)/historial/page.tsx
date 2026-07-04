@@ -727,6 +727,11 @@ export default function ActividadPage() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
             <p style={{ fontSize: 13, color: "var(--ink)" }}>Sin movimientos</p>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }))}
+              style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+              + Agregar movimiento
+            </button>
           </div>
         )}
         {!loading && filtered.length > 0 && (() => {
@@ -754,7 +759,7 @@ export default function ActividadPage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
-                      <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{t.date ? ` · ${t.date}` : ""}</p>
+                      <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       <p className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
@@ -766,7 +771,7 @@ export default function ActividadPage() {
                 );
               })}
               {filtered.length > 5 && (
-                <button onClick={() => setShowAllTx(v => !v)} style={{
+                <button onClick={() => { if (showAllTx) setPage(1); setShowAllTx(v => !v); }} style={{
                   width: "100%", padding: "10px 16px", fontSize: 12, fontWeight: 600,
                   color: "var(--accent)", background: "var(--raised)",
                   borderTop: "0.5px solid var(--glass-border-dim)", textAlign: "center",
@@ -779,7 +784,8 @@ export default function ActividadPage() {
         })()}
       </div>
 
-      {total > 50 && (
+      {/* Paginación solo con la lista expandida: colapsada es un resumen de 5 */}
+      {showAllTx && total > 50 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1} style={{ fontSize: 13, padding: "8px 16px", borderRadius: 10, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", opacity: page===1?0.3:1 }}>← Ant</button>
           <span style={{ fontSize: 13, color: "var(--ink-muted)" }}>{(page-1)*50+1}–{Math.min(page*50, total)} de {total}</span>

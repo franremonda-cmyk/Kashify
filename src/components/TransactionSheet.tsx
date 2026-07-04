@@ -158,7 +158,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                   <p style={{ fontSize: 24, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
                     {isIncome ? "+" : "−"}{tx.currency_code} {Number(tx.amount).toLocaleString("es-AR", { maximumFractionDigits: 2 })}
                   </p>
-                  {tx.date && <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 4 }}>{tx.date}</p>}
+                  {tx.date && <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 4 }}>{new Date(tx.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}</p>}
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 4 }}>
