@@ -1,22 +1,32 @@
 "use client";
 export const dynamic = "force-dynamic";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Logo from "@/components/Logo";
 
 export default function LoginPage() {
-  async function signInWithGoogle() {
-    const supabase = createClient();
-    // Preselecciona la cuenta de Google: ?hint=email en la URL (sirve como
-    // marcador para nav privada) o el último mail usado (nav normal).
-    const hint =
+  // Cuenta recordada: ?hint=email en la URL (marcador, sirve en nav privada)
+  // o el último mail con el que se entró en este navegador (nav normal).
+  const [savedEmail, setSavedEmail] = useState<string | null>(null);
+  useEffect(() => {
+    setSavedEmail(
       new URLSearchParams(window.location.search).get("hint") ??
-      localStorage.getItem("kashify_last_email") ??
-      undefined;
+      localStorage.getItem("kashify_last_email"),
+    );
+  }, []);
+
+  async function signInWithGoogle(forceChooser = false) {
+    const supabase = createClient();
+    const queryParams = forceChooser
+      ? { prompt: "select_account" }
+      : savedEmail
+        ? { login_hint: savedEmail }
+        : undefined;
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/api/auth/callback`,
-        ...(hint ? { queryParams: { login_hint: hint } } : {}),
+        ...(queryParams ? { queryParams } : {}),
       },
     });
   }
@@ -66,7 +76,7 @@ export default function LoginPage() {
         {/* Card */}
         <div className="card-v2 w-full flex flex-col gap-4" style={{ padding: 20 }}>
           <button
-            onClick={signInWithGoogle}
+            onClick={() => signInWithGoogle()}
             className="w-full flex items-center justify-center gap-3 lift"
             style={{
               minHeight: 52, borderRadius: 16, fontWeight: 600, fontSize: 15,
@@ -81,8 +91,27 @@ export default function LoginPage() {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
             </span>
-            Continuar con Google
+            {savedEmail ? (
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>
+                Continuar como {savedEmail}
+              </span>
+            ) : (
+              "Continuar con Google"
+            )}
           </button>
+
+          {savedEmail && (
+            <button
+              onClick={() => signInWithGoogle(true)}
+              className="text-center"
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 13, color: "var(--ink-muted)", textDecoration: "underline",
+              }}
+            >
+              Usar otra cuenta
+            </button>
+          )}
 
           <p className="text-center" style={{ fontSize: 12, color: "var(--ink-dim)" }}>
             Al continuar, aceptás los términos de uso
