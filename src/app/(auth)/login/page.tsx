@@ -6,9 +6,18 @@ import Logo from "@/components/Logo";
 export default function LoginPage() {
   async function signInWithGoogle() {
     const supabase = createClient();
+    // Preselecciona la cuenta de Google: ?hint=email en la URL (sirve como
+    // marcador para nav privada) o el último mail usado (nav normal).
+    const hint =
+      new URLSearchParams(window.location.search).get("hint") ??
+      localStorage.getItem("kashify_last_email") ??
+      undefined;
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+        ...(hint ? { queryParams: { login_hint: hint } } : {}),
+      },
     });
   }
 

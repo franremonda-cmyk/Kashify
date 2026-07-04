@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import DesktopSidebar from "@/components/DesktopSidebar";
 import NeoBanner from "@/components/NeoBanner";
 import NeoMascot from "@/components/NeoMascot";
+import RememberEmail from "@/components/RememberEmail";
 import { createClient } from "@/lib/supabase/server";
 import { SpaceProvider } from "@/context/SpaceContext";
 import { SPACE_COOKIE } from "@/lib/space-scope";
@@ -52,6 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         {/* Personaje Neo — fijo, vive en el sidebar (≥768) y vuela a /neo */}
         <NeoMascot />
+        <RememberEmail email={user?.email} />
       </div>
     </SpaceProvider>
   );
