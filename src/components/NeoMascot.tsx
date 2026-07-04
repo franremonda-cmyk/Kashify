@@ -1,5 +1,6 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import NeoOrb from "./NeoOrb";
@@ -108,7 +109,7 @@ export default function NeoMascot() {
         <div className="neo-mascot__bubble" role="status" aria-live="polite">
           <p className="neo-mascot__bubble-text">{line.text}</p>
           {line.cta && (
-            <a className="neo-mascot__bubble-cta" href={line.cta.href}>{line.cta.label} →</a>
+            <Link className="neo-mascot__bubble-cta" href={line.cta.href}>{line.cta.label} →</Link>
           )}
           <button
             type="button"

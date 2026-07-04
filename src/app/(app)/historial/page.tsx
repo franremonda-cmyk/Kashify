@@ -16,6 +16,7 @@ import TxBreakdownModal from "@/components/TxBreakdownModal";
 import type { ChartMonth } from "@/components/SpendingChart";
 const SpendingChart = dynamic(() => import("@/components/SpendingChart"), { ssr: false, loading: () => <div style={{ height: 200 }} /> });
 import type { Transaction } from "@/types";
+import { catColorOrFallback, FALLBACK_COLORS } from "@/lib/colors";
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   ARS: "$", USD: "US$", EUR: "€", CHF: "Fr", BRL: "R$",
@@ -106,19 +107,6 @@ const inp: React.CSSProperties = {
   borderRadius: 12, padding: "11px 14px",
   color: "var(--ink)", fontSize: 16, width: "100%", outline: "none",
 };
-
-const FALLBACK_COLORS = [
-  "#C8820A","#7B61FF","#34C759","#FF9500","#5AC8FA",
-  "#BF5AF2","#FF6B6B","#30D158","#FFD60A","#64D2FF",
-];
-
-function catColorOrFallback(color: string | undefined | null, name: string): string {
-  if (color) return color;
-  // hash del nombre → color consistente por categoría
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return FALLBACK_COLORS[h % FALLBACK_COLORS.length];
-}
 
 interface ChartEntry { name: string; amount: number; color?: string; }
 

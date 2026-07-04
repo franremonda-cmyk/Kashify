@@ -13,6 +13,7 @@ import TransactionSheet from "./TransactionSheet";
 import BudgetDetailModal from "./BudgetDetailModal";
 import TxBreakdownModal from "./TxBreakdownModal";
 import type { BalanceView, SavingsGoal } from "@/types";
+import { catColorOrFallback, FALLBACK_COLORS } from "@/lib/colors";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; prevIncome?: number; prevExpense?: number; }
 interface RecentTx {
@@ -22,17 +23,6 @@ interface RecentTx {
   categories?: { name?: string; icon?: string; color?: string } | null;
 }
 interface Category { id: string; name: string; icon?: string; color?: string; }
-
-const FALLBACK_COLORS = [
-  "#C8820A","#7B61FF","#34C759","#FF9500","#5AC8FA",
-  "#BF5AF2","#FF6B6B","#30D158","#FFD60A","#64D2FF",
-];
-function catColorOrFallback(color: string | undefined | null, name: string): string {
-  if (color) return color;
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return FALLBACK_COLORS[h % FALLBACK_COLORS.length];
-}
 
 interface BudgetEntry {
   id: string;
@@ -165,82 +155,6 @@ function SavingsCard({ income, expense, sym }: { income: number; expense: number
           ? `Guardaste ${sym} ${fmt(saved)} de ${sym} ${fmt(income)} de ingresos.`
           : `Gastaste ${sym} ${fmt(-saved)} más de lo que ingresó este mes.`}
       </p>
-    </div>
-  );
-}
-
-// Mini donut solo el círculo — colapsable
-function MiniDonut({ data, income, sym }: { data: { name: string; amount: number; color?: string }[]; income: number; sym: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const R = 40, CX = 50, CY = 50, stroke = 7;
-  const GAP = 0.008;
-  const circ = 2 * Math.PI * R;
-  const base = income > 0 ? income : data.reduce((s, d) => s + d.amount, 0);
-  let offset = 0;
-  const slices = data.slice(0, 6).map((d, i) => {
-    const pct = Math.min(d.amount / base, 1);
-    const dash = Math.max(0, pct * circ - GAP * circ);
-    const s = { pct, dash, offset: offset + (GAP * circ) / 2, color: d.color ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length], name: d.name, amount: d.amount };
-    offset += pct * circ;
-    return s;
-  });
-
-  function fmt(n: number) {
-    if (n >= 1_000_000) return `${(n/1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${Math.round(n/1_000)}K`;
-    return String(Math.round(n));
-  }
-  const totalExp = data.reduce((s, d) => s + d.amount, 0);
-
-  return (
-    <div style={{ borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 16px" }}>
-        <svg width="100" height="100" viewBox="0 0 100 100" style={{ flexShrink: 0 }}>
-          <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--raised)" strokeWidth={stroke}/>
-          {slices.map((s, i) => (
-            <circle key={i} cx={CX} cy={CY} r={R} fill="none"
-              stroke={s.color} strokeWidth={stroke}
-              strokeDasharray={`${s.dash} ${circ - s.dash}`}
-              strokeDashoffset={-(s.offset - circ / 4)}
-              strokeLinecap="butt"/>
-          ))}
-          <text x={CX} y={CY - 5} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--positive)" fontFamily="monospace">{sym}{fmt(income)}</text>
-          <text x={CX} y={CY + 9} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--negative)" fontFamily="monospace">{sym}{fmt(totalExp)}</text>
-        </svg>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 8 }}>Gastos por categoría</p>
-          {/* Top 2 categorías siempre visibles */}
-          {slices.slice(0, 2).map((s, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
-              <div style={{ width: 3, height: 12, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
-              <span style={{ fontSize: 13, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-              <span style={{ fontSize: 12, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums" }}>
-                {income > 0 ? `${Math.round(s.pct * 100)}%` : fmt(s.amount)}
-              </span>
-            </div>
-          ))}
-          {slices.length > 2 && (
-            <button onClick={() => setExpanded(v => !v)}
-              style={{ fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "transparent", marginTop: 2 }}>
-              {expanded ? "Ver menos ↑" : `+${slices.length - 2} más ↓`}
-            </button>
-          )}
-        </div>
-      </div>
-      {/* Detalle expandido */}
-      {expanded && (
-        <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 6, borderTop: "0.5px solid var(--glass-border-dim)" }}>
-          {slices.slice(2).map((s, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: i === 0 ? 10 : 0 }}>
-              <div style={{ width: 3, height: 12, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
-              <span style={{ fontSize: 13, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-              <span style={{ fontSize: 12, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums" }}>
-                {income > 0 ? `${Math.round(s.pct * 100)}%` : fmt(s.amount)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -474,19 +388,6 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
   const up = upcoming.find((u) => u.currency_code === selectedCurrency);
   const recCur = recurring.filter((r) => r.currency_code === selectedCurrency);
   const chartMonths = chartData[selectedCurrency] ?? [];
-
-  // Categorías de gasto para el donut (mes actual, moneda seleccionada)
-  const expenseByCategory: Record<string, { name: string; amount: number; color?: string }> = {};
-  recent
-    .filter(t => (t.type === "expense" || t.type === "installment-payment") && t.currency_code === selectedCurrency)
-    .forEach(t => {
-      const cat = t.categories as { name?: string; color?: string } | null;
-      const catName = cat?.name ?? "Otros";
-      const catColor = catColorOrFallback(cat?.color, catName);
-      if (!expenseByCategory[catName]) expenseByCategory[catName] = { name: catName, amount: 0, color: catColor };
-      expenseByCategory[catName].amount += Number(t.amount);
-    });
-  const donutData = Object.values(expenseByCategory).sort((a, b) => b.amount - a.amount);
 
   const visibleTx = showAllTx ? recent : recent.slice(0, 5);
 
