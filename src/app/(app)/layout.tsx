@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import BottomNav from "@/components/BottomNav";
 import DesktopSidebar from "@/components/DesktopSidebar";
 import NeoBanner from "@/components/NeoBanner";
+import NeoMascot from "@/components/NeoMascot";
 import { createClient } from "@/lib/supabase/server";
 import { SpaceProvider } from "@/context/SpaceContext";
 import { SPACE_COOKIE } from "@/lib/space-scope";
@@ -48,6 +49,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="app-bottom-nav">
           <BottomNav />
         </div>
+
+        {/* Personaje Neo — fijo, vive en el sidebar (≥768) y vuela a /neo */}
+        <NeoMascot />
       </div>
     </SpaceProvider>
   );

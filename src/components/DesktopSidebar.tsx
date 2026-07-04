@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import NeoOrb from "./NeoOrb";
 
 const NAV = [
@@ -28,6 +28,24 @@ export default function DesktopSidebar() {
   const activeSection = searchParams.get("section") ?? "datos";
   const [perfilOpen, setPerfilOpen] = useState(onPerfil);
   const [invited, setInvited] = useState(false);
+  const dockRef = useRef<HTMLDivElement>(null);
+
+  // Publica el centro del dock a variables CSS para que la mascota se pare
+  // exacto ahí, sin depender de la constante --neo-dock-bottom.
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!el) return;
+    const publish = () => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0) return; // display:none en mobile → mantiene el fallback
+      const root = document.documentElement.style;
+      root.setProperty("--neo-dock-x", `${Math.round(r.left + r.width / 2)}px`);
+      root.setProperty("--neo-dock-y", `${Math.round(r.top + r.height / 2)}px`);
+    };
+    publish();
+    window.addEventListener("resize", publish);
+    return () => window.removeEventListener("resize", publish);
+  }, []);
 
   function openRegister() {
     window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }));
@@ -169,6 +187,10 @@ export default function DesktopSidebar() {
           );
         })}
       </nav>
+
+      {/* Dock de la mascota Neo — reserva aire para que flote acá sin pisar
+          los botones de abajo. La mascota es fija (vive en NeoMascot). */}
+      <div ref={dockRef} className="neo-dock-slot" aria-hidden style={{ height: 84, flexShrink: 0 }} />
 
       {/* Invitar amigo */}
       <div style={{ padding: "0 14px 16px" }}>

@@ -741,22 +741,22 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
    sale, sin importar cuán grande sea el número. La card es el container. */
 .metric-value { font-size: clamp(0.9rem, 13.5cqi, 2.2rem); }
 
-/* Tablet (768–1023): no sidebar yet — just give the column room to breathe */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .app-main {
-    max-width: 760px !important;
-    padding-left: 24px !important;
-    padding-right: 24px !important;
-  }
-}
+/* Ancho del sidebar como variable: el chat de Neo y la mascota lo leen sin
+   recalcular. 0 en mobile (sin sidebar), 210 en tablet, 240 en desktop. */
+:root { --sidebar-w: 0px; }
+@media (min-width: 768px)  { :root { --sidebar-w: 210px; } }
+@media (min-width: 1024px) { :root { --sidebar-w: 240px; } }
 
-/* Desktop (≥1024): sidebar + capped, centered content, wider dashboard grid */
-@media (min-width: 1024px) {
-  /* Shell fijo a pantalla: el layout llena el viewport y NO scrollea;
-     el sidebar queda fijo y SOLO scrollea el contenido (.app-main). */
+/* El chat de Neo (portal en body) despeja el sidebar. En mobile var=0 → left 0. */
+.neo-chat-root { left: var(--sidebar-w) !important; }
+
+/* Sidebar + shell fijo desde tablet (≥768): el layout llena el viewport y NO
+   scrollea; el sidebar queda fijo y SOLO scrollea el contenido (.app-main).
+   Elegido con Fran: Neo vive en el panel izquierdo también en tablet. */
+@media (min-width: 768px) {
   .app-layout {
     display: grid !important;
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: var(--sidebar-w) 1fr;
     grid-template-rows: 1fr;
     height: 100dvh;
     overflow: hidden;
@@ -767,22 +767,152 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
   .app-main {
     height: 100dvh;
     overflow-y: auto;
-    padding: 40px 48px !important;
-    padding-bottom: 48px !important;
+    padding: 32px 24px !important;
+    padding-bottom: 40px !important;
     max-width: none !important;
     margin: 0 !important;
     width: 100% !important;
   }
-  /* El contenido se centra/capa adentro del área scrolleable.
-     Páginas de una sola columna quedan a ancho legible (760px, igual que tablet
-     y el chat de Neo); solo el dashboard opta por el ancho completo (bento). */
+  /* Contenido centrado a ancho legible (760px); el dashboard opta por el ancho
+     completo (bento). */
   .app-main > * { max-width: 760px; margin-left: auto; margin-right: auto; }
   .app-main > .dash-page { max-width: 1200px; }
+  .neo-chat-list { max-width: 760px; margin: 0 auto; }
+}
+
+/* Desktop (≥1024): más aire y la grilla del dashboard más ancha. */
+@media (min-width: 1024px) {
+  .app-main {
+    padding: 40px 48px !important;
+    padding-bottom: 48px !important;
+  }
   .dashboard-shell {
     grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
     gap: 22px 26px;
   }
-  /* Neo chat: clear the sidebar and center the conversation column */
-  .neo-chat-root { left: 240px !important; }
-  .neo-chat-list { max-width: 760px; margin: 0 auto; }
+}
+
+/* ─── Personaje Neo (mascota estilo Duolingo) ────────────────
+   Fija, decorativa salvo el personaje (botón → /neo) y el globito. Vuela entre
+   el dock del sidebar y el centro (hero) cambiando left/top con transición.
+   En <768 se oculta: la página de Neo usa su propio hero. Tunables abajo. */
+:root {
+  --neo-dock-bottom: 138px;   /* alto desde el fondo del sidebar al centro del dock */
+  --neo-hero-top: 28dvh;      /* dónde aterriza el hero en /neo (afinar a ojo) */
+}
+.neo-mascot {
+  position: fixed;
+  z-index: 35;
+  width: 104px; height: 104px;
+  pointer-events: none;                 /* no bloquea la UI de fondo */
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  transition: left 620ms cubic-bezier(0.22, 1, 0.36, 1),
+              top  620ms cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 220ms ease-out;
+  display: none;                        /* mobile: sin mascota fija */
+}
+/* En una conversación activa el gran personaje se esconde: ya está el avatar
+   del header del chat (NeoChat togglea body.neo-chatting). */
+body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
+.neo-mascot__char {
+  pointer-events: auto;
+  display: block; padding: 0; border: none; background: none; cursor: pointer;
+  width: 104px; height: 104px;
+  transform: scale(var(--neo-scale, 1));
+  transform-origin: center;
+  transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.neo-mascot__bob { display: block; width: 104px; height: 104px; position: relative; }
+.neo-mascot[data-mood="idle"]    .neo-mascot__bob,
+.neo-mascot[data-mood="happy"]   .neo-mascot__bob,
+.neo-mascot[data-mood="curious"] .neo-mascot__bob { animation: float-bob 3.6s ease-in-out infinite; }
+.neo-mascot[data-mood="thinking"]   .neo-mascot__bob { animation: float-bob 1.4s ease-in-out infinite; }
+.neo-mascot[data-mood="worried"]    .neo-mascot__bob { animation: float-bob 5s ease-in-out infinite; }
+.neo-mascot[data-mood="celebrating"] .neo-mascot__bob { animation: neo-celebrate 0.9s ease-in-out infinite; }
+.neo-mascot[data-mood="sleeping"]   .neo-mascot__bob { animation: none; }
+
+@keyframes neo-celebrate {
+  0%, 100% { transform: translateY(0)     rotate(0deg);  }
+  30%      { transform: translateY(-10px) rotate(-6deg); }
+  60%      { transform: translateY(-4px)  rotate(6deg);  }
+}
+
+/* Cara placeholder (orbe + carita) hasta que lleguen los PNGs de Fran. */
+.neo-face { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.neo-face__eye {
+  position: absolute; top: 42%; width: 12px; height: 14px; border-radius: 50%;
+  background: #06231a; animation: neo-blink 4.2s ease-in-out infinite;
+}
+.neo-face__eye--l { left: 34%; }
+.neo-face__eye--r { right: 34%; }
+.neo-face__mouth {
+  position: absolute; top: 60%; left: 50%; width: 20px; height: 10px;
+  transform: translateX(-50%);
+  border-bottom: 3px solid #06231a; border-radius: 0 0 20px 20px;
+}
+@keyframes neo-blink {
+  0%, 92%, 100% { transform: scaleY(1);   }
+  95%           { transform: scaleY(0.1); }
+}
+/* Expresiones por humor */
+.neo-mascot[data-mood="happy"]   .neo-face__mouth,
+.neo-mascot[data-mood="celebrating"] .neo-face__mouth { height: 13px; width: 24px; }
+.neo-mascot[data-mood="curious"] .neo-face__eye  { height: 16px; width: 14px; }
+.neo-mascot[data-mood="worried"] .neo-face__mouth {
+  border-bottom: none; border-top: 3px solid #06231a; border-radius: 20px 20px 0 0; top: 64%;
+}
+.neo-mascot[data-mood="thinking"] .neo-face__mouth { width: 10px; }
+.neo-mascot[data-mood="sleeping"] .neo-face__eye {
+  height: 3px; border-radius: 3px; animation: none;
+}
+
+/* Globito */
+.neo-mascot__bubble {
+  pointer-events: auto;
+  position: absolute;
+  left: calc(100% - 6px);
+  bottom: 58%;
+  width: max-content; max-width: 240px;
+  background: var(--glass-3);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid var(--glass-border-hover);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 12px 30px 12px 14px;
+  animation: scaleUp 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.neo-mascot__bubble-text { font-size: 13.5px; line-height: 1.4; color: var(--ink); }
+.neo-mascot__bubble-cta {
+  display: inline-block; margin-top: 6px; font-size: 13px; font-weight: 700;
+  color: var(--accent); text-decoration: none;
+}
+.neo-mascot__bubble-close {
+  position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
+  border: none; background: transparent; color: var(--ink-dim); font-size: 12px;
+  border-radius: 50%; cursor: pointer;
+}
+
+/* Posiciones por breakpoint. El punto-centro se translada (fly). */
+@media (min-width: 768px) {
+  .neo-mascot { display: block; }
+  .neo-mascot[data-neo-dock="sidebar"] {
+    left: var(--neo-dock-x, calc(var(--sidebar-w) / 2));
+    top: var(--neo-dock-y, calc(100dvh - var(--neo-dock-bottom)));
+    --neo-scale: 0.56;
+  }
+  /* Posición medida del hero real (NeoChat la publica); si aún no se midió,
+     cae al cálculo aproximado. Así aterriza exacto sin tunear a ojo. */
+  .neo-mascot[data-neo-dock="hero"] {
+    left: var(--neo-hero-x, calc(var(--sidebar-w) + (100vw - var(--sidebar-w)) / 2));
+    top: var(--neo-hero-y, var(--neo-hero-top));
+    --neo-scale: 1;
+  }
+}
+
+/* En ≥768 el hero propio del chat cede su lugar (visibility para no reflowear):
+   la mascota vuela y lo ocupa. En <768 el hero propio se ve. */
+@media (min-width: 768px) {
+  .neo-hero-orb-self { visibility: hidden; }
 }

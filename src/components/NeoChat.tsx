@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 import type { PendingTransaction } from "@/types";
 import { useSpaces } from "@/context/SpaceContext";
 import NeoOrb from "./NeoOrb";
+import { NeoFace } from "./NeoMascot";
+import { setNeoMood } from "@/lib/neo/mascot-bus";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -131,11 +133,31 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
   const maxVpHeight = useRef(0);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then(d => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
+
+  // Publica el centro del hero real a variables CSS para que la mascota (≥768)
+  // aterrice exacto ahí al volar, sin depender de una constante adivinada.
+  useEffect(() => {
+    if (isActive) return;
+    const el = heroRef.current;
+    if (!el) return;
+    const publish = () => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0) return;
+      const root = document.documentElement.style;
+      root.setProperty("--neo-hero-x", `${Math.round(r.left + r.width / 2)}px`);
+      root.setProperty("--neo-hero-y", `${Math.round(r.top + r.height / 2)}px`);
+    };
+    publish();
+    const t = setTimeout(publish, 350); // tras la animación de entrada
+    window.addEventListener("resize", publish);
+    return () => { clearTimeout(t); window.removeEventListener("resize", publish); };
+  }, [isActive]);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -243,6 +265,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     setInput("");
     setIsActive(true);
     setThinking(true);
+    setNeoMood("thinking");
 
     const body: Record<string, unknown> = { message: text.trim(), spaceId: activeId };
     if (pendingCtxRef.current) body.pendingContext = pendingCtxRef.current;
@@ -267,6 +290,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       setMessages(prev => [...prev, { id: uid(), role: "neo", text: "Error de conexión. Intentá de nuevo.", ts: new Date() }]);
     } finally {
       setThinking(false);
+      setNeoMood("idle");
     }
   }
 
@@ -463,9 +487,11 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             gap: 18, padding: "calc(40px + env(safe-area-inset-top, 0px)) 20px 28px",
           } as React.CSSProperties}>
-            {/* Avatar — living iridescent orb (floats + breathes + morphs) */}
-            <div className="float-bob enter-up" style={{ position: "relative" }}>
+            {/* Avatar — orbe-carita (floats + breathes + morphs). En ≥768 se
+                oculta (visibility) y la mascota fija vuela hasta acá. */}
+            <div ref={heroRef} className="float-bob enter-up neo-hero-orb-self" style={{ position: "relative", width: 104, height: 104 }}>
               <NeoOrb size={104} alive className="neo-orb--hero" />
+              <NeoFace />
             </div>
 
             <div className="enter-up" data-delay="1" style={{ textAlign: "center", maxWidth: 320 }}>
@@ -635,9 +661,12 @@ function WaBubble({
         border: isUser ? "none" : "0.5px solid var(--glass-border)",
         boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
       }}>
-        {/* Notification label */}
+        {/* Notification label — con mini-orbe de Neo (presencia en mobile) */}
         {msg.isNotification && (
-          <p style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", marginBottom: 3 }}>Neo</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+            <NeoOrb size={16} />
+            <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)" }}>Neo</span>
+          </div>
         )}
 
         {/* Text */}
