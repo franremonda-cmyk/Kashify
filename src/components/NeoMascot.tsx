@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import NeoOrb from "./NeoOrb";
 import { canSpeak, pickLine, type NeoLine, type NeoMood } from "@/lib/neo/mascot-bus";
 
-// Cuando Fran suba el set de PNGs a /public/neo/ (neo-idle.png, neo-happy.png, …)
-// poner esto en true. ponytail: un flag, no un loader de assets.
-const NEO_ART = false;
+// Set de PNGs en /public/neo/ (neo-idle.png, neo-happy.png, …) generado 2026-07-04.
+// ponytail: un flag, no un loader de assets.
+const NEO_ART = true;
 
 const LAST_LINE_KEY = "neo_last_line_at";
 
