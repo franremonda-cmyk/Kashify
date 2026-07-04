@@ -417,6 +417,7 @@ export default function ActividadPage() {
 
   const loadCatsWithBudget = useCallback(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string; category_budgets?: { space_id?: string; monthly_limit: number; currency_code: string; period_type?: "always" | "specific_months"; applies_months?: number[] | null }[] }[]) => {
+      setCategories(cats.map(c => ({ id: c.id, name: c.name, icon: c.icon ?? "", color: c.color })));
       setCatsWithBudget(cats.flatMap(c => {
         const b = c.category_budgets?.find(x => x.space_id === effectiveSpaceId);
         if (!b) return [];

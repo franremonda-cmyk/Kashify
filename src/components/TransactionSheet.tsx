@@ -171,8 +171,8 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                       </svg>
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Editar categoría</p>
-                      <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 1 }}>{catData?.name ? `Modificar "${catData.name}"` : "Sin categoría"}</p>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Personalizar categoría</p>
+                      <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 1 }}>{catData?.name ? `Nombre, ícono y color de "${catData.name}"` : "Sin categoría"}</p>
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", marginLeft: "auto", flexShrink: 0 }}>
                       <polyline points="9 18 15 12 9 6"/>

@@ -415,7 +415,7 @@ export default function OnboardingPage() {
                   boxShadow: "0 0 28px var(--accent-glow)",
                   opacity: saving ? 0.6 : 1,
                 }}>
-                {saving ? "Entrando..." : "Ir al Dashboard →"}
+                {saving ? "Entrando..." : "Ir al inicio →"}
               </button>
             )
           )}
