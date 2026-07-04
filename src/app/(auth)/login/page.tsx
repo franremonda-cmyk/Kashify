@@ -32,6 +32,18 @@ export default function LoginPage() {
         {/* Logo lockup */}
         <Logo size={56} className="enter-up" />
 
+        {/* Neo da la bienvenida */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/neo/neo-happy.png"
+          alt=""
+          width={112}
+          height={112}
+          draggable={false}
+          className="float-bob enter-up"
+          style={{ marginBottom: -12 }}
+        />
+
         {/* Headline */}
         <div className="text-center" style={{ padding: "0 8px" }}>
           <h1 className="display font-bold" style={{ fontSize: "2.1rem", color: "var(--ink)", letterSpacing: "-0.03em", lineHeight: 1.05 }}>
