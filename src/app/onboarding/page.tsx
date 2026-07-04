@@ -132,7 +132,7 @@ export default function OnboardingPage() {
                   style={{
                     padding: "7px 14px", borderRadius: 999, fontSize: 12, fontWeight: 600,
                     background: currency === c ? "var(--accent)" : "var(--raised)",
-                    color: currency === c ? "#FFFFFF" : "var(--ink-muted)",
+                    color: currency === c ? "#04130D" : "var(--ink-muted)",
                     border: currency === c ? "none" : "0.5px solid var(--glass-border)",
                     transition: "all 180ms cubic-bezier(0.22,1,0.36,1)",
                   }}>
@@ -287,7 +287,7 @@ export default function OnboardingPage() {
           display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: "0 0 48px var(--accent-glow)",
         }}>
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#04130D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>

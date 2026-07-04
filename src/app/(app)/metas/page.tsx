@@ -325,7 +325,7 @@ function GoalModal({
             </div>
 
             <button onClick={save} disabled={!name.trim() || !target || saving}
-              style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() && target ? "var(--accent)" : "var(--raised)", color: name.trim() && target ? "#FFFFFF" : "var(--ink-dim)" }}>
+              style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() && target ? "var(--accent)" : "var(--raised)", color: name.trim() && target ? "#04130D" : "var(--ink-dim)" }}>
               {saving ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear meta"}
             </button>
           </div>

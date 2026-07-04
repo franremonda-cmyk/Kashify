@@ -245,7 +245,7 @@ function ExpenseBreakdown({ data, spaceData, incomeData, allCurrencies, canSplit
               minHeight: 40, display: "inline-flex", alignItems: "center",
               padding: "0 14px", borderRadius: 999, fontSize: 13, fontWeight: 600,
               background: currency === c ? "var(--accent)" : "var(--raised)",
-              color: currency === c ? "#FFFFFF" : "var(--ink-muted)",
+              color: currency === c ? "#04130D" : "var(--ink-muted)",
               border: currency === c ? "none" : "0.5px solid var(--glass-border)",
             }}>{c}</button>
           ))}
@@ -649,7 +649,7 @@ export default function ActividadPage() {
                 minHeight: 40, display: "inline-flex", alignItems: "center",
                 padding: "0 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
                 background: selectedCurrency === c ? "var(--accent)" : "var(--raised)",
-                color: selectedCurrency === c ? "#FFFFFF" : "var(--ink-muted)",
+                color: selectedCurrency === c ? "#04130D" : "var(--ink-muted)",
                 border: selectedCurrency === c ? "none" : "0.5px solid var(--glass-border)",
                 transition: "all 180ms ease-out",
               }}>

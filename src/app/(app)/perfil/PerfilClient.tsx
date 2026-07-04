@@ -299,7 +299,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     <div className="flex flex-col gap-6">
       {/* Avatar header */}
       <div className="flex items-center gap-4 enter-up">
-        <div style={{ width: 56, height: 56, borderRadius: 18, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#FFFFFF", boxShadow: "0 4px 20px var(--accent-glow)", flexShrink: 0 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 18, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#04130D", boxShadow: "0 4px 20px var(--accent-glow)", flexShrink: 0 }}>
           {initials}
         </div>
         <div>

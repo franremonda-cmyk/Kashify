@@ -143,7 +143,7 @@ export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) 
           />
 
           <button onClick={handleSave} disabled={!name.trim() || saving}
-            style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "#FFFFFF" : "var(--ink-dim)" }}>
+            style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "#04130D" : "var(--ink-dim)" }}>
             {saving ? "Guardando..." : isNew ? "Crear espacio" : "Guardar cambios"}
           </button>
 

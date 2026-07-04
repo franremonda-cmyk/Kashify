@@ -258,7 +258,7 @@ export default function CategoriasPage() {
                 <MonthGrid selected={newBudgetMonths} onToggle={(m) => setNewBudgetMonths(arr => toggleMonth(arr, m))} />
               )}
               <button onClick={saveNewBudget} disabled={!newBudgetCatId || !newBudgetLimit}
-                style={{ alignSelf: "flex-start", padding: "10px 20px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: 600, background: newBudgetCatId && newBudgetLimit ? "var(--accent)" : "var(--raised)", color: newBudgetCatId && newBudgetLimit ? "#FFFFFF" : "var(--ink-dim)" }}>
+                style={{ alignSelf: "flex-start", padding: "10px 20px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: 600, background: newBudgetCatId && newBudgetLimit ? "var(--accent)" : "var(--raised)", color: newBudgetCatId && newBudgetLimit ? "#04130D" : "var(--ink-dim)" }}>
                 Guardar límite
               </button>
             </div>

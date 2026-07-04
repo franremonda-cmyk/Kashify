@@ -130,7 +130,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
             />
 
             <button onClick={handleSave} disabled={!name.trim() || saving}
-              style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "#FFFFFF" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
+              style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "#04130D" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
               {saving ? "Guardando..." : isNew ? "Crear categoría" : "Guardar cambios"}
             </button>
 

@@ -114,7 +114,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           <div style={{ display: "flex", gap: 6, padding: "12px 18px 0", overflowX: "auto", scrollbarWidth: "none" }}>
             {STYLE_TABS.map(t => (
               <button key={t.id} onClick={() => setStyle(t.id)}
-                style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: style === t.id ? "var(--accent)" : "var(--raised)", color: style === t.id ? "#FFFFFF" : "var(--ink-muted)", border: style === t.id ? "none" : "0.5px solid var(--glass-border)", transition: "all 160ms ease-out" }}>
+                style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: style === t.id ? "var(--accent)" : "var(--raised)", color: style === t.id ? "#04130D" : "var(--ink-muted)", border: style === t.id ? "none" : "0.5px solid var(--glass-border)", transition: "all 160ms ease-out" }}>
                 {t.label}
               </button>
             ))}
@@ -175,7 +175,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
         {/* Confirm button */}
         <div style={{ flexShrink: 0, padding: "10px 18px 16px" }}>
           <button onClick={confirmSelect} disabled={!pickedIcon}
-            style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: pickedIcon ? "var(--accent)" : "var(--raised)", color: pickedIcon ? "#FFFFFF" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
+            style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: pickedIcon ? "var(--accent)" : "var(--raised)", color: pickedIcon ? "#04130D" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
             {pickedIcon ? "Confirmar ícono" : "Seleccioná un ícono"}
           </button>
         </div>
