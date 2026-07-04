@@ -503,7 +503,7 @@ function ImportingStep({ progress, total }: { progress: number; total: number })
         <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>{progress} de {total}</p>
       </div>
       <div style={{ width: "100%", height: 6, borderRadius: 3, background: "var(--raised)", overflow: "hidden" }}>
-        <div style={{ height: "100%", borderRadius: 3, background: "var(--accent)", width: `${pct}%`, transition: "width 300ms ease-out" }}/>
+        <div style={{ height: "100%", borderRadius: 3, background: "var(--accent)", width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", transition: "transform 300ms ease-out" }}/>
       </div>
     </div>
   );

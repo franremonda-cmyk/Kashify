@@ -181,7 +181,7 @@ function BarChart({ data, total }: { data: ChartEntry[]; total: number }) {
               <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.amount)}</span>
             </div>
             <div style={{ height: 5, borderRadius: 3, background: "var(--raised)", overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: 3, background: color, width: `${pct}%`, transition: "width 500ms cubic-bezier(0.22,1,0.36,1)" }}/>
+              <div style={{ height: "100%", borderRadius: 3, background: color, width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", transition: "transform 500ms cubic-bezier(0.22,1,0.36,1)" }}/>
             </div>
           </div>
         );
@@ -840,7 +840,7 @@ export default function ActividadPage() {
                       </div>
                       <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
                       <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
+                        <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: gradientColor, transition: "transform 400ms ease-out" }} />
                       </div>
                       <p style={{ fontSize: 12.5, fontWeight: 700, color: labelColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
                     </button>
@@ -888,7 +888,7 @@ export default function ActividadPage() {
                     </span>
                   </div>
                   <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "width 500ms ease-out" }} />
+                    <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "transform 500ms ease-out" }} />
                   </div>
                   <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
                     {g.currency_code} {fmtG(g.current_amount)} de {fmtG(g.target_amount)}
@@ -927,7 +927,7 @@ export default function ActividadPage() {
                     </span>
                   </div>
                   <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "var(--accent)", transition: "width 500ms ease-out" }} />
+                    <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: "var(--accent)", transition: "transform 500ms ease-out" }} />
                   </div>
                 </Link>
               );

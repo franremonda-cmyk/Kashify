@@ -257,26 +257,35 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Última categoría puesta por Neo: si la vigente es de Neo, una nueva descripción
+  // puede reemplazarla; si la eligió el usuario a mano, no se toca.
+  const lastAutoRef = useRef<string>("");
 
   useEffect(() => {
     fetch("/api/categories").then((r) => r.json()).then(setCategories).catch(() => {});
   }, []);
+
+  // Cerrar con Esc
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   // Auto-categorize on description change
   function handleDescriptionChange(val: string) {
     setForm((f) => ({ ...f, description: val }));
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      if (categories.length > 0) {
-        const guessed = guessCategory(val, categories);
-        if (guessed) {
-          // Auto-apply unless user already manually picked
-          setForm((f) => ({ ...f, category_id: f.category_id || guessed }));
-          setSuggestion(guessed);
-        } else {
-          setSuggestion(null);
-        }
-      }
+      if (categories.length === 0) return;
+      const guessed = guessCategory(val, categories) || "";
+      setForm((f) => {
+        const currentIsAuto = !f.category_id || f.category_id === lastAutoRef.current;
+        if (!currentIsAuto) return f; // elección manual del usuario: se respeta
+        lastAutoRef.current = guessed;
+        return { ...f, category_id: guessed };
+      });
+      setSuggestion(guessed || null);
     }, 400);
   }
 
@@ -287,25 +296,33 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.description || !form.amount) {
-      setError("Completá descripción y monto");
+    if (!form.description.trim() || !form.amount || parseFloat(form.amount) <= 0) {
+      setError("Completá la descripción y un monto mayor a 0.");
       return;
     }
     setSaving(true);
-    const res = await fetch("/api/transactions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        amount: parseFloat(form.amount),
-        category_id: form.category_id || null,  // never send empty string
-      }),
-    });
-    if (res.ok) {
-      window.dispatchEvent(new Event("transaction-added"));
-      onSaved();
-      onClose();
-    } else { setError("Error al guardar"); setSaving(false); }
+    setError("");
+    try {
+      const res = await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          amount: parseFloat(form.amount),
+          category_id: form.category_id || null,  // never send empty string
+        }),
+      });
+      if (res.ok) {
+        window.dispatchEvent(new Event("transaction-added"));
+        onSaved();
+        onClose();
+        return;
+      }
+      setError("No se pudo guardar. Tocá Guardar para reintentar — lo que escribiste sigue acá.");
+    } catch {
+      setError("Sin conexión. Cuando vuelva la señal, tocá Guardar de nuevo.");
+    }
+    setSaving(false);
   }
 
   const inp: React.CSSProperties = {
@@ -319,9 +336,16 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     maxWidth: "100%",
     minWidth: 0,
     boxSizing: "border-box",
-    outline: "none",
     display: "block",
   };
+
+  // Label chico arriba de cada campo — Registrar se explica solo.
+  const FieldLabel = ({ text, hint }: { text: string; hint?: string }) => (
+    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 5 }}>
+      {text}
+      {hint && <span style={{ fontWeight: 400, color: "var(--ink-dim)" }}> · {hint}</span>}
+    </p>
+  );
 
   if (typeof document === "undefined") return null;
   return createPortal(
@@ -340,15 +364,20 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
           </h2>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             style={{
+              width: 44, height: 44, margin: -8,
+              background: "transparent", border: "none",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <span aria-hidden style={{
               width: 28, height: 28, borderRadius: "50%",
               background: "var(--raised)",
               border: "0.5px solid var(--glass-border)",
               color: "var(--ink-muted)", fontSize: 12,
               display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            ✕
+            }}>✕</span>
           </button>
         </div>
 
@@ -377,9 +406,10 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
 
           {/* Descripción */}
           <div>
+            <FieldLabel text="Descripción" hint={form.type === "expense" ? "qué compraste o pagaste" : "de dónde vino la plata"} />
             <input
               style={inp}
-              placeholder={form.type === "expense" ? "¿En qué gastaste?" : "¿Qué te ingresó?"}
+              placeholder={form.type === "expense" ? "Ej: super, nafta, farmacia…" : "Ej: sueldo, venta, transferencia…"}
               aria-label={form.type === "expense" ? "Descripción del gasto" : "Descripción del ingreso"}
               value={form.description}
               autoFocus
@@ -399,6 +429,8 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
           </div>
 
           {/* Monto + Moneda */}
+          <div>
+          <FieldLabel text="Monto y moneda" />
           <div className="flex gap-2">
             <input
               style={{ ...inp, width: "60%" }}
@@ -419,8 +451,11 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          </div>
 
           {/* Categoría */}
+          <div>
+          <FieldLabel text="Categoría" hint="Neo la elige sola; podés cambiarla" />
           <div style={{ display: "flex", gap: 6 }}>
             <select
               style={{
@@ -433,6 +468,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
                 const id = e.target.value;
                 setForm((f) => ({ ...f, category_id: id }));
                 setSuggestion(null);
+                lastAutoRef.current = ""; // elección manual: Neo deja de pisarla
                 // C: save manual correction so next time this description auto-selects this category
                 if (id && form.description.trim().length >= 3) saveCorrection(form.description.trim(), id);
               }}
@@ -447,26 +483,34 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
               style={{ ...inp, width: 42, flexShrink: 0, fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", padding: "0" }}
             >+</button>
           </div>
+          </div>
 
           {/* Espacio (solo si hay más de uno) */}
           {spaces.length > 1 && (
-            <select
-              style={inp}
-              aria-label="Espacio"
-              value={form.space_id}
-              onChange={(e) => setForm((f) => ({ ...f, space_id: e.target.value }))}
-            >
-              {spaces.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
-            </select>
+            <div>
+              <FieldLabel text="Espacio" hint="dónde anotarlo: personal, negocio…" />
+              <select
+                style={inp}
+                aria-label="Espacio"
+                value={form.space_id}
+                onChange={(e) => setForm((f) => ({ ...f, space_id: e.target.value }))}
+              >
+                {spaces.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+              </select>
+            </div>
           )}
 
           {/* Fecha */}
-          <input
-            style={{ ...inp, WebkitAppearance: "none", appearance: "none" } as React.CSSProperties}
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-          />
+          <div>
+            <FieldLabel text="Fecha" hint="ya viene con hoy" />
+            <input
+              style={{ ...inp, WebkitAppearance: "none", appearance: "none" } as React.CSSProperties}
+              type="date"
+              aria-label="Fecha del movimiento"
+              value={form.date}
+              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+            />
+          </div>
 
           {error && <p className="text-xs" style={{ color: "var(--negative)" }}>{error}</p>}
 
@@ -476,7 +520,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
             className="w-full py-3.5 rounded-xl font-semibold text-sm disabled:opacity-40"
             style={{
               background: "var(--accent)",
-              color: "#FFFFFF",
+              color: "#04130D",
               boxShadow: "0 0 24px var(--accent-glow)",
               fontSize: 15,
             }}
@@ -502,6 +546,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
               if (newCat?.id) {
                 setForm(f => ({ ...f, category_id: newCat.id }));
                 setSuggestion(null);
+                lastAutoRef.current = "";
               }
             }
             setShowNewCat(false);

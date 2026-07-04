@@ -17,7 +17,7 @@ export default function LoginPage() {
 
   async function signInWithGoogle(forceChooser = false) {
     const supabase = createClient();
-    const queryParams = forceChooser
+    const queryParams: Record<string, string> | undefined = forceChooser
       ? { prompt: "select_account" }
       : savedEmail
         ? { login_hint: savedEmail }

@@ -148,7 +148,7 @@ function SavingsCard({ income, expense, sym }: { income: number; expense: number
         <p className="mono" style={{ fontSize: 20, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{Math.round(rate)}%</p>
       </div>
       <div style={{ width: "100%", height: 6, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-        <div style={{ width: `${barPct}%`, height: "100%", borderRadius: 999, background: col, transition: "width 500ms ease-out" }} />
+        <div style={{ width: "100%", transform: `scaleX(${barPct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: col, transition: "transform 500ms ease-out" }} />
       </div>
       <p style={{ fontSize: 12.5, color: "var(--ink-dim)" }}>
         {positive
@@ -172,7 +172,7 @@ function ProjectionCard({ expense, dayOfMonth, daysInMonth, sym }: { expense: nu
         <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>día {dayOfMonth} de {daysInMonth}</p>
       </div>
       <div style={{ width: "100%", height: 6, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-        <div style={{ width: `${elapsed}%`, height: "100%", borderRadius: 999, background: "var(--warning)", transition: "width 500ms ease-out" }} />
+        <div style={{ width: "100%", transform: `scaleX(${elapsed / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: "var(--warning)", transition: "transform 500ms ease-out" }} />
       </div>
       <p style={{ fontSize: 12.5, color: "var(--ink-dim)", lineHeight: 1.45 }}>
         Llevás <strong style={{ color: "var(--ink)" }}>{sym} {fmt(expense)}</strong> gastados. A este ritmo cerrás el mes en <strong style={{ color: "var(--ink)" }}>~{sym} {fmt(projected)}</strong>.
@@ -256,7 +256,7 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
                   </span>
                 </div>
                 <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "width 400ms ease-out" }} />
+                  <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "transform 400ms ease-out" }} />
                 </div>
                 <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
                   {fmt(g.current_amount, g.currency_code)} de {fmt(g.target_amount, g.currency_code)}
@@ -299,7 +299,7 @@ function CuotasWidget({ installments }: { installments: InstallmentEntry[] }) {
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0 }}>{p.paid}/{p.n_installments}</span>
                 </div>
                 <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: color, transition: "width 400ms ease-out" }} />
+                  <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: color, transition: "transform 400ms ease-out" }} />
                 </div>
                 <p className="mono" style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
                   {fmt(p.installment_amount, p.currency_code)} / mes
@@ -355,7 +355,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
                 </div>
                 <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
                 <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
+                  <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: gradientColor, transition: "transform 400ms ease-out" }} />
                 </div>
                 <p style={{ fontSize: 12.5, fontWeight: 700, color: textColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
               </div>

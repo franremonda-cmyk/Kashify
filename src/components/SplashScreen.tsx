@@ -38,7 +38,7 @@ export default function SplashScreen() {
           ? "transform 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease-out"
           : phase === "out"
           ? "transform 300ms ease-in, opacity 200ms ease-in"
-          : "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          : "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)",
         boxShadow: phase === "hold"
           ? "0 0 0 16px rgba(16,217,138,0.07), 0 0 60px 20px rgba(16,217,138,0.20)"
           : "0 0 0 0 rgba(16,217,138,0)",

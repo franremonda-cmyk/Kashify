@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -36,9 +36,16 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   const { iconStyle } = useIconStyle();
   const [mode, setMode]             = useState<"view" | "edit">("view");
   const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState("");
   const [confirmDel, setConfirmDel] = useState(false);
   const [showCatModal, setShowCatModal] = useState(false);
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const [desc, setDesc]           = useState(tx.description);
   const [amount, setAmount]       = useState(String(tx.amount));
@@ -59,29 +66,50 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   const inpSm: React.CSSProperties = {
     background: "var(--raised)", border: "0.5px solid var(--glass-border)",
     borderRadius: 10, padding: "10px 12px", color: "var(--ink)",
-    fontSize: 16, width: "100%", outline: "none", boxSizing: "border-box", maxWidth: "100%",
+    fontSize: 16, width: "100%", boxSizing: "border-box", maxWidth: "100%",
   };
 
   async function handleSave() {
+    if (parseFloat(amount) <= 0) { setError("El monto tiene que ser mayor a 0."); return; }
     setSaving(true);
-    await fetch(`/api/transactions/${tx.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: desc.trim(), amount: parseFloat(amount), currency_code: currency, date, category_id: categoryId || null, type: txType }),
-    });
+    setError("");
+    try {
+      const res = await fetch(`/api/transactions/${tx.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: desc.trim(), amount: parseFloat(amount), currency_code: currency, date, category_id: categoryId || null, type: txType }),
+      });
+      if (!res.ok) throw new Error();
+      onSaved();
+      onClose();
+      window.dispatchEvent(new Event("transaction-added"));
+      return;
+    } catch {
+      setError("No se pudo guardar. Revisá la conexión y tocá Guardar de nuevo.");
+    }
     setSaving(false);
-    onSaved();
-    onClose();
-    window.dispatchEvent(new Event("transaction-added"));
   }
 
   async function handleDelete() {
     setSaving(true);
-    await fetch(`/api/transactions/${tx.id}`, { method: "DELETE" });
+    setError("");
+    try {
+      const res = await fetch(`/api/transactions/${tx.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      // Toast global con deshacer (lo escucha UndoToast en el layout)
+      window.dispatchEvent(new CustomEvent("tx-deleted", { detail: {
+        description: tx.description, amount: tx.amount, currency_code: tx.currency_code,
+        date: tx.date, category_id: tx.category_id, type: tx.type,
+        space_id: (tx as unknown as { space_id?: string }).space_id,
+      }}));
+      onDeleted();
+      onClose();
+      window.dispatchEvent(new Event("transaction-added"));
+      return;
+    } catch {
+      setError("No se pudo eliminar. Probá de nuevo.");
+    }
     setSaving(false);
-    onDeleted();
-    onClose();
-    window.dispatchEvent(new Event("transaction-added"));
   }
 
   async function handleCatSave(updated: Partial<{ name: string; icon?: string; color?: string }>) {
@@ -189,6 +217,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                       Eliminar movimiento
                     </button>
                   )}
+                  {error && <p style={{ fontSize: 12.5, color: "var(--negative)" }}>{error}</p>}
                 </div>
               </>
             ) : (
@@ -231,6 +260,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
+                {error && <p style={{ fontSize: 12.5, color: "var(--negative)" }}>{error}</p>}
                 <div style={{ display: "flex", gap: 8, paddingTop: 8 }}>
                   <button onClick={() => setMode("view")} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
                   <button onClick={handleSave} disabled={saving || !desc.trim() || !amount} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: saving ? 0.6 : 1 }}>{saving ? "Guardando..." : "Guardar"}</button>

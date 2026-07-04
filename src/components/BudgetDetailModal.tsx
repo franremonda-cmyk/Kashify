@@ -140,7 +140,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
               </p>
             </div>
             <div style={{ width: "100%", height: 8, borderRadius: 999, background: "var(--base)", overflow: "hidden" }}>
-              <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: gradientColor, transition: "width 400ms ease-out" }} />
+              <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: gradientColor, transition: "transform 400ms ease-out" }} />
             </div>
             {budget.monthly_limit > (budget.spent ?? 0) ? (
               <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6 }}>

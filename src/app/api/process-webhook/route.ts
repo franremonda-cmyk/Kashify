@@ -72,7 +72,11 @@ export async function POST(req: Request) {
         await clearState(supabase, event.user_id);
       }
 
-      await sendTextMessage(fromPhone, reply.text);
+      // Si Neo registró/cambió algo, sumar el link a la cuenta (puente WhatsApp→web).
+      const changedData = reply.effects?.some((e) => e.type === "refresh");
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://kashify.vercel.app";
+      const text_out = changedData ? `${reply.text}\n\nMiralo en tu cuenta 👉 ${appUrl}/historial` : reply.text;
+      await sendTextMessage(fromPhone, text_out);
       if (messageId) await sendReaction(fromPhone, messageId, "✅");
       await supabase.from("webhook_events").update({ status: "done" }).eq("id", event.id);
       processed++;
