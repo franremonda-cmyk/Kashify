@@ -20,12 +20,19 @@ const PERFIL_SUBS = [
   { id: "cuotas",     label: "Cuotas" },
 ];
 
+// Las páginas standalone de seguimiento pertenecen a Perfil en el árbol del
+// sidebar — sin esto, en /metas /cuotas /categorias nada queda marcado activo.
+const SUB_PATHS: Record<string, string> = {
+  "/categorias": "categorias", "/metas": "metas", "/cuotas": "cuotas",
+};
+
 export default function DesktopSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const onPerfil = pathname.startsWith("/perfil");
-  const activeSection = searchParams.get("section") ?? "datos";
+  const subFromPath = SUB_PATHS[pathname];
+  const onPerfil = pathname.startsWith("/perfil") || !!subFromPath;
+  const activeSection = subFromPath ?? searchParams.get("section") ?? "datos";
   const [perfilOpen, setPerfilOpen] = useState(onPerfil);
   const [invited, setInvited] = useState(false);
   const dockRef = useRef<HTMLDivElement>(null);
@@ -91,7 +98,7 @@ export default function DesktopSidebar() {
               fontSize: 15, fontWeight: 700, color: "#FFFFFF",
             }}>K</span>
           </div>
-          <span style={{
+          <span className="sidebar-label" style={{
             fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
             fontSize: 16, fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.01em",
           }}>Kashify</span>
@@ -100,14 +107,15 @@ export default function DesktopSidebar() {
 
       {/* Registrar */}
       <div style={{ padding: "0 14px 22px" }}>
-        <button onClick={openRegister} className="press"
+        <button onClick={openRegister} className="press" aria-label="Registrar movimiento"
           style={{
             width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             padding: "12px", borderRadius: 12, border: "none", cursor: "pointer",
             background: "var(--accent)", color: "#04130D", fontWeight: 700, fontSize: 14,
             boxShadow: "0 4px 16px var(--shadow-accent)",
           }}>
-          <span style={{ fontSize: 19, lineHeight: 1, marginTop: -1 }}>+</span> Registrar
+          <span style={{ fontSize: 19, lineHeight: 1, marginTop: -1 }}>+</span>
+          <span className="sidebar-label">Registrar</span>
         </button>
       </div>
 
@@ -129,16 +137,17 @@ export default function DesktopSidebar() {
               <div key="/perfil">
                 <button
                   onClick={() => { if (onPerfil) setPerfilOpen(o => !o); else { setPerfilOpen(true); router.push("/perfil"); } }}
+                  aria-label={item.label}
                   style={{ ...rowStyle, width: "100%", border: "none", cursor: "pointer" }}>
                   <item.icon active={active} />
-                  <span style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>{item.label}</span>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                  <span className="sidebar-label" style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>{item.label}</span>
+                  <svg className="sidebar-label" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                     style={{ marginLeft: "auto", color: "var(--ink-dim)", transition: "transform 200ms", transform: perfilOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
                 {perfilOpen && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2, marginBottom: 4 }}>
+                  <div className="sidebar-subs" style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2, marginBottom: 4 }}>
                     {PERFIL_SUBS.map((s) => {
                       const subActive = onPerfil && activeSection === s.id;
                       return (
@@ -164,6 +173,7 @@ export default function DesktopSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.label}
               style={rowStyle}
               onMouseEnter={(e) => {
                 if (!active) (e.currentTarget as HTMLElement).style.background = "var(--raised)";
@@ -173,11 +183,11 @@ export default function DesktopSidebar() {
               }}
             >
               <item.icon active={active} />
-              <span style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>
+              <span className="sidebar-label" style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>
                 {item.label}
               </span>
               {active && (
-                <div style={{
+                <div className="sidebar-label" style={{
                   marginLeft: "auto", width: 5, height: 5, borderRadius: "50%",
                   background: "var(--accent)",
                   boxShadow: "0 0 6px var(--accent-glow)",
@@ -194,25 +204,25 @@ export default function DesktopSidebar() {
 
       {/* Invitar amigo */}
       <div style={{ padding: "0 14px 16px" }}>
-        <button onClick={inviteFriend} className="press"
+        <button onClick={inviteFriend} className="press" aria-label="Invitar amigo" title="Invitar amigo"
           style={{
             width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             padding: "10px", borderRadius: 12, cursor: "pointer",
             background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 600, fontSize: 13,
             border: "0.5px solid var(--glass-border)",
           }}>
-          {invited ? "¡Copiado! ✓" : (
+          {invited ? "✓" : (
             <>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" />
               </svg>
-              Invitar amigo
+              <span className="sidebar-label">Invitar amigo</span>
             </>
           )}
         </button>
       </div>
 
-      <div style={{ padding: "0 20px" }}>
+      <div className="sidebar-label" style={{ padding: "0 20px" }}>
         <p style={{ fontSize: 12.5, color: "var(--ink-dim)", letterSpacing: "0.06em", fontWeight: 600 }}>
           KASHIFY · BETA
         </p>

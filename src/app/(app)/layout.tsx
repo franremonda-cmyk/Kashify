@@ -16,17 +16,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   let spaces: Space[] = [];
+  let hasPhone = false;
   if (user) {
-    const { data } = await supabase.from("spaces").select("*").eq("user_id", user.id)
-      .order("sort_order").order("created_at");
+    const [{ data }, { count }] = await Promise.all([
+      supabase.from("spaces").select("*").eq("user_id", user.id)
+        .order("sort_order").order("created_at"),
+      supabase.from("user_phones").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+    ]);
     spaces = (data as Space[] | null) ?? [];
+    hasPhone = (count ?? 0) > 0;
   }
   const activeSpace = (await cookies()).get(SPACE_COOKIE)?.value ?? "total";
 
   return (
     <SpaceProvider initialSpaces={spaces} initialActive={activeSpace}>
       <div className="app-layout" style={{ display: "flex", minHeight: "100dvh" }}>
-        <NeoBanner />
+        {/* Nudge de WhatsApp: solo para quien todavía no vinculó su número */}
+        {!hasPhone && <NeoBanner />}
         {/* Desktop sidebar — hidden on mobile via CSS */}
         <Suspense fallback={<aside className="app-sidebar" style={{ display: "none" }} />}>
           <DesktopSidebar />

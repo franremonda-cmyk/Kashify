@@ -263,7 +263,9 @@ body::before {
   background: radial-gradient(120% 70% at 50% -12%, rgba(255,255,255,0.22) 0%, transparent 58%);
 }
 [data-theme="light"] .hero-balance {
-  background: linear-gradient(155deg, #2BAC7B 0%, #1F9468 56%, #16805A 100%);
+  /* Esmeralda más profundo: el texto blanco chico llega a AA en toda la card
+     (antes arrancaba en #2BAC7B y el label/subtítulo quedaban en 2.1-3.1:1). */
+  background: linear-gradient(155deg, #147257 0%, #10604A 55%, #0C4E3C 100%);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -539,12 +541,14 @@ button, a, input, select, textarea {
   --spec:    none;
   --spec-sm: none;
 
-  /* Hero balance panel — bold emerald card with light type (personality) */
+  /* Hero balance panel — bold emerald card with light type (personality).
+     AA verificado: blanco sobre #147257 = 5.9:1; pills con fondo oscuro
+     translúcido (aclarar el pill con texto blanco EMPEORA el contraste). */
   --hero-ink:            #FFFFFF;
-  --hero-ink-soft:       rgba(255, 255, 255, 0.82);
+  --hero-ink-soft:       rgba(255, 255, 255, 0.95);
   --hero-symbol:         #CFF3E4;
-  --hero-pill-bg:        rgba(255, 255, 255, 0.20);
-  --hero-pill-fg:        rgba(255, 255, 255, 0.92);
+  --hero-pill-bg:        rgba(4, 19, 13, 0.30);
+  --hero-pill-fg:        #FFFFFF;
   --hero-pill-bg-active: #FFFFFF;
   --hero-pill-fg-active: #146048;
 }
@@ -705,8 +709,11 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
   }
 }
 
-/* Dashboard becomes a 2-column grid on tablet+; hero & chart span full.
-   Items flagged .dash-full stay full-width; the rest auto-place in 2 cols. */
+/* Dashboard: dos columnas CON INTENCIÓN desde tablet. Cada columna es UN item
+   de grilla con flex interno (sin auto-placement → sin celdas huecas).
+   Izquierda = flujo del mes (métricas, ahorro, ritmo, últimas).
+   Derecha = rail de seguimiento (cuotas, límites, metas, fijos). */
+.dash-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
 @media (min-width: 768px) {
   .dashboard-shell {
     display: grid;
@@ -714,27 +721,14 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
     gap: 18px;
     align-items: start;
   }
-  /* tile-full = ocupa las 2 columnas (hero, gráfico, widgets anchos nuevos) */
+  /* tile-full = ocupa las 2 columnas (hero, gráfico, widgets anchos) */
   .dashboard-shell > .dash-full,
   .dashboard-shell > .tile-full { grid-column: 1 / -1; }
+  .dash-col { gap: 18px; }
+  .dash-col--main { grid-column: 1; }
+  .dash-col--rail { grid-column: 2; }
   /* Two rows of budget chips on tablet/desktop */
   .budget-wrap { max-height: 206px; }
-  /* Drop the metrics down so the cards' TOP lines up with the chips
-     (below the "Límites" title), and grow them so the BOTTOM lines up
-     with the end of the second chip row. */
-  .dashboard-shell > .dash-metrics { margin-top: 32px; align-self: stretch; }
-  .dash-metrics > button {
-    min-height: 196px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 12px;
-  }
-  /* Transacciones se estira para coincidir con la columna derecha
-     (metas + cuotas) — bordes inferiores alineados. */
-  .dashboard-shell > .dash-tx-tile { align-self: stretch; }
-  .dash-tx-tile .dash-tx-card { flex: 1; }
 }
 
 /* El monto escala con el ancho REAL de la card (container query) — nunca se
@@ -742,10 +736,17 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
 .metric-value { font-size: clamp(0.9rem, 13.5cqi, 2.2rem); }
 
 /* Ancho del sidebar como variable: el chat de Neo y la mascota lo leen sin
-   recalcular. 0 en mobile (sin sidebar), 210 en tablet, 240 en desktop. */
+   recalcular. 0 en mobile, rail de íconos (72) en tablet, completo (240) en
+   desktop — 210px fijos en tablet eran 27% del ancho para 5 links. */
 :root { --sidebar-w: 0px; }
-@media (min-width: 768px)  { :root { --sidebar-w: 210px; } }
+@media (min-width: 768px)  { :root { --sidebar-w: 72px; } }
 @media (min-width: 1024px) { :root { --sidebar-w: 240px; } }
+
+/* Tablet: solo íconos en el sidebar; labels y subsecciones vuelven en ≥1024. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar-label, .sidebar-subs { display: none !important; }
+  .app-sidebar nav a, .app-sidebar nav button { justify-content: center; padding: 12px 0; }
+}
 
 /* El chat de Neo (portal en body) despeja el sidebar. En mobile var=0 → left 0. */
 .neo-chat-root { left: var(--sidebar-w) !important; }

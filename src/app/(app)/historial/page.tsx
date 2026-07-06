@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useId, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
@@ -11,18 +10,9 @@ const ImportFlowLazy = dynamic(() => import("@/components/ImportFlow"), { ssr: f
 import TransactionSheet from "@/components/TransactionSheet";
 import SpaceSwitcher from "@/components/SpaceSwitcher";
 import ExportSheet from "@/components/ExportSheet";
-import BudgetDetailModal from "@/components/BudgetDetailModal";
 import TxBreakdownModal from "@/components/TxBreakdownModal";
-import type { ChartMonth } from "@/components/SpendingChart";
-const SpendingChart = dynamic(() => import("@/components/SpendingChart"), { ssr: false, loading: () => <div style={{ height: 200 }} /> });
 import type { Transaction } from "@/types";
 import { catColorOrFallback, FALLBACK_COLORS } from "@/lib/colors";
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  ARS: "$", USD: "US$", EUR: "€", CHF: "Fr", BRL: "R$",
-  GBP: "£", UYU: "$U", CLP: "$", COP: "$", PEN: "S/", PYG: "₲", BOB: "Bs",
-};
-const CHART_MONTH_LABELS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 // Import modal usando el overlay estándar
 function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
@@ -375,9 +365,6 @@ function sortTransactions(txs: Transaction[], sort: string): Transaction[] {
 
 export default function ActividadPage() {
   const { activeId, spaces } = useSpaces();
-  // Presupuestos/metas/cuotas son por espacio; en "total" usamos el espacio por
-  // defecto (igual que la página de Categorías).
-  const effectiveSpaceId = activeId !== "total" ? activeId : (spaces.find(s => s.is_default)?.id ?? spaces[0]?.id ?? "");
   const [transactions, setTransactions]     = useState<Transaction[]>([]);
   const [categories, setCategories]         = useState<Category[]>([]);
   const [search, setSearch]                 = useState("");
@@ -385,45 +372,19 @@ export default function ActividadPage() {
   const [loading, setLoading]               = useState(false);
   const [loadError, setLoadError]           = useState(false);
   const [showFilter, setShowFilter]         = useState(false);
-  const [primaryCurrency, setPrimaryCurrency] = useState<string>("ARS");
   const [selectedCurrency, setSelectedCurrency] = useState<string>("ARS");
   const [selectedTx, setSelectedTx]         = useState<Transaction | null>(null);
   const [showImport, setShowImport]         = useState(false);
   const [showExport, setShowExport]         = useState(false);
-  const [showAllTx, setShowAllTx]           = useState(false);
   const [viewYear, setViewYear]             = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth]           = useState(() => new Date().getMonth() + 1);
-  const [selectedBudget, setSelectedBudget] = useState<{ id: string; category_id?: string; name: string; icon?: string; color?: string; monthly_limit: number; currency_code: string; spent?: number; period_type?: "always" | "specific_months"; applies_months?: number[] | null } | null>(null);
   const [breakdownType, setBreakdownType] = useState<"income" | "expense" | null>(null);
-  // Extra data for detailed widgets
-  const [goals, setGoals]         = useState<import("@/types").SavingsGoal[]>([]);
-  const [installmentPlans, setInstallmentPlans] = useState<import("@/types").InstallmentPlan[]>([]);
-  const [catsWithBudget, setCatsWithBudget] = useState<{ id: string; category_id: string; name: string; color?: string; icon?: string; monthly_limit: number; currency_code: string; period_type?: "always" | "specific_months"; applies_months?: number[] | null }[]>([]);
-  const [chartMonths, setChartMonths] = useState<ChartMonth[]>([]);
   const currencyInitialized = useRef(false);
 
-  const loadCatsWithBudget = useCallback(() => {
-    fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string; category_budgets?: { space_id?: string; monthly_limit: number; currency_code: string; period_type?: "always" | "specific_months"; applies_months?: number[] | null }[] }[]) => {
-      setCategories(cats.map(c => ({ id: c.id, name: c.name, icon: c.icon ?? "", color: c.color })));
-      setCatsWithBudget(cats.flatMap(c => {
-        const b = c.category_budgets?.find(x => x.space_id === effectiveSpaceId);
-        if (!b) return [];
-        return [{
-          id: c.id, category_id: c.id, name: c.name, color: c.color, icon: c.icon,
-          monthly_limit: b.monthly_limit,
-          currency_code: b.currency_code,
-          period_type: b.period_type,
-          applies_months: b.applies_months,
-        }];
-      }));
-    }).catch(() => {});
-  }, [effectiveSpaceId]);
-
   useEffect(() => {
-    // Extra widgets data (scoped al espacio activo)
-    fetch(`/api/goals?space=${activeId}`).then(r => r.ok ? r.json() : []).then(setGoals).catch(() => {});
-    fetch(`/api/installments?space=${activeId}`).then(r => r.ok ? r.json() : []).then(setInstallmentPlans).catch(() => {});
-    loadCatsWithBudget();
+    fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string }[]) => {
+      setCategories(cats.map(c => ({ id: c.id, name: c.name, icon: c.icon ?? "", color: c.color })));
+    }).catch(() => {});
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
@@ -431,41 +392,11 @@ export default function ActividadPage() {
         .then(({ data }) => {
           if (data?.primary_currency && !currencyInitialized.current) {
             currencyInitialized.current = true;
-            setPrimaryCurrency(data.primary_currency);
             setSelectedCurrency(data.primary_currency);
           }
         });
     });
-  }, [loadCatsWithBudget, activeId]);
-
-  // Tendencia mensual (12 meses) para la moneda seleccionada
-  useEffect(() => {
-    if (!selectedCurrency) return;
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    const from = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
-    fetch(`/api/transactions?currency=${selectedCurrency}&from=${from}&space=${activeId}&sort_by=date&sort_dir=asc&page=1&limit=1000`)
-      .then(r => r.ok ? r.json() : { data: [] })
-      .then((json: { data?: { amount: number; type: string; date: string }[] }) => {
-        const txs = json.data ?? [];
-        const months: ChartMonth[] = [];
-        for (let i = 11; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const y = d.getFullYear(), mo = d.getMonth();
-          const monthTxs = txs.filter(t => {
-            const td = new Date(t.date);
-            return td.getFullYear() === y && td.getMonth() === mo;
-          });
-          months.push({
-            label: CHART_MONTH_LABELS[mo],
-            income: monthTxs.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0),
-            expense: monthTxs.filter(t => t.type === "expense" || t.type === "installment-payment").reduce((s, t) => s + Number(t.amount), 0),
-          });
-        }
-        setChartMonths(months);
-      })
-      .catch(() => setChartMonths([]));
-  }, [selectedCurrency, activeId]);
+  }, []);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -522,7 +453,6 @@ export default function ActividadPage() {
   const incomeByCurrency: Record<string, number> = {};
   const expenseByCurrency: Record<string, Record<string, ChartEntry>> = {};
   filtered.forEach(t => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cur = t.currency_code ?? "ARS";
     if (t.type === "income") {
       incomeByCurrency[cur] = (incomeByCurrency[cur] ?? 0) + Number(t.amount);
@@ -607,13 +537,11 @@ export default function ActividadPage() {
         const now = new Date();
         const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth() + 1;
         function prevMonth() {
-          setShowAllTx(false);
           if (viewMonth === 1) { setViewYear(y => y - 1); setViewMonth(12); }
           else setViewMonth(m => m - 1);
         }
         function nextMonth() {
           if (isCurrentMonth) return;
-          setShowAllTx(false);
           if (viewMonth === 12) { setViewYear(y => y + 1); setViewMonth(1); }
           else setViewMonth(m => m + 1);
         }
@@ -743,228 +671,70 @@ export default function ActividadPage() {
           </div>
         )}
         {!loading && filtered.length > 0 && (() => {
-          const visibleTx = showAllTx ? filtered : filtered.slice(0, 5);
+          // Libro diario: agrupado por día cuando el orden es cronológico; con
+          // otros órdenes (monto, categoría, tipo) la lista va plana.
+          const byDay = filters.sort.startsWith("date");
+          const todayISO = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+          const labelFor = (iso: string) => {
+            const diff = Math.round((Date.parse(todayISO) - Date.parse(iso)) / 86_400_000);
+            if (diff === 0) return "Hoy";
+            if (diff === 1) return "Ayer";
+            const l = new Date(iso + "T00:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short" });
+            return l.charAt(0).toUpperCase() + l.slice(1);
+          };
+          const groups: { key: string; label: string; txs: typeof filtered }[] = [];
+          for (const t of filtered) {
+            const key = byDay ? t.date : "all";
+            const last = groups[groups.length - 1];
+            if (last && last.key === key) last.txs.push(t);
+            else groups.push({ key, label: byDay ? labelFor(t.date) : "", txs: [t] });
+          }
+          const row = (t: (typeof filtered)[number]) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const catData   = (t as any).categories ?? t.category;
+            const isIncome  = t.type === "income";
+            const isInstall = t.type === "installment-payment";
+            const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
+            const catColor  = catColorOrFallback(catData?.color, catData?.name ?? "");
+            return (
+              <button
+                key={t.id}
+                onClick={() => setSelectedTx(t)}
+                className="press list-row"
+                style={{ transition: "background 120ms ease-out" }}
+              >
+                <div className="list-row__icon" style={{ background: `${catColor}22`, color: catColor }}>
+                  <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={18}/>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
+                  <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{!byDay && t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <p className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
+                    {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+                  </p>
+                  <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
+                </div>
+              </button>
+            );
+          };
           return (
-            <div className="card-solid" style={{ overflow: "hidden" }}>
-              {visibleTx.map((t) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const catData   = (t as any).categories ?? t.category;
-                const isIncome  = t.type === "income";
-                const isInstall = t.type === "installment-payment";
-                const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
-                const catColor  = catColorOrFallback(catData?.color, catData?.name ?? "");
-                const iconBg    = `${catColor}22`;
-                const iconColor = catColor;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setSelectedTx(t)}
-                    className="press list-row"
-                    style={{ transition: "background 120ms ease-out" }}
-                  >
-                    <div className="list-row__icon" style={{ background: iconBg, color: iconColor }}>
-                      <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={18}/>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
-                      <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
-                    </div>
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <p className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
-                        {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-                      </p>
-                      <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
-                    </div>
-                  </button>
-                );
-              })}
-              {filtered.length > 5 && (
-                <button onClick={() => setShowAllTx(v => !v)} style={{
-                  width: "100%", padding: "10px 16px", fontSize: 12, fontWeight: 600,
-                  color: "var(--accent)", background: "var(--raised)",
-                  borderTop: "0.5px solid var(--glass-border-dim)", textAlign: "center",
-                }}>
-                  {showAllTx ? "Ver menos ↑" : "Ver todas"}
-                </button>
-              )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {groups.map((g) => (
+                <div key={g.key}>
+                  {g.label && (
+                    <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-dim)", padding: "0 2px 6px" }}>{g.label}</p>
+                  )}
+                  <div className="card-solid" style={{ overflow: "hidden" }}>
+                    {g.txs.map(row)}
+                  </div>
+                </div>
+              ))}
             </div>
           );
         })()}
       </div>
-
-      {/* ── Secciones de seguimiento ─────────────────────── */}
-
-      {/* Límites de categorías — cards rectangulares */}
-      {(() => {
-        const spendByCat: Record<string, number> = {};
-        filtered.filter(t => t.type === "expense" || t.type === "installment-payment").forEach(t => {
-          const catId = t.category_id ?? "";
-          spendByCat[catId] = (spendByCat[catId] ?? 0) + Number(t.amount);
-        });
-        return (
-          <section className="flex flex-col gap-2">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h2 className="section-title">Límites por categoría</h2>
-              <Link href="/categorias" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>+ Agregar límite</Link>
-            </div>
-            {catsWithBudget.length === 0 ? (
-              <div style={{ padding: "16px", borderRadius: 14, border: "0.5px dashed var(--glass-border-hover)", background: "var(--base)", textAlign: "center" }}>
-                <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Sin límites configurados</p>
-                <Link href="/categorias" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>Agregar uno →</Link>
-              </div>
-            ) : (
-              <div className="budget-wrap" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <Link href="/categorias" className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, borderRadius: "var(--radius-chip)" }} aria-label="Agregar límite por categoría">
-                  <div className="budget-chip budget-chip--add">
-                    <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 18, fontWeight: 400 }}>+</span>
-                    <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
-                  </div>
-                </Link>
-                {[...catsWithBudget]
-                  .sort((a, b) => {
-                    const pa = a.monthly_limit > 0 ? (spendByCat[a.id] ?? 0) / a.monthly_limit : 0;
-                    const pb = b.monthly_limit > 0 ? (spendByCat[b.id] ?? 0) / b.monthly_limit : 0;
-                    return pb - pa;
-                  })
-                  .map((cat) => {
-                  const spent = spendByCat[cat.id] ?? 0;
-                  const pct = Math.min(100, cat.monthly_limit > 0 ? (spent / cat.monthly_limit) * 100 : 0);
-                  const over = pct >= 100;
-                  const warn = pct >= 80;
-                  const gradientColor = pct < 50
-                    ? `hsl(${120 - pct * 0.6}, 72%, 50%)`
-                    : pct < 80
-                    ? `hsl(${90 - (pct - 50) * 2.4}, 80%, 48%)`
-                    : `hsl(${16 - Math.max(0, pct - 80) * 0.4}, 88%, 52%)`;
-                  const labelColor = over ? "var(--negative)" : warn ? "var(--warning)" : "var(--positive)";
-                  return (
-                    <button key={cat.id}
-                      onClick={() => setSelectedBudget({ ...cat, spent })}
-                      className="press glow-hover budget-chip"
-                      style={{
-                        background: "var(--base)",
-                        border: "0.5px solid var(--glass-border)",
-                        boxShadow: "var(--shadow-sm)", cursor: "pointer",
-                      }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: (cat.color ?? "#7B61FF") + "22", border: `1px solid ${cat.color ?? "#7B61FF"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)", flexShrink: 0 }}>
-                        <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={14} />
-                      </div>
-                      <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{cat.name}</p>
-                      <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                        <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: gradientColor, transition: "transform 400ms ease-out" }} />
-                      </div>
-                      <p style={{ fontSize: 12.5, fontWeight: 700, color: labelColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
-                    </button>
-                  );
-                })}
-                <Link href="/categorias" style={{ textDecoration: "none", flexShrink: 0, display: "none" }}>
-                  <div style={{
-                    width: 80, borderRadius: 14, background: "var(--raised)",
-                    border: "0.5px dashed var(--glass-border-hover)",
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 100,
-                  }}>
-                    <span style={{ fontSize: 20, color: "var(--accent)", fontWeight: 300 }}>+</span>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-dim)", textAlign: "center" }}>Agregar límite</p>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </section>
-        );
-      })()}
-
-      {/* Metas de ahorro */}
-      {goals.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 className="section-title">Metas de ahorro</h2>
-            <Link href="/metas" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar meta</Link>
-          </div>
-          <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
-            {goals.map((g, i) => {
-              const pct = Math.min(100, (g.current_amount / g.target_amount) * 100);
-              const reached = g.status === "reached" || g.current_amount >= g.target_amount;
-              function fmtG(n: number) { return Number(n).toLocaleString("es-AR", { maximumFractionDigits: 0 }); }
-              return (
-                <Link key={g.id} href="/metas" style={{ display: "block", textDecoration: "none", padding: "12px 16px", borderBottom: i < goals.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: g.color + "22", border: `1px solid ${g.color}33`, display: "flex", alignItems: "center", justifyContent: "center", color: g.color, flexShrink: 0 }}>
-                        <CategoryIcon icon={g.icon} name={g.name} color={g.color} size={14} />
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{g.name}</span>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)" }}>
-                      {reached ? "¡Lograda!" : `${pct.toFixed(0)}%`}
-                    </span>
-                  </div>
-                  <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                    <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "transform 500ms ease-out" }} />
-                  </div>
-                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
-                    {g.currency_code} {fmtG(g.current_amount)} de {fmtG(g.target_amount)}
-                    {g.target_date ? ` · ${new Date(g.target_date).toLocaleDateString("es-AR", { month: "short", year: "numeric" })}` : ""}
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Cuotas activas */}
-      {installmentPlans.filter(p => p.status === "active").length > 0 && (
-        <section className="flex flex-col gap-2">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 className="section-title">Cuotas activas</h2>
-            <Link href="/cuotas" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>+ Agregar cuota</Link>
-          </div>
-          <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
-            {installmentPlans.filter(p => p.status === "active").map((plan, i, arr) => {
-              const payments = (plan as import("@/types").InstallmentPlan & { installment_payments?: { status: string }[] }).installment_payments ?? [];
-              const paidCount = payments.filter((p: { status: string }) => p.status === "paid").length;
-              const pct = (paidCount / plan.n_installments) * 100;
-              return (
-                <Link key={plan.id} href="/cuotas" style={{ display: "block", textDecoration: "none", padding: "12px 16px", borderBottom: i < arr.length - 1 ? "0.5px solid var(--glass-border-dim)" : "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(70,181,140,0.13)", border: "1px solid rgba(70,181,140,0.22)", display: "flex", alignItems: "center", justifyContent: "center", color: "#46B58C", flexShrink: 0 }}>
-                        <CategoryIcon icon={(plan as import("@/types").InstallmentPlan & { categories?: { icon?: string } }).categories?.icon ?? "💳"} name={plan.name} size={14} />
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{plan.name}</span>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-                      {plan.currency_code} {Number(plan.installment_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })} · cuota {paidCount + 1}/{plan.n_installments}
-                    </span>
-                  </div>
-                  <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                    <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: "var(--accent)", transition: "transform 500ms ease-out" }} />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Gráfico mensual — tendencia ingresos/gastos */}
-      {chartMonths.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <div>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 2 }}>Tendencia mensual</p>
-            <p style={{ fontSize: 13, color: "var(--ink-dim)", paddingLeft: 2, marginTop: 1 }}>Ingresos y gastos de los últimos 12 meses en {selectedCurrency}.</p>
-          </div>
-          <SpendingChart data={chartMonths} currencySymbol={CURRENCY_SYMBOLS[selectedCurrency] ?? selectedCurrency} />
-        </section>
-      )}
-
-      {selectedBudget && (
-        <BudgetDetailModal
-          budget={selectedBudget}
-          onClose={() => setSelectedBudget(null)}
-          onUpdated={loadCatsWithBudget}
-        />
-      )}
 
       {breakdownType && (
         <TxBreakdownModal

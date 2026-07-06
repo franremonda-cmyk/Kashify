@@ -6,17 +6,18 @@ export default function NeoBanner() {
   const [phase, setPhase] = useState<"hidden" | "in" | "visible" | "out" | "gone">("hidden");
 
   useEffect(() => {
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("neo-banner")) return;
+    // Una sola vez por dispositivo (antes era por sesión y reaparecía siempre).
+    if (typeof localStorage !== "undefined" && localStorage.getItem("neo-banner")) return;
 
     const t1 = setTimeout(() => setPhase("in"), 2000);
     const t2 = setTimeout(() => setPhase("visible"), 2400);
     const t3 = setTimeout(() => dismiss(), 7000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   function dismiss() {
     setPhase("out");
-    sessionStorage?.setItem("neo-banner", "1");
+    localStorage?.setItem("neo-banner", "1");
     setTimeout(() => setPhase("gone"), 450);
   }
 

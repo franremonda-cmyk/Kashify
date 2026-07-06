@@ -13,7 +13,7 @@ import TransactionSheet from "./TransactionSheet";
 import BudgetDetailModal from "./BudgetDetailModal";
 import TxBreakdownModal from "./TxBreakdownModal";
 import type { BalanceView, SavingsGoal } from "@/types";
-import { catColorOrFallback, FALLBACK_COLORS } from "@/lib/colors";
+import { catColorOrFallback } from "@/lib/colors";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; prevIncome?: number; prevExpense?: number; }
 interface RecentTx {
@@ -37,17 +37,6 @@ interface BudgetEntry {
   applies_months?: number[] | null;
 }
 
-interface InstallmentEntry {
-  id: string;
-  name: string;
-  currency_code: string;
-  n_installments: number;
-  installment_amount: number;
-  paid: number;
-  color?: string;
-  icon?: string;
-}
-
 interface Props {
   balances: BalanceView[];
   primaryCurrency: string;
@@ -62,7 +51,6 @@ interface Props {
   recent: RecentTx[];
   goals?: SavingsGoal[];
   budgets?: BudgetEntry[];
-  installments?: InstallmentEntry[];
 }
 
 const SYMBOLS: Record<string, string> = {
@@ -270,49 +258,6 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
   );
 }
 
-// Widget de cuotas activas — solo desktop
-function CuotasWidget({ installments }: { installments: InstallmentEntry[] }) {
-  if (installments.length === 0) return null;
-  function fmt(n: number, c: string) {
-    if (n >= 1_000_000) return `${c} ${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${c} ${Math.round(n / 1_000)}K`;
-    return `${c} ${Math.round(n).toLocaleString("es-AR")}`;
-  }
-  return (
-    <section className="desktop-only flex flex-col gap-2 enter-up" data-delay="5">
-      <div className="section-head" style={{ marginBottom: 0 }}>
-        <h2 className="section-title">Cuotas activas</h2>
-        <Link href="/cuotas" className="section-link">Ver todo →</Link>
-      </div>
-      <div className="card-glass" style={{ overflow: "hidden" }}>
-        {installments.map((p) => {
-          const pct = Math.min(100, (p.paid / p.n_installments) * 100);
-          const color = p.color ?? "#46B58C";
-          return (
-            <Link key={p.id} href="/cuotas" className="list-row">
-              <div className="list-row__icon" style={{ background: color + "22", border: `1px solid ${color}33`, color }}>
-                <CategoryIcon icon={p.icon ?? "💳"} name={p.name} color={p.color} size={18} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{p.name}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0 }}>{p.paid}/{p.n_installments}</span>
-                </div>
-                <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                  <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: color, transition: "transform 400ms ease-out" }} />
-                </div>
-                <p className="mono" style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
-                  {fmt(p.installment_amount, p.currency_code)} / mes
-                </p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 // Franja horizontal de límites de categoría
 function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; currency: string; onSelect: (b: BudgetEntry) => void }) {
   // Sin tope: todas las categorías con límite, ordenadas por cercanía al 100%
@@ -367,7 +312,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [], installments = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -416,42 +361,38 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
               style={{ padding: "12px 24px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
               + Agregar movimiento
             </button>
-            <Link href="/historial" style={{ fontSize: 13, color: "var(--ink-muted)", textDecoration: "none" }}>
-              Importar desde un archivo →
-            </Link>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
+              <Link href="/neo" style={{ fontSize: 13, color: "var(--ink-muted)", textDecoration: "none" }}>
+                Escribirle a Neo →
+              </Link>
+              <Link href="/historial" style={{ fontSize: 13, color: "var(--ink-muted)", textDecoration: "none" }}>
+                Importar desde un archivo →
+              </Link>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
-        <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  deltaPct={incomeDelta}  onClick={() => setBreakdownType("income")} />
-        <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />
-      </div>
-
-      {/* Tasa de ahorro del mes */}
-      {m.income > 0 && <div className="dash-full"><SavingsCard income={m.income} expense={m.expense} sym={sym} /></div>}
-
-      {/* Ritmo de gasto / proyección */}
-      {m.expense > 0 && dayOfMonth < daysInMonth && <div className="dash-full"><ProjectionCard expense={m.expense} dayOfMonth={dayOfMonth} daysInMonth={daysInMonth} sym={sym} /></div>}
-
-      {/* Próximos pagos (cuotas del mes) */}
-      {up && up.count > 0 && <div className="dash-full"><UpcomingCard total={up.total} count={up.count} sym={sym} /></div>}
-
-      {/* Gastos recurrentes / suscripciones */}
-      {recCur.length > 0 && <div className="dash-full"><RecurringCard items={recCur} sym={sym} /></div>}
-
-      {/* Vista Total: desglose por espacio (cards horizontales) */}
+      {/* Vista Total: desglose por espacio (acompaña al balance) */}
       {spacesOverview.length > 1 && (
         <div className="dash-full">
           <SpacesOverview cards={spacesOverview} />
         </div>
       )}
 
-      {/* Franja de límites por categoría */}
-      <BudgetStrip budgets={budgets} currency={selectedCurrency} onSelect={setSelectedBudget} />
+      {/* Columna principal: el flujo del mes */}
+      <div className="dash-col dash-col--main">
+        <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
+          <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  deltaPct={incomeDelta}  onClick={() => setBreakdownType("income")} />
+          <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />
+        </div>
 
-      {/* Últimas transacciones — máx 5 con botón ver todas */}
-      {recent.length > 0 && (
+        {m.income > 0 && <SavingsCard income={m.income} expense={m.expense} sym={sym} />}
+
+        {m.expense > 0 && dayOfMonth < daysInMonth && <ProjectionCard expense={m.expense} dayOfMonth={dayOfMonth} daysInMonth={daysInMonth} sym={sym} />}
+
+        {/* Últimas transacciones — máx 5 con botón ver todas */}
+        {recent.length > 0 && (
         <section className="dash-tx-tile flex flex-col gap-2 enter-up" data-delay="4">
           <div className="section-head" style={{ marginBottom: 0 }}>
             <h2 className="section-title">Últimas transacciones</h2>
@@ -494,13 +435,18 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
             )}
           </div>
         </section>
-      )}
+        )}
+      </div>
 
-      {/* Metas + Cuotas apiladas (en desktop comparten la columna derecha) */}
-      <div className="flex flex-col gap-6">
+      {/* Rail de seguimiento: compromisos y progreso */}
+      <div className="dash-col dash-col--rail">
+        {up && up.count > 0 && <UpcomingCard total={up.total} count={up.count} sym={sym} />}
+
+        <BudgetStrip budgets={budgets} currency={selectedCurrency} onSelect={setSelectedBudget} />
+
         <GoalsWidget goals={goals} />
-        {/* Cuotas activas — solo desktop, debajo de metas */}
-        <CuotasWidget installments={installments} />
+
+        {recCur.length > 0 && <RecurringCard items={recCur} sym={sym} />}
       </div>
 
       {/* Gráfico de líneas mensual */}

@@ -62,26 +62,6 @@ export default async function DashboardPage() {
   const txHistory  = txHistoryRes.data ?? [];
   const goals      = goalsRes.data ?? [];
   const budgetsRaw = budgetsRes.data ?? [];
-  // Cuotas activas (las que aún tienen pagos pendientes)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const installments = (installmentsRes.data as any[] ?? [])
-    .map((p) => {
-      const paid = Array.isArray(p.installment_payments)
-        ? p.installment_payments.filter((x: { status?: string }) => x.status === "paid").length
-        : 0;
-      return {
-        id: p.id,
-        name: p.name,
-        currency_code: p.currency_code,
-        n_installments: p.n_installments,
-        installment_amount: Number(p.installment_amount),
-        paid,
-        color: p.categories?.color,
-        icon: p.categories?.icon,
-      };
-    })
-    .filter((p) => p.paid < p.n_installments)
-    .slice(0, 2);
 
   // Próximos pagos: cuotas pendientes que vencen este mes, por moneda.
   const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().split("T")[0];
@@ -155,7 +135,6 @@ export default async function DashboardPage() {
   }
 
   // Budget strip: join budgets with this-month spending
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const spentByCategory: Record<string, number> = {};
   for (const t of txAll) {
     if ((t.type === "expense" || t.type === "installment-payment") && t.category_id) {
@@ -276,28 +255,7 @@ export default async function DashboardPage() {
         recent={recent}
         goals={goals}
         budgets={budgets}
-        installments={installments}
       />
-
-      {/* Empty state */}
-      {recent.length === 0 && balances.length === 0 && (
-        <div className="glass p-8 text-center flex flex-col gap-3 enter-up" data-delay="3">
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
-            style={{ background: "var(--accent-soft)", border: "0.5px solid var(--glass-border-hover)" }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "var(--accent)" }}>
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-medium" style={{ color: "var(--ink)" }}>Neo te espera</p>
-            <p className="text-sm mt-1" style={{ color: "var(--ink-muted)" }}>
-              Escribile a Neo por WhatsApp o usá el <span style={{ color: "var(--accent)" }}>+</span> para empezar
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
