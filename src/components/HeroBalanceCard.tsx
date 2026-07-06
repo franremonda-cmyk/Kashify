@@ -84,7 +84,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
                   aria-label={`Mostrar balance en ${NAMES[b.currency_code] ?? b.currency_code}`}
                   className="press"
                   style={{
-                    flex: "0 0 auto", minWidth: 58, minHeight: 40,
+                    flex: "0 0 auto", minWidth: 58, minHeight: 44,
                     padding: "8px 16px", borderRadius: 999,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: isActive ? "var(--hero-pill-bg-active)" : "var(--hero-pill-bg)",

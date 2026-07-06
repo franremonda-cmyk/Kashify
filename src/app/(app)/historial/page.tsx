@@ -181,7 +181,7 @@ function BarChart({ data, total }: { data: ChartEntry[]; total: number }) {
 }
 
 const segBtn = (on: boolean): React.CSSProperties => ({
-  minHeight: 40, display: "inline-flex", alignItems: "center", justifyContent: "center",
+  minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
   padding: "0 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
   background: on ? "var(--base)" : "transparent",
   color: on ? "var(--accent)" : "var(--ink-muted)",
@@ -220,7 +220,7 @@ function ExpenseBreakdown({ data, spaceData, incomeData, allCurrencies, canSplit
         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
           {allCurrencies.map((c) => (
             <button key={c} onClick={() => setCurrency(c)} style={{
-              minHeight: 40, display: "inline-flex", alignItems: "center",
+              minHeight: 44, display: "inline-flex", alignItems: "center",
               padding: "0 14px", borderRadius: 999, fontSize: 13, fontWeight: 600,
               background: currency === c ? "var(--accent)" : "var(--raised)",
               color: currency === c ? "#04130D" : "var(--ink-muted)",
@@ -523,8 +523,8 @@ export default function ActividadPage() {
       <div className="flex items-center justify-between enter-up" style={{ position: "relative", zIndex: 10 }}>
         <h1 className="page-title">Actividad</h1>
         <div className="flex gap-2" style={{ position: "relative" }}>
-          <button onClick={() => setShowImport(true)} style={{ fontSize: 13, minHeight: 40, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
-          <button onClick={() => setShowExport(true)} style={{ fontSize: 13, minHeight: 40, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>↓ Exportar</button>
+          <button onClick={() => setShowImport(true)} style={{ fontSize: 13, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
+          <button onClick={() => setShowExport(true)} style={{ fontSize: 13, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>↓ Exportar</button>
         </div>
       </div>
 
@@ -548,7 +548,7 @@ export default function ActividadPage() {
         return (
           <div className="enter-up flex items-center justify-between" style={{ background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 14, padding: "6px 10px", boxShadow: "var(--shadow-sm)" }}>
             <button onClick={prevMonth} aria-label="Mes anterior"
-              style={{ width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
+              style={{ width: 44, height: 44, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <div style={{ textAlign: "center" }}>
@@ -559,7 +559,7 @@ export default function ActividadPage() {
             </div>
             <button onClick={nextMonth} aria-label="Mes siguiente"
               disabled={isCurrentMonth}
-              style={{ width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: isCurrentMonth ? "var(--ink-dim)" : "var(--ink-muted)", opacity: isCurrentMonth ? 0.4 : 1 }}>
+              style={{ width: 44, height: 44, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: isCurrentMonth ? "var(--ink-dim)" : "var(--ink-muted)", opacity: isCurrentMonth ? 0.4 : 1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
@@ -572,7 +572,7 @@ export default function ActividadPage() {
             <button key={c}
               onClick={() => setSelectedCurrency(c)}
               style={{
-                minHeight: 40, display: "inline-flex", alignItems: "center",
+                minHeight: 44, display: "inline-flex", alignItems: "center",
                 padding: "0 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
                 background: selectedCurrency === c ? "var(--accent)" : "var(--raised)",
                 color: selectedCurrency === c ? "#04130D" : "var(--ink-muted)",
@@ -659,7 +659,7 @@ export default function ActividadPage() {
         )}
         {!loading && !loadError && filtered.length === 0 && (
           <div style={{ padding: 32, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
             <p style={{ fontSize: 13, color: "var(--ink)" }}>Sin movimientos</p>

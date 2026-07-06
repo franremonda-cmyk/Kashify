@@ -147,7 +147,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
               key={p}
               onClick={() => setPeriod(p)}
               style={{
-                minHeight: 40, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
                 padding: "0 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
                 background: period === p ? "rgba(0,230,118,0.18)" : "transparent",
                 color: period === p ? "var(--accent)" : "var(--ink-muted)",
@@ -168,7 +168,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
               key={mo}
               onClick={() => setMode(mo)}
               style={{
-                minHeight: 40, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
                 padding: "0 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
                 background: activeMode === mo ? "var(--base)" : "transparent",
                 color: activeMode === mo ? "var(--accent)" : "var(--ink-muted)",

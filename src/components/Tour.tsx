@@ -162,7 +162,7 @@ export default function Tour() {
             }}>
               Saltear
             </button>
-            <button onClick={nextStep} className="btn-primary press" style={{ minHeight: 40, padding: "0 18px", fontSize: 14 }}>
+            <button onClick={nextStep} className="btn-primary press" style={{ minHeight: 44, padding: "0 18px", fontSize: 14 }}>
               {i >= STEPS.length - 1 ? "¡Listo!" : "Siguiente"}
             </button>
           </div>

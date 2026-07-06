@@ -539,14 +539,14 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             <button
               onClick={() => setIsActive(false)}
               aria-label="Volver"
-              style={{ width: 40, height: 40, borderRadius: "50%", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ width: 44, height: 44, borderRadius: "50%", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
 
-            <div className={thinking ? "neo-avatar-thinking" : "neo-avatar-active"} style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 18px var(--accent-glow)", flexShrink: 0 }} />
+            <div className={thinking ? "neo-avatar-thinking" : "neo-avatar-active"} style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 18px var(--accent-glow)", flexShrink: 0 }} />
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 }}>Neo</p>

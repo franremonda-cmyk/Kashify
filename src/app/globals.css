@@ -742,6 +742,18 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
 @media (min-width: 768px)  { :root { --sidebar-w: 72px; } }
 @media (min-width: 1024px) { :root { --sidebar-w: 240px; } }
 
+/* Área táctil AA (≥44px) sin agrandar el visual: el ::after extiende el hit
+   area 8px alrededor. Todos los ✕ de cierre (aria-label="Cerrar") la reciben
+   solos; para otros controles chicos, sumá la clase .tap-target. */
+.tap-target,
+button[aria-label="Cerrar"] { position: relative; }
+.tap-target::after,
+button[aria-label="Cerrar"]::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+
 /* Tablet: solo íconos en el sidebar; labels y subsecciones vuelven en ≥1024. */
 @media (min-width: 768px) and (max-width: 1023px) {
   .sidebar-label, .sidebar-subs { display: none !important; }

@@ -90,7 +90,7 @@ export default function MetasPage() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          style={{ fontSize: 13, fontWeight: 600, minHeight: 40, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
+          style={{ fontSize: 13, fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
         >
           + Nueva
         </button>
@@ -145,23 +145,27 @@ export default function MetasPage() {
                       {g.target_date && ` · para ${new Date(g.target_date).toLocaleDateString("es-AR", { month: "short", year: "numeric" })}`}
                     </p>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <div style={{ display: "flex", gap: 16, flexShrink: 0 }}>
                     <button onClick={() => setEditingGoal(g)}
-                      aria-label="Editar meta"
-                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-dim)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      ✏️
+                      aria-label="Editar meta" className="tap-target"
+                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                      </svg>
                     </button>
                     <button onClick={() => remove(g.id)}
-                      aria-label="Eliminar meta"
-                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-dim)", fontSize: 14 }}>
-                      <span aria-hidden="true">🗑</span>
+                      aria-label="Eliminar meta" className="tap-target"
+                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
 
                 <div>
                   <div style={{ width: "100%", height: 8, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "width 300ms ease-out" }} />
+                    <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "transform 300ms ease-out" }} />
                   </div>
                   <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : g.color }}>{pct.toFixed(0)}%</span>

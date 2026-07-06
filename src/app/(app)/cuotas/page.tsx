@@ -88,7 +88,7 @@ export default function CuotasPage() {
         </div>
         <button
           onClick={() => { setShowForm(true); setEditingPlan(null); }}
-          style={{ fontSize: 13, fontWeight: 600, minHeight: 40, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
+          style={{ fontSize: 13, fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
         >
           + Nueva
         </button>
@@ -195,7 +195,7 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
 
       <div>
         <div style={{ width: "100%", height: 6, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-          <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: plan.status === "paid" ? "var(--positive)" : "var(--accent)", transition: "width 300ms ease-out" }} />
+          <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: plan.status === "paid" ? "var(--positive)" : "var(--accent)", transition: "transform 300ms ease-out" }} />
         </div>
         {isActive && nextDue && (
           <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6 }}>

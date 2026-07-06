@@ -39,7 +39,7 @@ export default function SpacesHintCard() {
             Personal, Freelance, un emprendimiento… cada espacio con su propio balance. El “Total” suma los que elijas.
           </p>
           <Link href="/espacios" onClick={dismiss}
-            style={{ display: "inline-flex", alignItems: "center", minHeight: 40, marginTop: 10, padding: "0 16px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", textDecoration: "none" }}>
+            style={{ display: "inline-flex", alignItems: "center", minHeight: 44, marginTop: 10, padding: "0 16px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", textDecoration: "none" }}>
             Crear un espacio →
           </Link>
         </div>

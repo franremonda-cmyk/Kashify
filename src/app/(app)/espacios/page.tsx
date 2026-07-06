@@ -52,7 +52,7 @@ export default function EspaciosPage() {
       <div className="flex flex-col gap-2 enter-up">
         {spaces.map((s) => (
           <button key={s.id} onClick={() => { setError(null); setEditing(s); }} className="list-row press" style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: s.color + "22", border: `1px solid ${s.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: s.color + "22", border: `1px solid ${s.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
               {s.icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>

@@ -240,7 +240,7 @@ export default function OnboardingPage() {
                   display: "flex", alignItems: "center", gap: 14,
                   transition: "all 180ms ease-out",
                 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", flexShrink: 0 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                   </svg>
@@ -262,7 +262,7 @@ export default function OnboardingPage() {
                   background: "transparent", border: "0.5px solid var(--glass-border)",
                   display: "flex", alignItems: "center", gap: 14,
                 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--raised)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-muted)", flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--raised)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-muted)", flexShrink: 0 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                   </svg>
@@ -348,7 +348,7 @@ export default function OnboardingPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div style={{
-          width: 40, height: 40, borderRadius: 12,
+          width: 44, height: 44, borderRadius: 12,
           background: "var(--accent)", color: "#04130D",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 16, fontWeight: 700,
