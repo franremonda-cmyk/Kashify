@@ -9,9 +9,12 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = 50;
+  // limit configurable (antes estaba fijo en 50 e ignoraba el param: la tendencia
+  // de 12 meses y los breakdowns pedían 1000/100 y recibían 50 en silencio).
+  const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "50") || 50, 1), 1000);
   const offset = (page - 1) * limit;
   const category = searchParams.get("category");
+  const categories = searchParams.get("categories"); // CSV para multi-filtro
   const currency = searchParams.get("currency");
   const space = searchParams.get("space");
   const type = searchParams.get("type");
@@ -36,6 +39,10 @@ export async function GET(request: Request) {
     .range(offset, offset + limit - 1);
 
   if (category) query = query.eq("category_id", category);
+  if (categories) {
+    const ids = categories.split(",").map(c => c.trim()).filter(Boolean);
+    if (ids.length) query = query.in("category_id", ids);
+  }
   if (currency) query = query.eq("currency_code", currency);
   query = query.in("space_id", await includedSpaceIds(supabase, user.id, space));
   if (type) {

@@ -382,9 +382,8 @@ export default function ActividadPage() {
   const [categories, setCategories]         = useState<Category[]>([]);
   const [search, setSearch]                 = useState("");
   const [filters, setFilters]               = useState<Filters>({ categories: [], types: [], sort: "date_desc" });
-  const [page, setPage]                     = useState(1);
-  const [total, setTotal]                   = useState(0);
   const [loading, setLoading]               = useState(false);
+  const [loadError, setLoadError]           = useState(false);
   const [showFilter, setShowFilter]         = useState(false);
   const [primaryCurrency, setPrimaryCurrency] = useState<string>("ARS");
   const [selectedCurrency, setSelectedCurrency] = useState<string>("ARS");
@@ -470,19 +469,23 @@ export default function ActividadPage() {
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     const from = `${viewYear}-${String(viewMonth).padStart(2,"0")}-01`;
     const lastDay = new Date(viewYear, viewMonth, 0).getDate();
     const to = `${viewYear}-${String(viewMonth).padStart(2,"0")}-${lastDay}`;
-    const params = new URLSearchParams({ page: String(page), from, to, space: activeId });
-    if (search) params.set("search", search);
-    if (filters.categories.length === 1) params.set("category_id", filters.categories[0]);
-    if (filters.types.length === 1) params.set("type", filters.types[0]);
-    const res = await fetch(`/api/transactions?${params}`);
-    const json = await res.json();
-    setTransactions(json.data ?? []);
-    setTotal(json.count ?? 0);
+    // ponytail: el mes completo de una (cap 1000) — lista, totales y donut salen
+    // del MISMO set; filtros/búsqueda/orden son client-side y no se desincronizan.
+    try {
+      const res = await fetch(`/api/transactions?from=${from}&to=${to}&space=${activeId}&limit=1000`);
+      if (!res.ok) throw new Error(String(res.status));
+      const json = await res.json();
+      setTransactions(json.data ?? []);
+    } catch {
+      setTransactions([]);
+      setLoadError(true);
+    }
     setLoading(false);
-  }, [page, search, filters.categories, filters.types, viewYear, viewMonth, activeId]);
+  }, [viewYear, viewMonth, activeId]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
@@ -492,16 +495,25 @@ export default function ActividadPage() {
     return () => window.removeEventListener("transaction-added", handler);
   }, [fetchTransactions]);
 
-  const sorted = sortTransactions(transactions, filters.sort);
-
   const availableCurrencies = useMemo(() => {
     const set = new Set(transactions.map(t => t.currency_code ?? "ARS"));
     return Array.from(set).sort();
   }, [transactions]);
 
-  const filtered = useMemo(() =>
-    sorted.filter(t => (t.currency_code ?? "ARS") === selectedCurrency),
-  [sorted, selectedCurrency]);
+  // Una sola pipeline: moneda → categorías → tipos → búsqueda → orden.
+  // Todo lo que se muestra (lista, totales, donut) sale de acá.
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sortTransactions(
+      transactions.filter(t =>
+        (t.currency_code ?? "ARS") === selectedCurrency
+        && (filters.categories.length === 0 || filters.categories.includes(t.category_id ?? ""))
+        && (filters.types.length === 0 || filters.types.includes(t.type))
+        && (!q || (t.description ?? "").toLowerCase().includes(q))
+      ),
+      filters.sort,
+    );
+  }, [transactions, selectedCurrency, filters, search]);
 
   const incomeTotal  = filtered.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
   const expenseTotal = filtered.filter(t => t.type === "expense" || t.type === "installment-payment").reduce((s, t) => s + Number(t.amount), 0);
@@ -555,7 +567,7 @@ export default function ActividadPage() {
     <div className="flex flex-col gap-6">
       {showFilter && (
         <FilterSheet categories={categories} filters={filters}
-          onApply={(f) => { setFilters(f); setPage(1); }}
+          onApply={setFilters}
           onClose={() => setShowFilter(false)}/>
       )}
 
@@ -595,14 +607,12 @@ export default function ActividadPage() {
         const now = new Date();
         const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth() + 1;
         function prevMonth() {
-          setPage(1);
           setShowAllTx(false);
           if (viewMonth === 1) { setViewYear(y => y - 1); setViewMonth(12); }
           else setViewMonth(m => m - 1);
         }
         function nextMonth() {
           if (isCurrentMonth) return;
-          setPage(1);
           setShowAllTx(false);
           if (viewMonth === 12) { setViewYear(y => y + 1); setViewMonth(1); }
           else setViewMonth(m => m + 1);
@@ -678,7 +688,7 @@ export default function ActividadPage() {
       <div className="flex gap-2 enter-up" data-delay="2">
         <input style={{ ...inp, borderRadius: 12, flex: 1 }} placeholder="Buscar…"
           type="search" aria-label="Buscar transacciones" autoComplete="off"
-          value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}/>
+          value={search} onChange={(e) => setSearch(e.target.value)}/>
         <button onClick={() => setShowFilter(true)} style={{
           display: "flex", alignItems: "center", gap: 5,
           padding: "0 14px", borderRadius: 12, flexShrink: 0,
@@ -709,7 +719,17 @@ export default function ActividadPage() {
             <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Cargando...</p>
           </div>
         )}
-        {!loading && filtered.length === 0 && (
+        {!loading && loadError && (
+          <div style={{ padding: 32, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <p style={{ fontSize: 13, color: "var(--ink)" }}>No pudimos cargar tus movimientos.</p>
+            <p style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>Puede ser la conexión — tus datos están a salvo.</p>
+            <button onClick={fetchTransactions}
+              style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+              Reintentar
+            </button>
+          </div>
+        )}
+        {!loading && !loadError && filtered.length === 0 && (
           <div style={{ padding: 32, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
             <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -759,7 +779,7 @@ export default function ActividadPage() {
                 );
               })}
               {filtered.length > 5 && (
-                <button onClick={() => { if (showAllTx) setPage(1); setShowAllTx(v => !v); }} style={{
+                <button onClick={() => setShowAllTx(v => !v)} style={{
                   width: "100%", padding: "10px 16px", fontSize: 12, fontWeight: 600,
                   color: "var(--accent)", background: "var(--raised)",
                   borderTop: "0.5px solid var(--glass-border-dim)", textAlign: "center",
@@ -771,15 +791,6 @@ export default function ActividadPage() {
           );
         })()}
       </div>
-
-      {/* Paginación solo con la lista expandida: colapsada es un resumen de 5 */}
-      {showAllTx && total > 50 && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1} style={{ fontSize: 13, padding: "8px 16px", borderRadius: 10, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", opacity: page===1?0.3:1 }}>← Ant</button>
-          <span style={{ fontSize: 13, color: "var(--ink-muted)" }}>{(page-1)*50+1}–{Math.min(page*50, total)} de {total}</span>
-          <button onClick={() => setPage(p => p+1)} disabled={page*50>=total} style={{ fontSize: 13, padding: "8px 16px", borderRadius: 10, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", opacity: page*50>=total?0.3:1 }}>Sig →</button>
-        </div>
-      )}
 
       {/* ── Secciones de seguimiento ─────────────────────── */}
 

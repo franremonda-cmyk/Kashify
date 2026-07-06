@@ -38,10 +38,19 @@ export default function MetasPage() {
   const [contributing, setContributing] = useState<string | null>(null);
   const [addAmount, setAddAmount] = useState("");
 
+  const [loadError, setLoadError] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/goals?space=${activeId}`);
-    if (res.ok) setGoals(await res.json());
+    setLoadError(false);
+    try {
+      const res = await fetch(`/api/goals?space=${activeId}`);
+      if (!res.ok) throw new Error(String(res.status));
+      setGoals(await res.json());
+    } catch {
+      // Sin esto, un fallo de red se disfrazaba de "Sin metas todavía".
+      setLoadError(true);
+    }
     setLoading(false);
   }, [activeId]);
 
@@ -89,6 +98,15 @@ export default function MetasPage() {
 
       {loading ? (
         <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Cargando...</p>
+      ) : loadError ? (
+        <div className="card-solid p-8 text-center enter-up" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+          <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>No pudimos cargar tus metas.</p>
+          <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Puede ser la conexión — tus datos están a salvo.</p>
+          <button onClick={load}
+            style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+            Reintentar
+          </button>
+        </div>
       ) : goals.length === 0 ? (
         <div className="card-glass p-8 text-center enter-up">
           <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>Sin metas todavía</p>
