@@ -162,13 +162,13 @@ body {
 }
 
 /* ── Card system ─────────────────────────────────────────────
-   REGLA: .card-glass para widgets / resúmenes (dashboard, summary,
-   metas/cuotas). .card-solid para listas largas (historial).
-   Mismo radio/borde/sombra; sólo cambia el fondo. ─────────── */
+   REGLA liquid-glass: el CONTENIDO va sobre superficie sólida calma
+   (cards, listas, chips); el vidrio queda para lo que FLOTA sobre el
+   contenido — hero, nav, sheets/modales, globito de Neo — donde hay
+   algo detrás que refractar. Glass en todas las cards sobre fondo
+   opaco era decorativo y costoso en gama media. */
 .card-glass, .glass-card {
-  background: var(--glass-2);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  background: var(--base);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-md), var(--spec-sm);

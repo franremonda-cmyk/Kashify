@@ -45,9 +45,10 @@ interface Props {
   primaryCurrency: string;
   selectedCurrency?: string;
   onSelectCurrency?: (c: string) => void;
+  usdRate?: number | null; // 1 USD = X moneda principal (fijado por el usuario en Perfil)
 }
 
-export default function HeroBalanceCard({ balances, primaryCurrency, selectedCurrency, onSelectCurrency }: Props) {
+export default function HeroBalanceCard({ balances, primaryCurrency, selectedCurrency, onSelectCurrency, usdRate }: Props) {
   const [internalSelected, setInternalSelected] = useState(primaryCurrency);
   const selected    = selectedCurrency ?? internalSelected;
   const setSelected = onSelectCurrency ?? setInternalSelected;
@@ -116,6 +117,20 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
           <p style={{ fontSize: 13, color: "var(--hero-ink-soft)", marginTop: 8, fontWeight: 500 }}>
             {NAMES[selected] ?? selected}
           </p>
+          {(() => {
+            // Total unificado: suma los USD convertidos al cambio fijado por el
+            // usuario. Solo con tasa cargada, mirando la moneda principal.
+            if (!usdRate || usdRate <= 0 || selected !== primaryCurrency || primaryCurrency === "USD") return null;
+            const usd = balances.find((b) => b.currency_code === "USD");
+            if (!usd || !Number(usd.amount)) return null;
+            const unified = amount + Number(usd.amount) * usdRate;
+            return (
+              <p style={{ fontSize: 13, color: "var(--hero-ink-soft)", marginTop: 6, fontWeight: 500 }}>
+                ≈ {symbol} {unified.toLocaleString("es-AR", { maximumFractionDigits: 0 })} unificado
+                (US$ 1 = {symbol} {Number(usdRate).toLocaleString("es-AR", { maximumFractionDigits: 0 })})
+              </p>
+            );
+          })()}
         </div>
       )}
     </div>

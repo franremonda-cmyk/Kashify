@@ -11,6 +11,7 @@ export interface Profile {
   primary_currency: string;
   theme?: string | null;
   icon_style?: string | null;
+  usd_rate?: number | null;
   created_at: string;
 }
 

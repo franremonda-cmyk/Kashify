@@ -244,6 +244,7 @@ export default async function DashboardPage() {
       <DashboardShell
         balances={sortedBalances}
         primaryCurrency={primaryCurrency}
+        usdRate={profile?.usd_rate ? Number(profile.usd_rate) : null}
         spacesOverview={spacesOverview}
         metrics={metrics}
         dayOfMonth={dayOfMonth}

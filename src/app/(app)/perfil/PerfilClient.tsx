@@ -127,6 +127,9 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [savedName, setSavedName]           = useState(false);
   const [savedCurrency, setSavedCurrency]   = useState(false);
+  const [usdRate, setUsdRate]               = useState(profile?.usd_rate ? String(profile.usd_rate) : "");
+  const [savingRate, setSavingRate]         = useState(false);
+  const [savedRate, setSavedRate]           = useState(false);
   const [inviteCopied, setInviteCopied]     = useState(false);
   const [theme, setTheme] = useState<string>(() =>
     typeof window !== "undefined" ? (localStorage.getItem("kashify-theme") ?? "arctic") : "arctic"
@@ -206,6 +209,17 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     setSavingCurrency(false);
     setSavedCurrency(true);
     setTimeout(() => setSavedCurrency(false), 2000);
+  }
+
+  async function saveUsdRate() {
+    const value = parseFloat(usdRate.replace(",", "."));
+    setSavingRate(true);
+    await supabase.from("profiles")
+      .update({ usd_rate: Number.isFinite(value) && value > 0 ? value : null })
+      .eq("user_id", profile?.user_id ?? "");
+    setSavingRate(false);
+    setSavedRate(true);
+    setTimeout(() => setSavedRate(false), 2000);
   }
 
   async function addPhone() {
@@ -335,6 +349,25 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             </select>
             <SaveButton onClick={saveCurrency} saving={savingCurrency} label={savedCurrency ? "✓" : "Guardar"} />
           </div>
+        </div>
+
+        <Divider />
+
+        {/* Tipo de cambio manual (para unificar el Total multi-divisa) */}
+        <div>
+          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>Tipo de cambio (1 USD = {primaryCurrency})</p>
+          <div className="flex gap-2">
+            <input
+              style={{ ...inp, flex: 1 }}
+              type="text" inputMode="decimal" placeholder="Ej: 1450"
+              value={usdRate}
+              onChange={(e) => setUsdRate(e.target.value)}
+            />
+            <SaveButton onClick={saveUsdRate} saving={savingRate} label={savedRate ? "✓" : "Guardar"} />
+          </div>
+          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6 }}>
+            Con esto el balance te muestra el total unificado en {primaryCurrency}. Dejalo vacío para no convertir.
+          </p>
         </div>
 
         <Divider />

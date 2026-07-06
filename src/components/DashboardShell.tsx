@@ -40,6 +40,7 @@ interface BudgetEntry {
 interface Props {
   balances: BalanceView[];
   primaryCurrency: string;
+  usdRate?: number | null;
   spacesOverview?: SpaceCardData[];
   metrics: CurrencyMetrics[];
   dayOfMonth?: number;
@@ -312,7 +313,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, usdRate, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -344,6 +345,7 @@ export default function DashboardShell({ balances, primaryCurrency, spacesOvervi
           primaryCurrency={primaryCurrency}
           selectedCurrency={selectedCurrency}
           onSelectCurrency={setSelectedCurrency}
+          usdRate={usdRate}
         />
       </div>
 
