@@ -33,7 +33,7 @@ export function canSpeak(now: number, lastAt: number, gapMs = LINE_GAP_MS): bool
 function moodForNotifType(type: string): NeoMood {
   if (type === "budget_alert" || type.startsWith("alert_")) return "worried";
   if (type === "goal_reached" || type.startsWith("achievement_")) return "celebrating";
-  if (type === "monthly_summary" || type === "spend_spike" || type.startsWith("reminder_")) return "curious";
+  if (type === "monthly_summary" || type === "monthly_close" || type === "spend_spike" || type.startsWith("reminder_")) return "curious";
   return "idle";
 }
 

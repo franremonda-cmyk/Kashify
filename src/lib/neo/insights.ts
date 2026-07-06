@@ -2,6 +2,8 @@
 // neo-insights la usa para escribir avisos en neo_notifications.
 // Copy según referencia/neo-voz.md (cálido, sin culpa, 1 emoji, voseo).
 
+import { normalizeDesc, type RecurringItem } from "../recurring";
+
 // Un evento candidato a notificar. priority: 3 alerta/logro · 2 recordatorio · 1 resumen.
 export interface Candidate {
   alertType: string; // clave de dedupe en notification_log (incluye el período)
@@ -112,4 +114,95 @@ export function detectOverspend(expense: number, income: number, period: string)
     alertType: `alert_overspend_${period}`, type: "alert_overspend", priority: 3,
     message: `👀 Este mes gastaste más de lo que entró. ¿Lo miramos juntos?`,
   };
+}
+
+/**
+ * Ritmo de límite: proyecta el gasto a fin de mes al ritmo actual. Aviso TEMPRANO:
+ * solo corre si el gasto real todavía está bajo el 70% del límite (de ahí en más
+ * hablan los umbrales de budgetThresholdHit, para no avisar dos veces lo mismo)
+ * y recién desde el día 7 (antes hay poca señal). Devuelve proyección/límite o null.
+ */
+export function budgetPaceRatio(
+  spent: number, limit: number, day: number, daysInMonth: number, factor = 1.1,
+): number | null {
+  if (limit <= 0 || spent <= 0 || day < 7) return null;
+  if (spent / limit >= 0.7) return null; // ya es territorio de los umbrales
+  const ratio = ((spent / day) * daysInMonth) / limit;
+  return ratio >= factor ? ratio : null;
+}
+
+/** Hito de meta: 50% / 75% alcanzado (el más alto). El 100% ya lo festeja goal_reached. */
+export function goalMilestone(current: number, target: number, thresholds: number[] = [50, 75]): number | null {
+  if (target <= 0 || current <= 0) return null;
+  const pct = (current / target) * 100;
+  let hit: number | null = null;
+  for (const th of thresholds) if (pct >= th) hit = th;
+  return hit;
+}
+
+/**
+ * Meta en riesgo: % del plazo transcurrido vs % ahorrado. Solo metas con fecha,
+ * con ≥25% del plazo pasado (a una meta nueva no se la cargosea) y aún vigentes.
+ * Devuelve cuántos puntos viene atrás (si son ≥ minBehind), o null.
+ */
+export function goalBehindPts(
+  createdISO: string, targetISO: string, todayISO: string,
+  current: number, target: number, minBehind = 25,
+): number | null {
+  if (target <= 0 || todayISO >= targetISO) return null;
+  const total = daysBetween(createdISO, targetISO);
+  const gone = daysBetween(createdISO, todayISO);
+  if (total <= 0 || gone <= 0) return null;
+  const elapsedPct = (gone / total) * 100;
+  if (elapsedPct < 25) return null;
+  const progressPct = Math.min((current / target) * 100, 100);
+  const behind = elapsedPct - progressPct;
+  return behind >= minBehind ? Math.round(behind) : null;
+}
+
+/**
+ * Cambio en la tasa de ahorro vs el mes pasado a la MISMA altura, en puntos
+ * porcentuales. Requiere ingresos en ambos meses. El cron solo festeja mejoras
+ * (sin culpa: empeorar no genera aviso).
+ */
+export function savingsRateDelta(
+  thisIncome: number, thisExpense: number, lastIncome: number, lastExpense: number,
+): number | null {
+  if (thisIncome <= 0 || lastIncome <= 0) return null;
+  const delta = ((thisIncome - thisExpense) / thisIncome - (lastIncome - lastExpense) / lastIncome) * 100;
+  return Math.round(delta);
+}
+
+/** P&L de un espacio: salió más de lo que entró (solo si ese espacio registra ingresos). */
+export function detectSpacePnl(
+  spaceId: string, spaceName: string, expense: number, income: number, period: string,
+): Candidate | null {
+  if (income <= 0 || expense <= income) return null;
+  return {
+    alertType: `space_pnl_${spaceId}_${period}`, type: "alert_space_pnl", priority: 3,
+    message: `👀 En ${spaceName} este mes salió más de lo que entró. ¿Lo miramos?`,
+  };
+}
+
+/** Plan de cuotas recién terminado: todas pagas y la última vencía este mes. */
+export function planJustFinished(statuses: string[], dueDates: string[], thisMonthKey: string): boolean {
+  if (!statuses.length || statuses.some((s) => s !== "paid")) return false;
+  const last = dueDates.reduce((m, d) => (d > m ? d : m), dueDates[0]);
+  return last.slice(0, 7) === thisMonthKey;
+}
+
+/**
+ * Recurrentes de meses previos que este mes todavía no aparecieron. Recién desde
+ * el día `minDay` (antes puede simplemente no haber vencido todavía).
+ */
+export function missingRecurring(
+  prior: RecurringItem[], thisMonthNorms: Set<string>, day: number, minDay = 20,
+): RecurringItem[] {
+  if (day < minDay) return [];
+  return prior.filter((r) => !thisMonthNorms.has(normalizeDesc(r.description)));
+}
+
+/** Recurrentes NUEVOS: recién este mes juntaron su 2ª aparición (no eran recurrentes antes). */
+export function newRecurring(all: RecurringItem[], priorNorms: Set<string>): RecurringItem[] {
+  return all.filter((r) => !priorNorms.has(normalizeDesc(r.description)));
 }
