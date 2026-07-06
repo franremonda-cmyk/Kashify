@@ -754,6 +754,42 @@ button[aria-label="Cerrar"]::after {
   inset: -8px;
 }
 
+/* Eliminar rápido al hover en filas del libro diario: solo punteros finos
+   (en touch la vía es el swipe). Aparece sobre el borde derecho de la fila. */
+.tx-hover-del {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  translate: 0 -50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 130ms ease-out;
+  z-index: 2;
+}
+@media (hover: hover) and (pointer: fine) {
+  .tx-swipe:hover .tx-hover-del,
+  .tx-swipe:focus-within .tx-hover-del {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Actividad: 2 columnas en desktop — libro diario (izq) | resumen del mes
+   (der, sticky). En mobile los wrappers apilan en el orden del DOM. */
+.hist-cols, .hist-rail, .hist-main {
+  display: flex; flex-direction: column; gap: 24px; min-width: 0;
+}
+@media (min-width: 1024px) {
+  .hist-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.66fr);
+    gap: 22px 26px;
+    align-items: start;
+  }
+  .hist-main { grid-column: 1; grid-row: 1; }
+  .hist-rail { grid-column: 2; grid-row: 1; position: sticky; top: 24px; }
+}
+
 /* Tablet: solo íconos en el sidebar; labels y subsecciones vuelven en ≥1024. */
 @media (min-width: 768px) and (max-width: 1023px) {
   .sidebar-label, .sidebar-subs { display: none !important; }

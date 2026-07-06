@@ -62,7 +62,6 @@ export default function CuotasPage() {
   }
 
   async function handleCancel(id: string) {
-    if (!confirm("¿Cancelar todas las cuotas pendientes? El plan quedará saldado.")) return;
     await fetch(`/api/installments/${id}/cancel`, { method: "POST" });
     load();
   }
@@ -128,7 +127,7 @@ export default function CuotasPage() {
 
       {active.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 4 }}>Activas</p>
+          <h2 className="section-title" style={{ paddingLeft: 4 }}>Activas</h2>
           {active.map((plan) => (
             <PlanCard key={plan.id} plan={plan} onCancel={handleCancel} onPay={handlePay} onEdit={setEditingPlan} />
           ))}
@@ -137,7 +136,7 @@ export default function CuotasPage() {
 
       {paid.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", paddingLeft: 4 }}>Saldadas</p>
+          <h2 className="section-title" style={{ paddingLeft: 4 }}>Saldadas</h2>
           {paid.map((plan) => (
             <PlanCard key={plan.id} plan={plan} onCancel={handleCancel} onPay={handlePay} onEdit={setEditingPlan} />
           ))}
@@ -160,6 +159,14 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
   onPay: (id: string) => void;
   onEdit: (plan: PlanWithPayments) => void;
 }) {
+  // Confirmación inline de dos toques (reemplaza el window.confirm del navegador).
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  useEffect(() => {
+    if (!confirmingCancel) return;
+    const t = setTimeout(() => setConfirmingCancel(false), 3500);
+    return () => clearTimeout(t);
+  }, [confirmingCancel]);
+
   const payments = plan.installment_payments ?? [];
   const paidCount = payments.filter((p) => p.status === "paid").length;
   const pct = (paidCount / plan.n_installments) * 100;
@@ -214,10 +221,14 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
               Registrar pago
             </button>
             <button
-              onClick={() => onCancel(plan.id)}
-              style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "rgba(255,59,48,0.08)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}
+              onClick={() => {
+                if (!confirmingCancel) { setConfirmingCancel(true); return; }
+                setConfirmingCancel(false);
+                onCancel(plan.id);
+              }}
+              style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: confirmingCancel ? 700 : 600, background: confirmingCancel ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmingCancel ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)", transition: "all 150ms ease-out" }}
             >
-              Saldar
+              {confirmingCancel ? "¿Saldar todo? Tocá de nuevo" : "Saldar"}
             </button>
           </>
         )}

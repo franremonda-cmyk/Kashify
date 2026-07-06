@@ -138,6 +138,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
       >
         <div
           className="glass-strong w-full max-w-sm flex flex-col"
+          role="dialog" aria-modal="true" aria-label="Detalle del movimiento"
           style={{
             borderRadius: 20,
             maxHeight: "calc(100dvh - 40px)",

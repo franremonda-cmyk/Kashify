@@ -70,7 +70,7 @@ export default function EspaciosPage() {
       </div>
 
       <button onClick={() => { setError(null); setEditing("new"); }} className="press"
-        style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#fff" }}>
+        style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
         + Nuevo espacio
       </button>
 

@@ -356,6 +356,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     >
       <div
         className="glass-strong w-full max-w-sm p-5 flex flex-col gap-4 mb-16 scale-up"
+        role="dialog" aria-modal="true" aria-label="Registrar movimiento"
         style={{ borderRadius: 24, overflow: "hidden" }}
       >
         <div className="flex items-center justify-between">

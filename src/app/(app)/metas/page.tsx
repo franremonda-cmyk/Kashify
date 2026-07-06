@@ -72,8 +72,17 @@ export default function MetasPage() {
     load();
   }
 
+  // Confirmación inline de dos toques (reemplaza el window.confirm del navegador).
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const t = setTimeout(() => setConfirmingDelete(null), 3500);
+    return () => clearTimeout(t);
+  }, [confirmingDelete]);
+
   async function remove(id: string) {
-    if (!confirm("¿Eliminar esta meta?")) return;
+    if (confirmingDelete !== id) { setConfirmingDelete(id); return; }
+    setConfirmingDelete(null);
     await fetch(`/api/goals/${id}`, { method: "DELETE" });
     load();
   }
@@ -136,7 +145,7 @@ export default function MetasPage() {
                       <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{g.name}</p>
                       {reached && (
                         <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 7px", borderRadius: 999, background: "rgba(52,199,89,0.12)", color: "var(--positive)" }}>
-                          ¡LOGRADA!
+                          ¡Lograda!
                         </span>
                       )}
                     </div>
@@ -155,10 +164,14 @@ export default function MetasPage() {
                     </button>
                     <button onClick={() => remove(g.id)}
                       aria-label="Eliminar meta" className="tap-target"
-                      style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                      </svg>
+                      style={confirmingDelete === g.id
+                        ? { height: 28, padding: "0 10px", borderRadius: 8, background: "rgba(255,59,48,0.14)", border: "0.5px solid rgba(255,59,48,0.45)", color: "var(--negative)", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap", transition: "all 150ms ease-out" }
+                        : { width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {confirmingDelete === g.id ? "¿Eliminar?" : (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -246,6 +259,12 @@ function GoalModal({
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   async function save() {
     if (!name.trim() || !target || parseFloat(target) <= 0) return;

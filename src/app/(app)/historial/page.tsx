@@ -31,6 +31,11 @@ function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => v
     el.addEventListener("touchmove", prevent, { passive: false });
     return () => el.removeEventListener("touchmove", prevent);
   }, [mounted]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   if (!mounted) return null;
 
@@ -243,6 +248,12 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
   const [local, setLocal] = useState<Filters>({ ...filters });
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   if (!mounted) return null;
 
   return createPortal(
@@ -346,6 +357,117 @@ function FilterSheet({ categories, filters, onApply, onClose }: {
       </div>
     </div>,
     document.body
+  );
+}
+
+// ─── Fila con edición rápida ─────────────────────────────────────────────────
+// Swipe a la izquierda (mobile) revela Eliminar; en desktop aparece al hover.
+// Sin confirm: el borrado dispara "tx-deleted" → UndoToast ofrece deshacer.
+function TxRow({ t, byDay, onOpen }: { t: Transaction; byDay: boolean; onOpen: () => void }) {
+  const W = 88; // ancho del área de acción revelada
+  const [offset, setOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const drag = useRef<{ x: number; y: number; base: number; locked: null | "h" | "v" } | null>(null);
+
+  function onTouchStart(e: React.TouchEvent) {
+    drag.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, base: offset, locked: null };
+    setDragging(true);
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.touches[0].clientX - d.x;
+    const dy = e.touches[0].clientY - d.y;
+    if (!d.locked) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      d.locked = Math.abs(dx) > Math.abs(dy) ? "h" : "v"; // el scroll vertical gana
+    }
+    if (d.locked === "v") return;
+    setOffset(Math.max(-W, Math.min(0, d.base + dx)));
+  }
+  function onTouchEnd() {
+    const d = drag.current;
+    drag.current = null;
+    setDragging(false);
+    if (!d || d.locked !== "h") return;
+    setOffset(offset < -W / 2 ? -W : 0);
+  }
+
+  async function quickDelete() {
+    try {
+      const res = await fetch(`/api/transactions/${t.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      window.dispatchEvent(new CustomEvent("tx-deleted", { detail: {
+        description: t.description, amount: t.amount, currency_code: t.currency_code,
+        date: t.date, category_id: t.category_id, type: t.type,
+        space_id: (t as unknown as { space_id?: string }).space_id,
+      }}));
+      window.dispatchEvent(new Event("transaction-added")); // la página refetchea
+    } catch {
+      setFailed(true);
+      setTimeout(() => setFailed(false), 2500);
+    }
+    setOffset(0);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const catData   = (t as any).categories ?? t.category;
+  const isIncome  = t.type === "income";
+  const isInstall = t.type === "installment-payment";
+  const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
+  const catColor  = catColorOrFallback(catData?.color, catData?.name ?? "");
+
+  return (
+    <div className="tx-swipe" style={{ position: "relative", overflow: "hidden" }}>
+      {/* Acción detrás (se revela con el swipe) */}
+      <div aria-hidden={offset === 0} style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: W, display: "flex" }}>
+        <button onClick={quickDelete} tabIndex={offset === 0 ? -1 : 0}
+          aria-label={`Eliminar ${t.description}`}
+          style={{ flex: 1, background: failed ? "var(--warning)" : "var(--negative)", color: "#fff", fontSize: 12.5, fontWeight: 700, border: "none" }}>
+          {failed ? "Falló" : "Eliminar"}
+        </button>
+      </div>
+
+      {/* Contenido deslizable */}
+      <div
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: dragging ? "none" : "transform 200ms ease-out",
+          background: "var(--base)",
+          position: "relative",
+        }}>
+        <button
+          onClick={() => { if (offset < 0) setOffset(0); else onOpen(); }}
+          className="press list-row"
+          style={{ transition: "background 120ms ease-out" }}
+        >
+          <div className="list-row__icon" style={{ background: `${catColor}22`, color: catColor }}>
+            <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={18}/>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
+            <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{!byDay && t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
+          </div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <p className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
+              {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+            </p>
+            <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
+          </div>
+        </button>
+
+        {/* Eliminar rápido al hover (solo punteros finos; en touch está el swipe) */}
+        <button onClick={quickDelete} className="tx-hover-del tap-target"
+          aria-label={`Eliminar ${t.description}`} title="Eliminar"
+          style={{ width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--negative)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -531,6 +653,11 @@ export default function ActividadPage() {
       {/* Selector de espacio (se autoesconde si hay uno solo) */}
       <SpaceSwitcher />
 
+      {/* En desktop: lista a la izquierda, resumen del mes a la derecha (sticky).
+          En mobile los wrappers no cambian el orden. */}
+      <div className="hist-cols">
+      <div className="hist-rail">
+
       {/* Navegador de meses */}
       {(() => {
         const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -613,6 +740,9 @@ export default function ActividadPage() {
 
       {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} spaceData={spaceChartByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies} canSplitBySpace={canSplitBySpace}/>}
 
+      </div>{/* /hist-rail */}
+      <div className="hist-main">
+
       <div className="flex gap-2 enter-up" data-delay="2">
         <input style={{ ...inp, borderRadius: 12, flex: 1 }} placeholder="Buscar…"
           type="search" aria-label="Buscar transacciones" autoComplete="off"
@@ -689,36 +819,6 @@ export default function ActividadPage() {
             if (last && last.key === key) last.txs.push(t);
             else groups.push({ key, label: byDay ? labelFor(t.date) : "", txs: [t] });
           }
-          const row = (t: (typeof filtered)[number]) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const catData   = (t as any).categories ?? t.category;
-            const isIncome  = t.type === "income";
-            const isInstall = t.type === "installment-payment";
-            const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
-            const catColor  = catColorOrFallback(catData?.color, catData?.name ?? "");
-            return (
-              <button
-                key={t.id}
-                onClick={() => setSelectedTx(t)}
-                className="press list-row"
-                style={{ transition: "background 120ms ease-out" }}
-              >
-                <div className="list-row__icon" style={{ background: `${catColor}22`, color: catColor }}>
-                  <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={18}/>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
-                  <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{!byDay && t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
-                </div>
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <p className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
-                    {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-                  </p>
-                  <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
-                </div>
-              </button>
-            );
-          };
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {groups.map((g) => (
@@ -727,7 +827,9 @@ export default function ActividadPage() {
                     <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-dim)", padding: "0 2px 6px" }}>{g.label}</p>
                   )}
                   <div className="card-solid" style={{ overflow: "hidden" }}>
-                    {g.txs.map(row)}
+                    {g.txs.map((t) => (
+                      <TxRow key={t.id} t={t} byDay={byDay} onOpen={() => setSelectedTx(t)} />
+                    ))}
                   </div>
                 </div>
               ))}
@@ -735,6 +837,9 @@ export default function ActividadPage() {
           );
         })()}
       </div>
+
+      </div>{/* /hist-main */}
+      </div>{/* /hist-cols */}
 
       {breakdownType && (
         <TxBreakdownModal

@@ -28,6 +28,12 @@ export default function ExportSheet({ onClose }: { onClose: () => void }) {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   function doExport() {
     const p = new URLSearchParams({ format });
     if (spaceId) p.set("space", spaceId);

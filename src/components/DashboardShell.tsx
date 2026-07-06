@@ -241,7 +241,7 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
                   <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>
-                    {reached ? "✓ Lograda" : `${pct.toFixed(0)}%`}
+                    {reached ? "¡Lograda!" : `${pct.toFixed(0)}%`}
                   </span>
                 </div>
                 <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
