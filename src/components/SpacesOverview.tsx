@@ -27,15 +27,7 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
       <div className="section-head" style={{ marginBottom: 8 }}>
         <h2 className="section-title">Tus espacios</h2>
       </div>
-      <div
-        style={{
-          display: "flex", gap: 10, overflowX: "auto",
-          scrollbarWidth: "none", WebkitOverflowScrolling: "touch",
-          scrollSnapType: "x proximity",
-          // margen negativo para que el peek del borde no se sienta cortado
-          margin: "0 -16px", padding: "0 16px 4px",
-        }}
-      >
+      <div className="spaces-row" style={{ WebkitOverflowScrolling: "touch" }}>
         {cards.map((c) => {
           const sym = SYMBOLS[c.currency] ?? c.currency;
           const color = c.color ?? "#46B58C";
@@ -43,12 +35,9 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
             <button
               key={c.id}
               onClick={() => setActiveSpace(c.id)}
-              className="press glow-hover glass-card"
+              className="press glow-hover glass-card spaces-card"
               aria-label={`Ver espacio ${c.name}`}
               style={{
-                flex: "0 0 auto",
-                width: "clamp(150px, 44vw, 186px)",
-                scrollSnapAlign: "start",
                 padding: "16px 18px", borderRadius: 18, textAlign: "left", cursor: "pointer",
                 containerType: "inline-size", overflow: "hidden",
               }}

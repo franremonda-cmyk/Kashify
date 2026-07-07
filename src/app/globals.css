@@ -709,24 +709,27 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
   }
 }
 
-/* Dashboard: dos columnas CON INTENCIÓN desde tablet. Cada columna es UN item
-   de grilla con flex interno (sin auto-placement → sin celdas huecas).
-   Izquierda = flujo del mes (métricas, ahorro, ritmo, últimas).
-   Derecha = rail de seguimiento (cuotas, límites, metas, fijos). */
-.dash-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+/* Dashboard bento (tablet y desktop, misma grilla → se ven similares):
+   6 columnas con flow dense — los widgets condicionales ausentes NO dejan
+   celdas huecas. La banda .dash-stats reparte 1-4 stats con auto-fit
+   (imposible que quede un hueco). Mobile: apila (flex del shell). */
+.dash-stats { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
 @media (min-width: 768px) {
   .dashboard-shell {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 18px;
-    align-items: start;
+    grid-auto-flow: dense;
   }
-  /* tile-full = ocupa las 2 columnas (hero, gráfico, widgets anchos) */
+  /* dash-full = ancho completo (hero, espacios, banda de stats, gráfico) */
   .dashboard-shell > .dash-full,
   .dashboard-shell > .tile-full { grid-column: 1 / -1; }
-  .dash-col { gap: 18px; }
-  .dash-col--main { grid-column: 1; }
-  .dash-col--rail { grid-column: 2; }
+  .dash-span-3 { grid-column: span 3; }
+  .dash-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+  }
   /* Two rows of budget chips on tablet/desktop */
   .budget-wrap { max-height: 206px; }
 }
@@ -829,15 +832,48 @@ button[aria-label="Cerrar"]::after {
   .neo-chat-list { max-width: 760px; margin: 0 auto; }
 }
 
-/* Desktop (≥1024): más aire y la grilla del dashboard más ancha. */
+/* Desktop (≥1024): más aire. */
 @media (min-width: 1024px) {
   .app-main {
     padding: 40px 48px !important;
     padding-bottom: 48px !important;
   }
-  .dashboard-shell {
-    grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
-    gap: 22px 26px;
+  .dashboard-shell { gap: 22px 26px; }
+  .dash-stats { gap: 22px 26px; }
+}
+
+/* Pantallas grandes: el dashboard aprovecha más ancho. */
+@media (min-width: 1440px) {
+  .app-main > .dash-page { max-width: 1360px; }
+}
+
+/* Cards de espacios: carrusel con snap en mobile; en tablet/desktop crecen
+   y llenan el ancho (nada de cards angostas flotando en el vacío). */
+.spaces-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  margin: 0 -16px;          /* peek del borde en mobile */
+  padding: 0 16px 4px;
+}
+.spaces-card {
+  flex: 0 0 auto;
+  width: clamp(150px, 44vw, 186px);
+  scroll-snap-align: start;
+}
+@media (min-width: 768px) {
+  .spaces-row {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    margin: 0;
+    padding: 0;
+  }
+  .spaces-card {
+    flex: 1 1 200px;
+    width: auto;
+    max-width: none;
   }
 }
 

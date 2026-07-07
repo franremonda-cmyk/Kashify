@@ -223,7 +223,7 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
     return `${currency} ${Math.round(n).toLocaleString("es-AR")}`;
   }
   return (
-    <section className="flex flex-col gap-2 enter-up" data-delay="3">
+    <section className="flex flex-col gap-2 enter-up dash-span-3" data-delay="3">
       <div className="section-head" style={{ marginBottom: 0 }}>
         <h2 className="section-title">Metas de ahorro</h2>
         <Link href="/metas" className="section-link">Ver todo →</Link>
@@ -269,7 +269,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
     .sort((a, b) => pctOf(b) - pctOf(a));
   if (relevant.length === 0) return null;
   return (
-    <section className="enter-up" data-delay="4" data-tour="budgets">
+    <section className="enter-up dash-span-3" data-delay="4" data-tour="budgets">
       <div className="section-head">
         <h2 className="section-title">Límites por categoría</h2>
         <Link href="/categorias" className="section-link">Ver todo →</Link>
@@ -382,20 +382,29 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
         </div>
       )}
 
-      {/* Columna principal: el flujo del mes */}
-      <div className="dash-col dash-col--main">
-        <div className="dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
-          <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  deltaPct={incomeDelta}  onClick={() => setBreakdownType("income")} />
-          <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />
+      {/* Métricas del mes (par fijo) */}
+      <div className="dash-span-3 dash-metrics flex gap-3 enter-up" data-delay="2" data-tour="metrics">
+        <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  deltaPct={incomeDelta}  onClick={() => setBreakdownType("income")} />
+        <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />
+      </div>
+
+      {/* Banda de stats del mes — auto-fit reparte el ancho entre los que
+          existan (1 a 4): nunca quedan celdas huecas. */}
+      {(m.income > 0 || (m.expense > 0 && dayOfMonth < daysInMonth) || (up && up.count > 0) || recCur.length > 0) && (
+        <div className="dash-full dash-stats">
+          {m.income > 0 && <SavingsCard income={m.income} expense={m.expense} sym={sym} />}
+          {m.expense > 0 && dayOfMonth < daysInMonth && <ProjectionCard expense={m.expense} dayOfMonth={dayOfMonth} daysInMonth={daysInMonth} sym={sym} />}
+          {up && up.count > 0 && <UpcomingCard total={up.total} count={up.count} sym={sym} />}
+          {recCur.length > 0 && <RecurringCard items={recCur} sym={sym} />}
         </div>
+      )}
 
-        {m.income > 0 && <SavingsCard income={m.income} expense={m.expense} sym={sym} />}
+      {/* Franja de límites por categoría */}
+      <BudgetStrip budgets={budgets} currency={selectedCurrency} onSelect={setSelectedBudget} />
 
-        {m.expense > 0 && dayOfMonth < daysInMonth && <ProjectionCard expense={m.expense} dayOfMonth={dayOfMonth} daysInMonth={daysInMonth} sym={sym} />}
-
-        {/* Últimas transacciones — máx 5 con botón ver todas */}
-        {recent.length > 0 && (
-        <section className="dash-tx-tile flex flex-col gap-2 enter-up" data-delay="4">
+      {/* Últimas transacciones — máx 5 con botón ver todas */}
+      {recent.length > 0 && (
+        <section className="dash-tx-tile flex flex-col gap-2 enter-up dash-span-3" data-delay="4">
           <div className="section-head" style={{ marginBottom: 0 }}>
             <h2 className="section-title">Últimas transacciones</h2>
             <Link href="/historial" className="section-link">Ver todo →</Link>
@@ -437,19 +446,10 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
             )}
           </div>
         </section>
-        )}
-      </div>
+      )}
 
-      {/* Rail de seguimiento: compromisos y progreso */}
-      <div className="dash-col dash-col--rail">
-        {up && up.count > 0 && <UpcomingCard total={up.total} count={up.count} sym={sym} />}
-
-        <BudgetStrip budgets={budgets} currency={selectedCurrency} onSelect={setSelectedBudget} />
-
-        <GoalsWidget goals={goals} />
-
-        {recCur.length > 0 && <RecurringCard items={recCur} sym={sym} />}
-      </div>
+      {/* Metas de ahorro */}
+      <GoalsWidget goals={goals} />
 
       {/* Gráfico de líneas mensual */}
       <div className="dash-full enter-up" data-delay="6">
