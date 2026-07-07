@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -10,6 +10,7 @@ import type { ChartMonth, SpaceExpenseStack } from "./SpendingChart";
 import type { RecurringItem } from "@/lib/recurring";
 const SpendingChart = dynamic(() => import("./SpendingChart"), { ssr: false, loading: () => <div style={{ height: 200 }} /> });
 import TransactionSheet from "./TransactionSheet";
+import FilterSheet, { type Filters, sortTransactions } from "./FilterSheet";
 import BudgetDetailModal from "./BudgetDetailModal";
 import TxBreakdownModal from "./TxBreakdownModal";
 import type { BalanceView, SavingsGoal } from "@/types";
@@ -20,6 +21,7 @@ interface RecentTx {
   id: string;
   description: string; amount: number; currency_code: string;
   type: string; date: string;
+  category_id?: string | null;
   categories?: { name?: string; icon?: string; color?: string } | null;
 }
 interface Category { id: string; name: string; icon?: string; color?: string; }
@@ -321,6 +323,8 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
   const [breakdownType, setBreakdownType] = useState<"income" | "expense" | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showAllTx, setShowAllTx] = useState(false);
+  const [showTxFilter, setShowTxFilter] = useState(false);
+  const [txFilters, setTxFilters] = useState<Filters>({ categories: [], types: [], sort: "date_desc" });
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
@@ -335,7 +339,16 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
   const recCur = recurring.filter((r) => r.currency_code === selectedCurrency);
   const chartMonths = chartData[selectedCurrency] ?? [];
 
-  const visibleTx = showAllTx ? recent : recent.slice(0, 5);
+  // Filtro/orden client-side sobre las últimas del mes (mismo sheet que Actividad).
+  const txFiltered = useMemo(() => sortTransactions(
+    recent.filter(t =>
+      (txFilters.categories.length === 0 || txFilters.categories.includes(t.category_id ?? ""))
+      && (txFilters.types.length === 0 || txFilters.types.includes(t.type))
+    ),
+    txFilters.sort,
+  ), [recent, txFilters]);
+  const activeTxFilters = txFilters.categories.length + txFilters.types.length + (txFilters.sort !== "date_desc" ? 1 : 0);
+  const visibleTx = showAllTx ? txFiltered : txFiltered.slice(0, 5);
 
   return (
     <div className="dashboard-shell flex flex-col gap-8">
@@ -407,8 +420,27 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
         <section className="dash-tx-tile flex flex-col gap-2 enter-up dash-span-3" data-delay="4">
           <div className="section-head" style={{ marginBottom: 0 }}>
             <h2 className="section-title">Últimas transacciones</h2>
-            <Link href="/historial" className="section-link">Ver todo →</Link>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button onClick={() => setShowTxFilter(true)} className="tap-target"
+                aria-label="Filtrar y ordenar transacciones"
+                style={{
+                  display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
+                  cursor: "pointer", fontSize: 13, fontWeight: 600,
+                  color: activeTxFilters > 0 ? "var(--accent)" : "var(--ink-muted)",
+                }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                  <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+                </svg>
+                {activeTxFilters > 0 ? activeTxFilters : ""}
+              </button>
+              <Link href="/historial" className="section-link">Ver todo →</Link>
+            </div>
           </div>
+          {txFiltered.length === 0 ? (
+            <div className="card-solid" style={{ padding: 20, textAlign: "center" }}>
+              <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Nada coincide con estos filtros.</p>
+            </div>
+          ) : (
           <div className="card-glass dash-tx-card" style={{ overflow: "hidden" }}>
             {visibleTx.map((t, i) => {
               const cat = t.categories as { name?: string; icon?: string; color?: string } | null;
@@ -435,16 +467,17 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
                 </button>
               );
             })}
-            {recent.length > 5 && (
+            {txFiltered.length > 5 && (
               <button onClick={() => setShowAllTx(v => !v)} style={{
                 width: "100%", padding: "10px 16px", fontSize: 12, fontWeight: 600,
                 color: "var(--accent)", background: "var(--raised)",
                 borderTop: "0.5px solid var(--glass-border-dim)", textAlign: "center",
               }}>
-                {showAllTx ? "Ver menos ↑" : `Ver ${recent.length - 5} más ↓`}
+                {showAllTx ? "Ver menos ↑" : `Ver ${txFiltered.length - 5} más ↓`}
               </button>
             )}
           </div>
+          )}
         </section>
       )}
 
@@ -455,6 +488,15 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
       <div className="dash-full enter-up" data-delay="6">
         <SpendingChart data={chartMonths} currencySymbol={sym} spaceStacks={spaceStacksData[selectedCurrency] ?? []} />
       </div>
+
+      {showTxFilter && (
+        <FilterSheet
+          categories={categories}
+          filters={txFilters}
+          onApply={setTxFilters}
+          onClose={() => setShowTxFilter(false)}
+        />
+      )}
 
       {selectedTx && (
         <TransactionSheet
