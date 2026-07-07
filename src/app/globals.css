@@ -997,7 +997,7 @@ body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
   .neo-mascot[data-neo-dock="sidebar"] {
     left: var(--neo-dock-x, calc(var(--sidebar-w) / 2));
     top: var(--neo-dock-y, calc(100dvh - var(--neo-dock-bottom)));
-    --neo-scale: 0.62;
+    --neo-scale: 0.85;  /* tablet: rail 72px, sobresale un toque pero se aprecia */
   }
   /* Posición medida del hero real (NeoChat la publica); si aún no se midió,
      cae al cálculo aproximado. Así aterriza exacto sin tunear a ojo. */
@@ -1008,12 +1008,12 @@ body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
   }
 }
 @media (min-width: 1024px) {
-  .neo-mascot[data-neo-dock="sidebar"] { --neo-scale: 1.35; }
+  .neo-mascot[data-neo-dock="sidebar"] { --neo-scale: 1.65; }  /* sidebar 240px, luce grande */
 }
 
 /* Aire que el sidebar reserva para que la mascota flote sin pisar botones. */
-.neo-dock-slot { height: 92px; flex-shrink: 0; }
-@media (min-width: 1024px) { .neo-dock-slot { height: 172px; } }
+.neo-dock-slot { height: 108px; flex-shrink: 0; }
+@media (min-width: 1024px) { .neo-dock-slot { height: 200px; } }
 
 /* Avatar de Neo en el saludo de Inicio: solo mobile. En ≥768 la mascota ya vive
    en el sidebar (dos Neo en pantalla sobra); en mobile es la única presencia. */
