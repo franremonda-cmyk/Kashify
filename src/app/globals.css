@@ -998,12 +998,12 @@ body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
   }
 }
 @media (min-width: 1024px) {
-  .neo-mascot[data-neo-dock="sidebar"] { --neo-scale: 0.8; }
+  .neo-mascot[data-neo-dock="sidebar"] { --neo-scale: 1; }
 }
 
 /* Aire que el sidebar reserva para que la mascota flote sin pisar botones. */
 .neo-dock-slot { height: 92px; flex-shrink: 0; }
-@media (min-width: 1024px) { .neo-dock-slot { height: 116px; } }
+@media (min-width: 1024px) { .neo-dock-slot { height: 140px; } }
 
 /* Hero del chat: en <768 muestra el ARTE (PNG, 140px); en ≥768 el box se
    oculta (visibility, sin reflow) y la mascota voladora aterriza encima. */
@@ -1011,7 +1011,10 @@ body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
 .neo-hero-legacy { display: none; }
 @media (min-width: 768px) {
   .neo-hero-orb-self { visibility: hidden; }
-  .neo-hero-box { width: 104px; height: 104px; }
+  /* Alto > que el ancho: la mascota voladora aterriza a 1.2x (≈125px) y
+     centrada en este box; con height=width se comía el texto de abajo
+     (ver "Neo tapa el texto" — el aire extra reserva el overshoot). */
+  .neo-hero-box { width: 104px; height: 168px; }
   .neo-hero-legacy { display: block; }
   .neo-hero-art { display: none; }
 }

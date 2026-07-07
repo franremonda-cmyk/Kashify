@@ -619,12 +619,20 @@ export default function ActividadPage() {
       <div className="flex flex-col gap-2">
         <div className="section-head" style={{ marginBottom: 0 }}>
           <h2 className="section-title">Transacciones</h2>
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }))}
-            className="section-link"
-            style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer" }}>
-            + Agregar
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {expanded && filtered.length > 5 && (
+              <button onClick={() => setExpanded(false)} className="section-link"
+                style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer" }}>
+                Ver menos ↑
+              </button>
+            )}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }))}
+              className="section-link"
+              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer" }}>
+              + Agregar
+            </button>
+          </div>
         </div>
         {loading && (
           <div style={{ padding: 24, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)" }}>
