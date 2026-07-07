@@ -419,6 +419,12 @@ body::before {
   animation: ai-shimmer 3.4s ease-in-out infinite;
 }
 
+/* Solo para lectores de pantalla (visualmente oculto, sin quitar del árbol a11y). */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
 /* Skeleton de carga — bloque que "late" mientras llegan los datos.
    Usar con estilos inline para ancho/alto/forma (ej. width, borderRadius). */
 @keyframes skel-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
@@ -787,15 +793,23 @@ button[aria-label="Cerrar"]::after {
   }
 }
 
-/* Actividad: 2 columnas en desktop — libro diario (izq) | resumen del mes
-   (der, sticky). En mobile los wrappers apilan en el orden del DOM. */
+/* Actividad — nueva organización:
+   fila de contexto (mes + moneda, a lo ancho) → banda de resumen (3 tiles, a lo
+   ancho) → 2 columnas: lista de transacciones (izq) | gráfico (der, sticky). */
+.hist-context {
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: 10px 12px;
+}
+.hist-monthnav { flex: 1 1 240px; max-width: 360px; }
+.hist-currency { flex: 0 0 auto; }
+
 .hist-cols, .hist-rail, .hist-main {
   display: flex; flex-direction: column; gap: 24px; min-width: 0;
 }
 @media (min-width: 1024px) {
   .hist-cols {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.66fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.62fr);
     gap: 22px 26px;
     align-items: start;
   }
@@ -803,10 +817,21 @@ button[aria-label="Cerrar"]::after {
   .hist-rail { grid-column: 2; grid-row: 1; position: sticky; top: 24px; }
 }
 
-/* Tablet: solo íconos en el sidebar; labels y subsecciones vuelven en ≥1024. */
+/* Tablet: rail angosto, pero cada ícono lleva su label CHICO debajo (apilado) —
+   sin texto la mamá no sabe qué es cada ícono. El logo/Registrar/Invitar/footer
+   (sidebar-label) siguen ocultos; solo los labels del nav (nav-label) aparecen. */
 @media (min-width: 768px) and (max-width: 1023px) {
   .sidebar-label, .sidebar-subs { display: none !important; }
-  .app-sidebar nav a, .app-sidebar nav button { justify-content: center; padding: 12px 0; }
+  .app-sidebar nav { padding: 0 4px !important; }
+  .app-sidebar nav a, .app-sidebar nav button {
+    flex-direction: column; gap: 4px !important; padding: 8px 2px !important;
+  }
+  .nav-label {
+    font-size: 10px !important; font-weight: 600 !important;
+    letter-spacing: 0 !important; line-height: 1; white-space: nowrap;
+  }
+  /* Rail de 72px: no hay lugar para el globito de Neo sin pisar el contenido. */
+  .neo-mascot__bubble { display: none !important; }
 }
 
 /* El chat de Neo (portal en body) despeja el sidebar. En mobile var=0 → left 0. */
@@ -962,13 +987,15 @@ body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
   height: 3px; border-radius: 3px; animation: none;
 }
 
-/* Globito */
+/* Globito — ARRIBA del personaje y centrado (antes al costado: sobre el sidebar
+   angosto se disparaba al contenido). En el rail de tablet se suprime (sin lugar). */
 .neo-mascot__bubble {
   pointer-events: auto;
   position: absolute;
-  left: calc(100% - 6px);
-  bottom: 58%;
-  width: max-content; max-width: 240px;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  width: max-content; max-width: 220px;
   background: var(--glass-3);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);

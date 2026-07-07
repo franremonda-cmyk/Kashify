@@ -140,7 +140,7 @@ export default function DesktopSidebar() {
                   aria-label={item.label}
                   style={{ ...rowStyle, width: "100%", border: "none", cursor: "pointer" }}>
                   <item.icon active={active} />
-                  <span className="sidebar-label" style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>{item.label}</span>
+                  <span className="nav-label" style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>{item.label}</span>
                   <svg className="sidebar-label" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                     style={{ marginLeft: "auto", color: "var(--ink-dim)", transition: "transform 200ms", transform: perfilOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
                     <polyline points="6 9 12 15 18 9"/>
@@ -183,7 +183,7 @@ export default function DesktopSidebar() {
               }}
             >
               <item.icon active={active} />
-              <span className="sidebar-label" style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>
+              <span className="nav-label" style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>
                 {item.label}
               </span>
               {active && (

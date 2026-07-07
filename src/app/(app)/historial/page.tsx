@@ -177,17 +177,17 @@ const segBtn = (on: boolean): React.CSSProperties => ({
   boxShadow: on ? "var(--shadow-sm)" : "none",
 });
 
-function ExpenseBreakdown({ data, spaceData, incomeData, allCurrencies, canSplitBySpace }: {
+// Gráfico de gastos. La moneda la manda la página (selectedCurrency), no un
+// selector propio: antes había DOS selectores de moneda en Actividad.
+function ExpenseBreakdown({ data, spaceData, incomeData, currency, canSplitBySpace }: {
   data: Record<string, ChartEntry[]>; spaceData?: Record<string, ChartEntry[]>;
-  incomeData: Record<string, number>; allCurrencies: string[]; canSplitBySpace?: boolean;
+  incomeData: Record<string, number>; currency: string; canSplitBySpace?: boolean;
 }) {
-  const [mode, setMode]         = useState<"donut" | "bar">("donut");
-  const [groupBy, setGroupBy]   = useState<"categoria" | "espacio">("categoria");
-  const [currency, setCurrency] = useState(allCurrencies[0] ?? "ARS");
+  const [mode, setMode]       = useState<"donut" | "bar">("donut");
+  const [groupBy, setGroupBy] = useState<"categoria" | "espacio">("categoria");
   const group  = canSplitBySpace ? groupBy : "categoria";
   const active = (group === "espacio" ? (spaceData ?? {}) : data)[currency] ?? [];
   const total  = active.reduce((s, d) => s + d.amount, 0);
-  if (allCurrencies.length === 0 || total === 0) return null;
   return (
     <div style={{ borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", padding: "14px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
@@ -205,20 +205,9 @@ function ExpenseBreakdown({ data, spaceData, incomeData, allCurrencies, canSplit
           ))}
         </div>
       )}
-      {allCurrencies.length > 1 && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-          {allCurrencies.map((c) => (
-            <button key={c} onClick={() => setCurrency(c)} style={{
-              minHeight: 44, display: "inline-flex", alignItems: "center",
-              padding: "0 14px", borderRadius: 999, fontSize: 13, fontWeight: 600,
-              background: currency === c ? "var(--accent)" : "var(--raised)",
-              color: currency === c ? "#04130D" : "var(--ink-muted)",
-              border: currency === c ? "none" : "0.5px solid var(--glass-border)",
-            }}>{c}</button>
-          ))}
-        </div>
-      )}
-      {mode === "donut" ? <DonutChart data={active} income={incomeData[currency] ?? 0}/> : <BarChart data={active} total={total}/>}
+      {total === 0 ? (
+        <p style={{ fontSize: 12.5, color: "var(--ink-dim)", textAlign: "center", padding: "28px 0" }}>Sin gastos en {currency} este mes</p>
+      ) : mode === "donut" ? <DonutChart data={active} income={incomeData[currency] ?? 0}/> : <BarChart data={active} total={total}/>}
     </div>
   );
 }
@@ -338,9 +327,10 @@ function TxRow({ t, byDay, onOpen }: { t: Transaction; byDay: boolean; onOpen: (
 // TxRow (ícono + 2 líneas + monto) para que no haya salto de layout al llegar.
 function TxListSkeleton() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }} aria-hidden>
-      <div className="skel" style={{ width: 80, height: 13, borderRadius: 6, margin: "0 2px 2px" }} />
-      <div className="card-solid" style={{ overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }} role="status" aria-busy="true">
+      <span className="sr-only">Cargando transacciones…</span>
+      <div className="skel" style={{ width: 80, height: 13, borderRadius: 6, margin: "0 2px 2px" }} aria-hidden />
+      <div className="card-solid" style={{ overflow: "hidden" }} aria-hidden>
         {[68, 52, 60].map((w, i) => (
           <div key={i} className="list-row">
             <div className="skel list-row__icon" style={{ borderRadius: "var(--radius-control)" }} />
@@ -530,10 +520,9 @@ export default function ActividadPage() {
       {/* Selector de espacio (se autoesconde si hay uno solo) */}
       <SpaceSwitcher />
 
-      {/* En desktop: lista a la izquierda, resumen del mes a la derecha (sticky).
-          En mobile los wrappers no cambian el orden. */}
-      <div className="hist-cols">
-      <div className="hist-rail">
+      {/* Barra de contexto: los dos filtros globales (mes + moneda) juntos, a lo
+          ancho. Antes vivían sueltos en el rail derecho, difíciles de encontrar. */}
+      <div className="hist-context enter-up">
 
       {/* Navegador de meses */}
       {(() => {
@@ -552,7 +541,7 @@ export default function ActividadPage() {
           else setViewMonth(m => m + 1);
         }
         return (
-          <div className="enter-up flex items-center justify-between" style={{ background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 14, padding: "6px 10px", boxShadow: "var(--shadow-sm)" }}>
+          <div className="hist-monthnav flex items-center justify-between" style={{ background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 14, padding: "6px 10px", boxShadow: "var(--shadow-sm)" }}>
             <button onClick={prevMonth} aria-label="Mes anterior"
               style={{ width: 44, height: 44, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -573,7 +562,7 @@ export default function ActividadPage() {
       })()}
 
       {availableCurrencies.length > 1 && (
-        <div className="enter-up" data-delay="1" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div className="hist-currency" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {availableCurrencies.map(c => (
             <button key={c}
               onClick={() => setSelectedCurrency(c)}
@@ -591,8 +580,11 @@ export default function ActividadPage() {
         </div>
       )}
 
+      </div>{/* /hist-context */}
+
+      {/* Resumen del mes: banda a lo ancho — más aire para los números. */}
       {filtered.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }} className="enter-up" data-delay="1">
+        <div className="hist-summary enter-up" data-delay="1" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
           <button onClick={() => setBreakdownType("income")} className="card-glass stat-tile" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--positive)", flexShrink: 0 }} />
@@ -610,14 +602,18 @@ export default function ActividadPage() {
           <div className="card-glass stat-tile" style={{ padding: "14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: net >= 0 ? "var(--positive)" : "var(--negative)", flexShrink: 0 }} />
-              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Neto</p>
+              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Balance</p>
             </div>
             <p className="mono stat-num" style={{ color: net >= 0 ? "var(--positive)" : "var(--negative)" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
       )}
 
-      {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} spaceData={spaceChartByCurrency} incomeData={incomeByCurrency} allCurrencies={chartCurrencies} canSplitBySpace={canSplitBySpace}/>}
+      {/* Detalle (lista) a la izquierda, gráfico a la derecha (sticky en desktop). */}
+      <div className="hist-cols">
+      <div className="hist-rail">
+
+      {chartCurrencies.length > 0 && <ExpenseBreakdown data={chartDataByCurrency} spaceData={spaceChartByCurrency} incomeData={incomeByCurrency} currency={selectedCurrency} canSplitBySpace={canSplitBySpace}/>}
 
       </div>{/* /hist-rail */}
       <div className="hist-main">

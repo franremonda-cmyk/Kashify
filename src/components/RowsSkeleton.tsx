@@ -16,10 +16,13 @@ export default function RowsSkeleton({ rows = 4, card = true }: { rows?: number;
       ))}
     </>
   );
-  if (!card) return <div aria-hidden aria-busy="true">{list}</div>;
+  // role=status + texto sr-only anuncia "Cargando" al lector; las barras van
+  // aria-hidden (decorativas). aria-hidden en el contenedor lo silenciaba entero.
+  const sr = <span className="sr-only">Cargando…</span>;
+  if (!card) return <div role="status" aria-busy="true">{sr}{list}</div>;
   return (
-    <div className="card-solid" style={{ overflow: "hidden" }} aria-hidden aria-busy="true">
-      {list}
+    <div className="card-solid" style={{ overflow: "hidden" }} role="status" aria-busy="true">
+      {sr}{list}
     </div>
   );
 }
