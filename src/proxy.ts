@@ -55,5 +55,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon|opengraph-image|twitter-image|logo-mark.svg|icons|manifest.json|robots.txt|sitemap.xml).*)"],
+  // `.*\..*` excluye TODO path con extensión (assets de /public): sin esto,
+  // /neo/neo-happy.png sin sesión redirigía a /login → imagen rota en el login.
+  // Las rutas de metadata SIN extensión (opengraph-image, apple-icon) siguen
+  // pasando por acá y las cubre isPublic.
+  matcher: ["/((?!_next/static|_next/image|.*\\..*).*)"],
 };

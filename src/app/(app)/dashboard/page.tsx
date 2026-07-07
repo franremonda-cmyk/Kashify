@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import DashboardShell from "@/components/DashboardShell";
 import DashboardClient from "./DashboardClient";
+import NeoImg from "@/components/NeoImg";
 import SpaceSwitcher from "@/components/SpaceSwitcher";
 import SpacesHintCard from "@/components/SpacesHintCard";
 import { computeBalances } from "@/lib/ledger/balances";
@@ -222,12 +223,20 @@ export default async function DashboardPage() {
           </h1>
         </div>
         <div
-          className="rounded-full flex items-center justify-center font-bold"
-          style={{ width: 44, height: 44, fontSize: 17, background: "var(--accent)", color: "#04130D", boxShadow: "0 2px 10px var(--shadow-accent)" }}
+          className="rounded-full flex items-center justify-center"
+          style={{ width: 52, height: 52, background: "var(--accent-soft)", border: "1px solid var(--accent-glow)", overflow: "hidden" }}
           role="img"
-          aria-label={firstName ? `Tu perfil, ${firstName}` : "Tu perfil"}
+          aria-label={firstName ? `Neo te saluda, ${firstName}` : "Neo te saluda"}
         >
-          {(firstName?.[0] ?? "K").toUpperCase()}
+          <NeoImg
+            mood="happy"
+            size={44}
+            fallback={
+              <span className="font-bold" style={{ fontSize: 17, color: "var(--accent)" }}>
+                {(firstName?.[0] ?? "K").toUpperCase()}
+              </span>
+            }
+          />
         </div>
       </div>
 

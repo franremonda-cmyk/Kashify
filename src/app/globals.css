@@ -943,25 +943,39 @@ body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
   border-radius: 50%; cursor: pointer;
 }
 
-/* Posiciones por breakpoint. El punto-centro se translada (fly). */
+/* Posiciones por breakpoint. El punto-centro se translada (fly).
+   Escalas: rail de tablet (72px) → 0.62 ≈ 64px; sidebar desktop → 0.8 ≈ 83px
+   (Fran quería a Neo más presente: "total no molesta"). */
 @media (min-width: 768px) {
   .neo-mascot { display: block; }
   .neo-mascot[data-neo-dock="sidebar"] {
     left: var(--neo-dock-x, calc(var(--sidebar-w) / 2));
     top: var(--neo-dock-y, calc(100dvh - var(--neo-dock-bottom)));
-    --neo-scale: 0.56;
+    --neo-scale: 0.62;
   }
   /* Posición medida del hero real (NeoChat la publica); si aún no se midió,
      cae al cálculo aproximado. Así aterriza exacto sin tunear a ojo. */
   .neo-mascot[data-neo-dock="hero"] {
     left: var(--neo-hero-x, calc(var(--sidebar-w) + (100vw - var(--sidebar-w)) / 2));
     top: var(--neo-hero-y, var(--neo-hero-top));
-    --neo-scale: 1;
+    --neo-scale: 1.2;
   }
 }
+@media (min-width: 1024px) {
+  .neo-mascot[data-neo-dock="sidebar"] { --neo-scale: 0.8; }
+}
 
-/* En ≥768 el hero propio del chat cede su lugar (visibility para no reflowear):
-   la mascota vuela y lo ocupa. En <768 el hero propio se ve. */
+/* Aire que el sidebar reserva para que la mascota flote sin pisar botones. */
+.neo-dock-slot { height: 92px; flex-shrink: 0; }
+@media (min-width: 1024px) { .neo-dock-slot { height: 116px; } }
+
+/* Hero del chat: en <768 muestra el ARTE (PNG, 140px); en ≥768 el box se
+   oculta (visibility, sin reflow) y la mascota voladora aterriza encima. */
+.neo-hero-box { width: 140px; height: 140px; }
+.neo-hero-legacy { display: none; }
 @media (min-width: 768px) {
   .neo-hero-orb-self { visibility: hidden; }
+  .neo-hero-box { width: 104px; height: 104px; }
+  .neo-hero-legacy { display: block; }
+  .neo-hero-art { display: none; }
 }

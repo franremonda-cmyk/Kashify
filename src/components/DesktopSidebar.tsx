@@ -200,7 +200,7 @@ export default function DesktopSidebar() {
 
       {/* Dock de la mascota Neo — reserva aire para que flote acá sin pisar
           los botones de abajo. La mascota es fija (vive en NeoMascot). */}
-      <div ref={dockRef} className="neo-dock-slot" aria-hidden style={{ height: 84, flexShrink: 0 }} />
+      <div ref={dockRef} className="neo-dock-slot" aria-hidden />
 
       {/* Invitar amigo */}
       <div style={{ padding: "0 14px 16px" }}>

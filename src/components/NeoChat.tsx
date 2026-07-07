@@ -5,6 +5,7 @@ import type { PendingTransaction } from "@/types";
 import { useSpaces } from "@/context/SpaceContext";
 import NeoOrb from "./NeoOrb";
 import { NeoFace } from "./NeoMascot";
+import NeoImg from "./NeoImg";
 import { setNeoMood } from "@/lib/neo/mascot-bus";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -487,11 +488,14 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             gap: 18, padding: "calc(40px + env(safe-area-inset-top, 0px)) 20px 28px",
           } as React.CSSProperties}>
-            {/* Avatar — orbe-carita (floats + breathes + morphs). En ≥768 se
-                oculta (visibility) y la mascota fija vuela hasta acá. */}
-            <div ref={heroRef} className="float-bob enter-up neo-hero-orb-self" style={{ position: "relative", width: 104, height: 104 }}>
-              <NeoOrb size={104} alive className="neo-orb--hero" />
-              <NeoFace />
+            {/* Avatar — en mobile muestra el ARTE de Neo (PNG); en ≥768 el box
+                se oculta (visibility) y la mascota fija vuela hasta acá. */}
+            <div ref={heroRef} className="float-bob enter-up neo-hero-orb-self neo-hero-box" style={{ position: "relative" }}>
+              <span className="neo-hero-legacy" style={{ position: "absolute", inset: 0 }}>
+                <NeoOrb size={104} alive className="neo-orb--hero" />
+                <NeoFace />
+              </span>
+              <NeoImg mood="happy" size={140} className="neo-hero-art" />
             </div>
 
             <div className="enter-up" data-delay="1" style={{ textAlign: "center", maxWidth: 320 }}>

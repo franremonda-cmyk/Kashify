@@ -3,6 +3,9 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Logo from "@/components/Logo";
+import NeoImg from "@/components/NeoImg";
+import NeoOrb from "@/components/NeoOrb";
+import { NeoFace } from "@/components/NeoMascot";
 
 export default function LoginPage() {
   // Cuenta recordada: ?hint=email en la URL (marcador, sirve en nav privada)
@@ -51,17 +54,14 @@ export default function LoginPage() {
         {/* Logo lockup */}
         <Logo size={56} className="enter-up" />
 
-        {/* Neo da la bienvenida */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/neo/neo-happy.png"
-          alt=""
-          width={112}
-          height={112}
-          draggable={false}
-          className="float-bob enter-up"
-          style={{ marginBottom: -12 }}
-        />
+        {/* Neo da la bienvenida — con fallback al orbe si el PNG no carga */}
+        <div className="float-bob enter-up" style={{ marginBottom: -12, position: "relative", width: 112, height: 112 }}>
+          <NeoImg
+            mood="happy"
+            size={112}
+            fallback={<><NeoOrb size={112} alive /><NeoFace /></>}
+          />
+        </div>
 
         {/* Headline */}
         <div className="text-center" style={{ padding: "0 8px" }}>
