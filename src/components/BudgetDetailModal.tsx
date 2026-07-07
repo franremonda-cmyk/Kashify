@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
+import RowsSkeleton from "@/components/RowsSkeleton";
 
 interface BudgetEntry {
   id: string;
@@ -210,7 +211,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
         {/* Scrollable tx list */}
         <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "0 18px 20px", touchAction: "pan-y", minHeight: 0 }}>
           {loading ? (
-            <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "20px 0" }}>Cargando...</p>
+            <RowsSkeleton rows={4} card={false} />
           ) : txs.length === 0 ? (
             <p style={{ fontSize: 13, color: "var(--ink-dim)", textAlign: "center", padding: "20px 0" }}>Sin gastos este mes</p>
           ) : (

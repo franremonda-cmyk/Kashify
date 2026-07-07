@@ -7,6 +7,7 @@ import { CATEGORY_COLORS } from "@/lib/iconList";
 import { useIconStyle } from "@/context/IconStyleContext";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import { BackButton } from "@/components/ui/BackButton";
+import RowsSkeleton from "@/components/RowsSkeleton";
 import { useSpaces } from "@/context/SpaceContext";
 import type { SavingsGoal } from "@/types";
 
@@ -106,7 +107,7 @@ export default function MetasPage() {
       </div>
 
       {loading ? (
-        <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Cargando...</p>
+        <RowsSkeleton rows={3} />
       ) : loadError ? (
         <div className="card-solid p-8 text-center enter-up" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
           <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>No pudimos cargar tus metas.</p>

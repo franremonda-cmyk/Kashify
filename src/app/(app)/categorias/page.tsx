@@ -4,6 +4,7 @@ import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
 import { useIconStyle } from "@/context/IconStyleContext";
 import { BackButton } from "@/components/ui/BackButton";
+import RowsSkeleton from "@/components/RowsSkeleton";
 import { useSpaces } from "@/context/SpaceContext";
 
 interface Budget { space_id?: string; monthly_limit: number; currency_code: string; period_type?: PeriodType; applies_months?: number[] | null }
@@ -145,7 +146,7 @@ export default function CategoriasPage() {
 
       {/* Lista de categorías */}
       {loading ? (
-        <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Cargando...</p>
+        <RowsSkeleton rows={5} />
       ) : (
         <div style={{ borderRadius: 16, overflow: "hidden", border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)" }}>
           {categories.map((cat, i) => {

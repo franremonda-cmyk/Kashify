@@ -8,6 +8,7 @@ import type { IconStyle } from "@/context/IconStyleContext";
 import { toWhatsappFrom } from "@/lib/phone";
 import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
+import RowsSkeleton from "@/components/RowsSkeleton";
 import type { Profile } from "@/types";
 
 interface UserPhone { id: string; phone_number: string; verified: boolean }
@@ -510,7 +511,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                 <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
               </button>
               {catLoading ? (
-                <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "8px 0" }}>Cargando...</p>
+                <RowsSkeleton rows={4} card={false} />
               ) : categories.length === 0 ? (
                 <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Aún no tenés categorías</p>
               ) : (

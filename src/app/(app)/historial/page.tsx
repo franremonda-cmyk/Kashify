@@ -334,6 +334,31 @@ function TxRow({ t, byDay, onOpen }: { t: Transaction; byDay: boolean; onOpen: (
   );
 }
 
+// Skeleton de la lista mientras cargan las transacciones: calca la forma de
+// TxRow (ícono + 2 líneas + monto) para que no haya salto de layout al llegar.
+function TxListSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }} aria-hidden>
+      <div className="skel" style={{ width: 80, height: 13, borderRadius: 6, margin: "0 2px 2px" }} />
+      <div className="card-solid" style={{ overflow: "hidden" }}>
+        {[68, 52, 60].map((w, i) => (
+          <div key={i} className="list-row">
+            <div className="skel list-row__icon" style={{ borderRadius: "var(--radius-control)" }} />
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+              <div className="skel" style={{ width: `${w}%`, height: 13 }} />
+              <div className="skel" style={{ width: `${w - 24}%`, height: 11 }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7, alignItems: "flex-end" }}>
+              <div className="skel" style={{ width: 66, height: 13 }} />
+              <div className="skel" style={{ width: 38, height: 10 }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ActividadPage() {
@@ -634,11 +659,7 @@ export default function ActividadPage() {
             </button>
           </div>
         </div>
-        {loading && (
-          <div style={{ padding: 24, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)" }}>
-            <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Cargando...</p>
-          </div>
-        )}
+        {loading && <TxListSkeleton />}
         {!loading && loadError && (
           <div style={{ padding: 32, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
             <p style={{ fontSize: 13, color: "var(--ink)" }}>No pudimos cargar tus movimientos.</p>

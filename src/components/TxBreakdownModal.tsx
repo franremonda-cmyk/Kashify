@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import CategoryIcon from "@/components/CategoryIcon";
 import TransactionSheet from "@/components/TransactionSheet";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
+import RowsSkeleton from "@/components/RowsSkeleton";
 import type { Transaction } from "@/types";
 
 interface Tx {
@@ -129,7 +130,7 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
         {/* Scrollable list */}
         <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "0 18px 8px", touchAction: "pan-y", minHeight: 0 }}>
           {loading ? (
-            <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "20px 0" }}>Cargando...</p>
+            <RowsSkeleton rows={4} card={false} />
           ) : txs.length === 0 ? (
             <p style={{ fontSize: 13, color: "var(--ink-dim)", textAlign: "center", padding: "20px 0" }}>Sin {title.toLowerCase()} este mes</p>
           ) : (

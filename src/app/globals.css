@@ -419,6 +419,16 @@ body::before {
   animation: ai-shimmer 3.4s ease-in-out infinite;
 }
 
+/* Skeleton de carga — bloque que "late" mientras llegan los datos.
+   Usar con estilos inline para ancho/alto/forma (ej. width, borderRadius). */
+@keyframes skel-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.skel {
+  background: var(--raised);
+  border-radius: 8px;
+  animation: skel-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
 /* Gentle floating bob — for the Neo avatar idle */
 @keyframes float-bob {
   0%, 100% { transform: translateY(0); }
