@@ -1019,6 +1019,15 @@ body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
    en el sidebar (dos Neo en pantalla sobra); en mobile es la única presencia. */
 @media (min-width: 768px) { .neo-home-avatar { display: none !important; } }
 
+/* Tiles Ingresos/Gastos/Neto: el número escala al ANCHO DE LA TARJETA (cqi), no
+   del viewport, así nunca desborda por más largo que sea el importe. */
+.stat-tile { container-type: inline-size; }
+.stat-num {
+  font-size: clamp(0.68rem, 11cqi, 1.25rem);
+  font-weight: 700; letter-spacing: -0.02em; line-height: 1;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
 /* Hero del chat: en <768 muestra el ARTE (PNG, 140px); en ≥768 el box se
    oculta (visibility, sin reflow) y la mascota voladora aterriza encima. */
 .neo-hero-box { width: 140px; height: 140px; }

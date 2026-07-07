@@ -593,26 +593,26 @@ export default function ActividadPage() {
 
       {filtered.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }} className="enter-up" data-delay="1">
-          <button onClick={() => setBreakdownType("income")} className="card-glass" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
+          <button onClick={() => setBreakdownType("income")} className="card-glass stat-tile" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--positive)", flexShrink: 0 }} />
               <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Ingresos</p>
             </div>
-            <p className="mono" style={{ fontSize: "clamp(0.78rem, 3vw, 1.4rem)", fontWeight: 700, whiteSpace: "nowrap", color: "var(--positive)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+            <p className="mono stat-num" style={{ color: "var(--positive)" }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
-          <button onClick={() => setBreakdownType("expense")} className="card-glass" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
+          <button onClick={() => setBreakdownType("expense")} className="card-glass stat-tile" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--negative)", flexShrink: 0 }} />
               <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Gastos</p>
             </div>
-            <p className="mono" style={{ fontSize: "clamp(0.78rem, 3vw, 1.4rem)", fontWeight: 700, whiteSpace: "nowrap", color: "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+            <p className="mono stat-num" style={{ color: "var(--negative)" }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
-          <div className="card-glass" style={{ padding: "14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
+          <div className="card-glass stat-tile" style={{ padding: "14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: net >= 0 ? "var(--positive)" : "var(--negative)", flexShrink: 0 }} />
               <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Neto</p>
             </div>
-            <p className="mono" style={{ fontSize: "clamp(0.78rem, 3vw, 1.4rem)", fontWeight: 700, whiteSpace: "nowrap", color: net >= 0 ? "var(--positive)" : "var(--negative)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+            <p className="mono stat-num" style={{ color: net >= 0 ? "var(--positive)" : "var(--negative)" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
       )}
