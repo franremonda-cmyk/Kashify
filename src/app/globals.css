@@ -893,7 +893,7 @@ button[aria-label="Cerrar"]::after {
    En <768 se oculta: la página de Neo usa su propio hero. Tunables abajo. */
 :root {
   --neo-dock-bottom: 138px;   /* alto desde el fondo del sidebar al centro del dock */
-  --neo-hero-top: 28dvh;      /* dónde aterriza el hero en /neo (afinar a ojo) */
+  --neo-hero-top: 22dvh;      /* fallback si aún no se midió; NeoChat publica el real */
 }
 .neo-mascot {
   position: fixed;
@@ -1008,12 +1008,16 @@ body.neo-chatting .neo-mascot { opacity: 0; pointer-events: none; }
   }
 }
 @media (min-width: 1024px) {
-  .neo-mascot[data-neo-dock="sidebar"] { --neo-scale: 1; }
+  .neo-mascot[data-neo-dock="sidebar"] { --neo-scale: 1.35; }
 }
 
 /* Aire que el sidebar reserva para que la mascota flote sin pisar botones. */
 .neo-dock-slot { height: 92px; flex-shrink: 0; }
-@media (min-width: 1024px) { .neo-dock-slot { height: 140px; } }
+@media (min-width: 1024px) { .neo-dock-slot { height: 172px; } }
+
+/* Avatar de Neo en el saludo de Inicio: solo mobile. En ≥768 la mascota ya vive
+   en el sidebar (dos Neo en pantalla sobra); en mobile es la única presencia. */
+@media (min-width: 768px) { .neo-home-avatar { display: none !important; } }
 
 /* Hero del chat: en <768 muestra el ARTE (PNG, 140px); en ≥768 el box se
    oculta (visibility, sin reflow) y la mascota voladora aterriza encima. */

@@ -152,7 +152,10 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
       if (r.width === 0) return;
       const root = document.documentElement.style;
       root.setProperty("--neo-hero-x", `${Math.round(r.left + r.width / 2)}px`);
-      root.setProperty("--neo-hero-y", `${Math.round(r.top + r.height / 2)}px`);
+      // Aterriza en el tercio superior del box (no el centro): la mascota a 1.2x
+      // aterrizando en el centro pisaba el título de abajo. El box reserva el aire
+      // inferior; apuntar arriba sube a Neo y despeja el texto.
+      root.setProperty("--neo-hero-y", `${Math.round(r.top + r.height * 0.28)}px`);
     };
     publish();
     const t = setTimeout(publish, 350); // tras la animación de entrada

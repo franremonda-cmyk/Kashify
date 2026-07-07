@@ -223,7 +223,7 @@ export default async function DashboardPage() {
           </h1>
         </div>
         <div
-          className="rounded-full flex items-center justify-center"
+          className="rounded-full flex items-center justify-center neo-home-avatar"
           style={{ width: 52, height: 52, background: "var(--accent-soft)", border: "1px solid var(--accent-glow)", overflow: "hidden" }}
           role="img"
           aria-label={firstName ? `Neo te saluda, ${firstName}` : "Neo te saluda"}
