@@ -7,7 +7,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import RowsSkeleton from "@/components/RowsSkeleton";
 import { useSpaces } from "@/context/SpaceContext";
 
-interface Budget { space_id?: string; monthly_limit: number; currency_code: string; period_type?: PeriodType; applies_months?: number[] | null }
+interface Budget { id: string; space_id?: string; monthly_limit: number; currency_code: string; period_type?: PeriodType; applies_months?: number[] | null }
 interface Category {
   id: string; name: string; icon: string; color: string; is_default: boolean;
   category_budgets?: Budget[];
@@ -67,7 +67,8 @@ export default function CategoriasPage() {
   const [loading, setLoading] = useState(true);
   const [editingCat, setEditingCat] = useState<Category | "new" | null>(null);
   // Límite: state del panel expandido por categoría
-  const [editBudget, setEditBudget] = useState<{ id: string; limit: string; currency: string; period: PeriodType; months: number[] } | null>(null);
+  const [editBudget, setEditBudget] = useState<{ id: string; budgetId: string; limit: string; currency: string; period: PeriodType; months: number[] } | null>(null);
+  const [confirmDeleteBudget, setConfirmDeleteBudget] = useState(false);
   // Nuevo límite: dropdown para elegir qué categoría
   const [showNewBudget, setShowNewBudget] = useState(false);
   const [newBudgetCatId, setNewBudgetCatId] = useState("");
@@ -100,6 +101,13 @@ export default function CategoriasPage() {
         period_type: b.period, applies_months: b.period === "specific_months" ? b.months : null,
       }),
     });
+    setEditBudget(null);
+    load();
+  }
+
+  async function deleteBudget(budgetId: string) {
+    await fetch(`/api/budgets/${budgetId}`, { method: "DELETE" });
+    setConfirmDeleteBudget(false);
     setEditBudget(null);
     load();
   }
@@ -173,7 +181,7 @@ export default function CategoriasPage() {
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => setEditBudget(isEditing ? null : { id: cat.id, limit: String(budget?.monthly_limit ?? ""), currency: budget?.currency_code ?? "ARS", period: budget?.period_type ?? "always", months: budget?.applies_months ?? [] })}
+                    <button onClick={() => { setConfirmDeleteBudget(false); setEditBudget(isEditing ? null : { id: cat.id, budgetId: budget?.id ?? "", limit: String(budget?.monthly_limit ?? ""), currency: budget?.currency_code ?? "ARS", period: budget?.period_type ?? "always", months: budget?.applies_months ?? [] }); }}
                       style={{ fontSize: 13, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: budget ? "var(--accent)" : "var(--ink-muted)", fontWeight: 600 }}>
                       {budget ? "Límite" : "+ Límite"}
                     </button>
@@ -204,8 +212,16 @@ export default function CategoriasPage() {
                     {editBudget.period === "specific_months" && (
                       <MonthGrid selected={editBudget.months} onToggle={(m) => setEditBudget(b => b ? { ...b, months: toggleMonth(b.months, m) } : b)} />
                     )}
-                    <button onClick={() => editBudget && saveBudget(cat.id, editBudget)}
-                      style={{ alignSelf: "flex-start", padding: "9px 20px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Guardar límite</button>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => editBudget && saveBudget(cat.id, editBudget)}
+                        style={{ padding: "9px 20px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Guardar límite</button>
+                      {editBudget.budgetId && (
+                        <button onClick={() => confirmDeleteBudget ? deleteBudget(editBudget.budgetId) : setConfirmDeleteBudget(true)}
+                          style={{ padding: "9px 16px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: confirmDeleteBudget ? 700 : 600, background: confirmDeleteBudget ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmDeleteBudget ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)" }}>
+                          {confirmDeleteBudget ? "¿Eliminar? Tocá de nuevo" : "Eliminar límite"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

@@ -16,7 +16,7 @@ export default function CuotasPage() {
   const { activeId } = useSpaces();
   const [plans, setPlans] = useState<PlanWithPayments[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<PlanWithPayments | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -24,7 +24,7 @@ export default function CuotasPage() {
   }, [activeId]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("new") === "1") { setShowForm(true); setEditingPlan(null); }
+    if (new URLSearchParams(window.location.search).get("new") === "1") { setShowForm(true); setEditingId(null); }
   }, []);
 
   async function handleCreate(data: InstallmentFormData) {
@@ -43,9 +43,8 @@ export default function CuotasPage() {
     }
   }
 
-  async function handleEdit(data: InstallmentFormData) {
-    if (!editingPlan) return;
-    await fetch(`/api/installments/${editingPlan.id}`, {
+  async function handleEdit(id: string, data: InstallmentFormData) {
+    await fetch(`/api/installments/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -57,7 +56,7 @@ export default function CuotasPage() {
           : undefined,
       }),
     });
-    setEditingPlan(null);
+    setEditingId(null);
     load();
   }
 
@@ -69,6 +68,12 @@ export default function CuotasPage() {
   async function handlePay(id: string) {
     await fetch(`/api/installments/${id}/pay`, { method: "POST" });
     window.dispatchEvent(new Event("transaction-added"));
+    load();
+  }
+
+  async function handleDelete(id: string) {
+    await fetch(`/api/installments/${id}`, { method: "DELETE" });
+    if (editingId === id) setEditingId(null);
     load();
   }
 
@@ -86,7 +91,7 @@ export default function CuotasPage() {
           </div>
         </div>
         <button
-          onClick={() => { setShowForm(true); setEditingPlan(null); }}
+          onClick={() => { setShowForm(true); setEditingId(null); }}
           style={{ fontSize: 13, fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
         >
           + Nueva
@@ -107,29 +112,20 @@ export default function CuotasPage() {
         </>
       )}
 
-      {editingPlan && (
-        <InstallmentForm
-          editMode
-          initialData={{
-            name: editingPlan.name,
-            total_amount: editingPlan.total_amount,
-            currency_code: editingPlan.currency_code,
-            card_name: editingPlan.card_name ?? "",
-            n_installments: editingPlan.n_installments,
-            interest_type: editingPlan.interest_type as "none" | "french",
-            tna: editingPlan.tna ?? null,
-            first_payment_date: editingPlan.first_payment_date ?? "",
-          }}
-          onSubmit={handleEdit}
-          onCancel={() => setEditingPlan(null)}
-        />
-      )}
-
       {active.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="section-title" style={{ paddingLeft: 4 }}>Activas</h2>
           {active.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} onCancel={handleCancel} onPay={handlePay} onEdit={setEditingPlan} />
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              onCancel={handleCancel}
+              onPay={handlePay}
+              onDelete={handleDelete}
+              isEditing={editingId === plan.id}
+              onEditToggle={() => setEditingId((cur) => (cur === plan.id ? null : plan.id))}
+              onSubmitEdit={(data) => handleEdit(plan.id, data)}
+            />
           ))}
         </section>
       )}
@@ -138,7 +134,16 @@ export default function CuotasPage() {
         <section className="flex flex-col gap-2">
           <h2 className="section-title" style={{ paddingLeft: 4 }}>Saldadas</h2>
           {paid.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} onCancel={handleCancel} onPay={handlePay} onEdit={setEditingPlan} />
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              onCancel={handleCancel}
+              onPay={handlePay}
+              onDelete={handleDelete}
+              isEditing={editingId === plan.id}
+              onEditToggle={() => setEditingId((cur) => (cur === plan.id ? null : plan.id))}
+              onSubmitEdit={(data) => handleEdit(plan.id, data)}
+            />
           ))}
         </section>
       )}
@@ -153,19 +158,28 @@ export default function CuotasPage() {
   );
 }
 
-function PlanCard({ plan, onCancel, onPay, onEdit }: {
+function PlanCard({ plan, onCancel, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit }: {
   plan: PlanWithPayments;
   onCancel: (id: string) => void;
   onPay: (id: string) => void;
-  onEdit: (plan: PlanWithPayments) => void;
+  onDelete: (id: string) => void;
+  isEditing: boolean;
+  onEditToggle: () => void;
+  onSubmitEdit: (data: InstallmentFormData) => void;
 }) {
   // Confirmación inline de dos toques (reemplaza el window.confirm del navegador).
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   useEffect(() => {
     if (!confirmingCancel) return;
     const t = setTimeout(() => setConfirmingCancel(false), 3500);
     return () => clearTimeout(t);
   }, [confirmingCancel]);
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const t = setTimeout(() => setConfirmingDelete(false), 3500);
+    return () => clearTimeout(t);
+  }, [confirmingDelete]);
 
   const payments = plan.installment_payments ?? [];
   const paidCount = payments.filter((p) => p.status === "paid").length;
@@ -211,34 +225,62 @@ function PlanCard({ plan, onCancel, onPay, onEdit }: {
         )}
       </div>
 
-      <div className="flex gap-2">
-        {isActive && (
-          <>
-            <button
-              onClick={() => onPay(plan.id)}
-              style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}
-            >
-              Registrar pago
-            </button>
-            <button
-              onClick={() => {
-                if (!confirmingCancel) { setConfirmingCancel(true); return; }
-                setConfirmingCancel(false);
-                onCancel(plan.id);
-              }}
-              style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: confirmingCancel ? 700 : 600, background: confirmingCancel ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmingCancel ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)", transition: "all 150ms ease-out" }}
-            >
-              {confirmingCancel ? "¿Saldar todo? Tocá de nuevo" : "Saldar"}
-            </button>
-          </>
-        )}
-        <button
-          onClick={() => onEdit(plan)}
-          style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}
-        >
-          Editar
-        </button>
-      </div>
+      {isEditing ? (
+        <InstallmentForm
+          editMode
+          initialData={{
+            name: plan.name,
+            total_amount: plan.total_amount,
+            currency_code: plan.currency_code,
+            card_name: plan.card_name ?? "",
+            n_installments: plan.n_installments,
+            interest_type: plan.interest_type as "none" | "french",
+            tna: plan.tna ?? null,
+            first_payment_date: plan.first_payment_date ?? "",
+          }}
+          onSubmit={onSubmitEdit}
+          onCancel={onEditToggle}
+        />
+      ) : (
+        <div className="flex gap-2">
+          {isActive && (
+            <>
+              <button
+                onClick={() => onPay(plan.id)}
+                style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}
+              >
+                Registrar pago
+              </button>
+              <button
+                onClick={() => {
+                  if (!confirmingCancel) { setConfirmingCancel(true); return; }
+                  setConfirmingCancel(false);
+                  onCancel(plan.id);
+                }}
+                style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: confirmingCancel ? 700 : 600, background: confirmingCancel ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmingCancel ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)", transition: "all 150ms ease-out" }}
+              >
+                {confirmingCancel ? "¿Saldar todo? Tocá de nuevo" : "Saldar"}
+              </button>
+            </>
+          )}
+          <button
+            onClick={onEditToggle}
+            style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}
+          >
+            Editar
+          </button>
+          <button
+            onClick={() => {
+              if (!confirmingDelete) { setConfirmingDelete(true); return; }
+              setConfirmingDelete(false);
+              onDelete(plan.id);
+            }}
+            style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: confirmingDelete ? 700 : 600, background: confirmingDelete ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmingDelete ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)", transition: "all 150ms ease-out" }}
+          >
+            {confirmingDelete ? "¿Eliminar? Tocá de nuevo" : "Eliminar"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

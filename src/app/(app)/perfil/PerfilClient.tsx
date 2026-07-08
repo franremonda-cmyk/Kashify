@@ -16,6 +16,7 @@ interface Category  { id: string; name: string; icon?: string; color?: string }
 interface Budget    {
   id: string;
   category_id: string;
+  space_id?: string | null;
   monthly_limit: number;
   currency_code: string;
   period_type?: "always" | "specific_months";
@@ -144,8 +145,9 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
   // Límites
   const [budgets, setBudgets]           = useState<Budget[]>([]);
-  const [budgetEdits, setBudgetEdits]   = useState<Record<string, { period_type: "always" | "specific_months"; applies_months: number[] }>>({});
+  const [budgetEdits, setBudgetEdits]   = useState<Record<string, { limit: string; currency: string; period_type: "always" | "specific_months"; applies_months: number[] }>>({});
   const [savingBudget, setSavingBudget] = useState<string | null>(null);
+  const [confirmDeleteBudget, setConfirmDeleteBudget] = useState<string | null>(null);
 
   // Sub-secciones del acordeón Categorías
   const [showMisCats, setShowMisCats]   = useState(false);
@@ -169,9 +171,9 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     if (res.ok) {
       const data: Budget[] = await res.json();
       setBudgets(data);
-      const edits: Record<string, { period_type: "always" | "specific_months"; applies_months: number[] }> = {};
+      const edits: Record<string, { limit: string; currency: string; period_type: "always" | "specific_months"; applies_months: number[] }> = {};
       for (const b of data) {
-        edits[b.id] = { period_type: b.period_type ?? "always", applies_months: b.applies_months ?? [] };
+        edits[b.id] = { limit: String(b.monthly_limit), currency: b.currency_code, period_type: b.period_type ?? "always", applies_months: b.applies_months ?? [] };
       }
       setBudgetEdits(edits);
     }
@@ -278,22 +280,31 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     await fetchCategories();
   }
 
-  async function saveBudgetPeriod(budget: Budget) {
+  async function saveBudget(budget: Budget) {
     const edit = budgetEdits[budget.id];
-    if (!edit) return;
+    if (!edit || !edit.limit || isNaN(parseFloat(edit.limit))) return;
     setSavingBudget(budget.id);
     await fetch("/api/budgets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         category_id: budget.category_id,
-        monthly_limit: budget.monthly_limit,
-        currency_code: budget.currency_code,
+        monthly_limit: parseFloat(edit.limit),
+        currency_code: edit.currency,
+        space_id: budget.space_id,
         period_type: edit.period_type,
         applies_months: edit.period_type === "specific_months" ? edit.applies_months : null,
       }),
     });
     setSavingBudget(null);
+    fetchBudgets();
+  }
+
+  async function deleteBudget(budgetId: string) {
+    setSavingBudget(budgetId);
+    await fetch(`/api/budgets/${budgetId}`, { method: "DELETE" });
+    setSavingBudget(null);
+    setConfirmDeleteBudget(null);
     fetchBudgets();
   }
 
@@ -557,17 +568,25 @@ export default function PerfilClient({ profile, phones, email }: Props) {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {budgets.map((b) => {
-                    const edit = budgetEdits[b.id] ?? { period_type: "always", applies_months: [] };
+                    const edit = budgetEdits[b.id] ?? { limit: String(b.monthly_limit), currency: b.currency_code, period_type: "always" as const, applies_months: [] };
+                    const confirming = confirmDeleteBudget === b.id;
                     return (
                       <div key={b.id} style={{ borderRadius: 12, border: "0.5px solid var(--glass-border)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, background: "var(--base)" }}>
                         <div className="flex items-center gap-3">
                           <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (b.categories?.color ?? "var(--accent)") + "22", border: `1px solid ${b.categories?.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.categories?.color ?? "var(--accent)" }}>
                             <CategoryIcon icon={b.categories?.icon} name={b.categories?.name ?? ""} color={b.categories?.color} size={15} />
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{b.categories?.name ?? "—"}</p>
-                            <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>{b.currency_code} {b.monthly_limit.toLocaleString("es-AR")}</p>
-                          </div>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", flex: 1, minWidth: 0 }}>{b.categories?.name ?? "—"}</p>
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <select style={{ ...inp, width: 84, padding: "9px 10px", fontSize: 13 }} value={edit.currency}
+                            onChange={(e) => setBudgetEdits((prev) => ({ ...prev, [b.id]: { ...edit, currency: e.target.value } }))}>
+                            {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
+                          </select>
+                          <input style={{ ...inp, flex: 1, padding: "9px 12px", fontSize: 13 }} type="number" inputMode="decimal" placeholder="Límite mensual"
+                            value={edit.limit}
+                            onChange={(e) => setBudgetEdits((prev) => ({ ...prev, [b.id]: { ...edit, limit: e.target.value } }))}
+                          />
                         </div>
                         <div style={{ display: "flex", gap: 6 }}>
                           {(["always", "specific_months"] as const).map((pt) => (
@@ -592,10 +611,16 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                             })}
                           </div>
                         )}
-                        <button onClick={() => saveBudgetPeriod(b)} disabled={savingBudget === b.id}
-                          style={{ padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: savingBudget === b.id ? 0.6 : 1 }}>
-                          {savingBudget === b.id ? "Guardando..." : "Guardar"}
-                        </button>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={() => saveBudget(b)} disabled={savingBudget === b.id}
+                            style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: savingBudget === b.id ? 0.6 : 1 }}>
+                            {savingBudget === b.id ? "Guardando..." : "Guardar"}
+                          </button>
+                          <button onClick={() => confirming ? deleteBudget(b.id) : setConfirmDeleteBudget(b.id)} disabled={savingBudget === b.id}
+                            style={{ padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: confirming ? 700 : 600, background: confirming ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirming ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)" }}>
+                            {confirming ? "¿Eliminar?" : "Eliminar"}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
