@@ -12,6 +12,53 @@ export interface Candidate {
   message: string;
 }
 
+// Familias de aviso que el usuario puede silenciar (agrupan los `type` granulares).
+// El cron respeta `neo_notification_prefs.family`; el usuario silencia por acá.
+export type NotifFamily =
+  | "limites" | "gastos" | "resumen" | "metas"
+  | "cuotas" | "recurrentes" | "espacios" | "registrar" | "logros";
+
+export const NOTIF_FAMILIES: { family: NotifFamily; label: string; desc: string }[] = [
+  { family: "limites",     label: "Avisos de límites",     desc: "Cuando te acercás o pasás un límite de categoría" },
+  { family: "gastos",      label: "Alertas de gastos",     desc: "Picos, gastos mayores al ingreso, comparación con el mes pasado" },
+  { family: "resumen",     label: "Resúmenes del mes",     desc: "Cuánto llevás gastado y el cierre de cada mes" },
+  { family: "metas",       label: "Avisos de metas",       desc: "Progreso, metas en riesgo y sugerencias de ahorro" },
+  { family: "cuotas",      label: "Recordatorios de cuotas", desc: "Vencimientos próximos y cuotas saldadas" },
+  { family: "recurrentes", label: "Gastos que se repiten", desc: "Cuando falta uno habitual o aparece uno nuevo" },
+  { family: "espacios",    label: "Balance por espacio",   desc: "Cuando en un espacio salió más de lo que entró" },
+  { family: "registrar",   label: "Recordatorios para registrar", desc: "Cuando hace días que no anotás nada" },
+  { family: "logros",      label: "Felicitaciones",        desc: "Aniversarios y cuando ahorrás más que el mes anterior" },
+];
+
+// type de neo_notification → familia silenciable. Un solo lugar de verdad.
+export function notifFamily(type: string): NotifFamily {
+  if (type === "alert_budget" || type === "alert_budget_pace") return "limites";
+  if (type === "spend_spike" || type === "alert_overspend" || type === "alert_month_up" || type === "achievement_month_down") return "gastos";
+  if (type === "monthly_summary" || type === "monthly_close") return "resumen";
+  if (type.startsWith("achievement_goal_") || type === "reminder_goal_risk" || type === "reminder_leftover_goal") return "metas";
+  if (type === "reminder_installment_due" || type === "achievement_installments_done") return "cuotas";
+  if (type === "reminder_recurring_missing" || type === "reminder_recurring_new") return "recurrentes";
+  if (type === "alert_space_pnl") return "espacios";
+  if (type === "reminder_inactivity") return "registrar";
+  return "logros"; // achievement_savings_up, achievement_anniversary y cualquier logro nuevo
+}
+
+// Familia → los `type` que la componen (para borrar del feed al silenciar).
+export function typesForFamily(family: NotifFamily): string[] {
+  const map: Record<NotifFamily, string[]> = {
+    limites: ["alert_budget", "alert_budget_pace"],
+    gastos: ["spend_spike", "alert_overspend", "alert_month_up", "achievement_month_down"],
+    resumen: ["monthly_summary", "monthly_close"],
+    metas: ["achievement_goal_50", "achievement_goal_75", "reminder_goal_risk", "reminder_leftover_goal"],
+    cuotas: ["reminder_installment_due", "achievement_installments_done"],
+    recurrentes: ["reminder_recurring_missing", "reminder_recurring_new"],
+    espacios: ["alert_space_pnl"],
+    registrar: ["reminder_inactivity"],
+    logros: ["achievement_savings_up", "achievement_anniversary"],
+  };
+  return map[family];
+}
+
 export interface Spike { catId: string; now: number; avg: number; }
 
 /**

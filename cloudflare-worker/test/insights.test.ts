@@ -4,6 +4,7 @@ import {
   budgetThresholdHit, detectMonthComparison, detectOverspend,
   budgetPaceRatio, goalMilestone, goalBehindPts, savingsRateDelta,
   detectSpacePnl, planJustFinished, missingRecurring, newRecurring,
+  notifFamily, typesForFamily, NOTIF_FAMILIES,
 } from "../../src/lib/neo/insights.ts";
 
 let pass = 0;
@@ -123,5 +124,21 @@ ok(missingRecurring([netflix], new Set(), 15).length === 0, "antes del día 20 �
 ok(missingRecurring([netflix], new Set(["netflix"]), 22).length === 0, "ya apareció este mes → nada");
 ok(newRecurring([netflix], new Set()).length === 1, "2ª aparición recién este mes → nuevo");
 ok(newRecurring([netflix], new Set(["netflix"])).length === 0, "ya era recurrente → no es nuevo");
+
+// ── familias silenciables: mapeo type→familia y round-trip ──
+ok(notifFamily("alert_budget") === "limites", "alert_budget → limites");
+ok(notifFamily("alert_budget_pace") === "limites", "ritmo de límite → limites");
+ok(notifFamily("spend_spike") === "gastos", "pico → gastos");
+ok(notifFamily("achievement_goal_75") === "metas", "hito de meta → metas");
+ok(notifFamily("reminder_installment_due") === "cuotas", "cuota por vencer → cuotas");
+ok(notifFamily("reminder_inactivity") === "registrar", "inactividad → registrar");
+ok(notifFamily("achievement_anniversary") === "logros", "aniversario → logros");
+// todo type conocido cae en una familia que existe en NOTIF_FAMILIES, y typesForFamily lo devuelve
+const fams = new Set(NOTIF_FAMILIES.map(f => f.family));
+for (const t of ["alert_budget","alert_budget_pace","spend_spike","alert_overspend","alert_month_up","achievement_month_down","monthly_summary","monthly_close","achievement_goal_50","achievement_goal_75","reminder_goal_risk","reminder_leftover_goal","reminder_installment_due","achievement_installments_done","reminder_recurring_missing","reminder_recurring_new","alert_space_pnl","reminder_inactivity","achievement_savings_up","achievement_anniversary"]) {
+  const fam = notifFamily(t);
+  ok(fams.has(fam), `${t} cae en familia válida (${fam})`);
+  ok(typesForFamily(fam).includes(t), `typesForFamily(${fam}) incluye ${t}`);
+}
 
 console.log(`✓ insights Neo: ${pass} asserts OK`);

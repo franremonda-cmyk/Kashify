@@ -5,7 +5,7 @@ import {
   budgetThresholdHit, detectMonthComparison, detectOverspend,
   budgetPaceRatio, goalMilestone, goalBehindPts, savingsRateDelta,
   detectSpacePnl, planJustFinished, missingRecurring, newRecurring,
-  type Candidate,
+  notifFamily, type Candidate, type NotifFamily,
 } from "@/lib/neo/insights";
 import { detectRecurring, normalizeDesc } from "@/lib/recurring";
 
@@ -18,6 +18,10 @@ import { detectRecurring, normalizeDesc } from "@/lib/recurring";
 // aprenden) es el paso de co-diseño posterior.
 const PRIOR_MONTHS = 3;
 const MAX_PER_RUN = 2;
+// Back-off automático: si el usuario deja sin leer ≥ este número de avisos de una
+// misma familia, Neo pausa esa familia por BACKOFF_DAYS (se auto-reactiva sola).
+const BACKOFF_UNREAD = 3;
+const BACKOFF_DAYS = 21;
 
 type Row = { user_id: string; amount: number; currency_code: string; category_id: string | null; date: string; type: string; space_id: string | null; description: string | null };
 type Budget = { user_id: string; space_id: string; category_id: string; monthly_limit: number; currency_code: string };
@@ -54,15 +58,37 @@ export async function GET(request: Request) {
 
   if (!rows?.length) return NextResponse.json({ insights: 0 });
 
-  // Nombres de categoría, presupuestos, metas, espacios, cuotas y perfiles.
-  const [{ data: cats }, { data: budgetRows }, { data: goalRows }, { data: spaceRows }, { data: paymentRows }, { data: profileRows }] = await Promise.all([
+  // Nombres de categoría, presupuestos, metas, espacios, cuotas, perfiles,
+  // preferencias de aviso (silenciado/pausa) y avisos sin leer (para back-off).
+  const [{ data: cats }, { data: budgetRows }, { data: goalRows }, { data: spaceRows }, { data: paymentRows }, { data: profileRows }, { data: prefRows }, { data: unreadRows }] = await Promise.all([
     supabase.from("categories").select("id, name"),
     supabase.from("category_budgets").select("user_id, space_id, category_id, monthly_limit, currency_code"),
     supabase.from("savings_goals").select("id, user_id, name, current_amount, target_amount, target_date, created_at").eq("status", "active"),
     supabase.from("spaces").select("id, user_id, name"),
     supabase.from("installment_payments").select("id, plan_id, user_id, status, due_date, payment_number, amount, installment_plans(name, currency_code)"),
     supabase.from("profiles").select("user_id, created_at"),
+    supabase.from("neo_notification_prefs").select("user_id, family, muted_until"),
+    supabase.from("neo_notifications").select("user_id, type").is("read_at", null),
   ]);
+
+  // Familias silenciadas/pausadas (muted_until en el futuro) por usuario.
+  const nowMs = now.getTime();
+  const mutedByUser = new Map<string, Set<string>>();
+  for (const p of (prefRows ?? []) as { user_id: string; family: string; muted_until: string | null }[]) {
+    if (p.muted_until && Date.parse(p.muted_until) > nowMs) {
+      const set = mutedByUser.get(p.user_id) ?? new Set<string>();
+      set.add(p.family);
+      mutedByUser.set(p.user_id, set);
+    }
+  }
+  // Avisos sin leer por usuario+familia → dispara el back-off automático.
+  const unreadByUserFamily = new Map<string, Map<NotifFamily, number>>();
+  for (const n of (unreadRows ?? []) as { user_id: string; type: string }[]) {
+    const fam = notifFamily(n.type);
+    const m = unreadByUserFamily.get(n.user_id) ?? new Map<NotifFamily, number>();
+    m.set(fam, (m.get(fam) ?? 0) + 1);
+    unreadByUserFamily.set(n.user_id, m);
+  }
   const nameOf = new Map((cats ?? []).map((c: { id: string; name: string }) => [c.id, c.name]));
   const budgetsByUser = new Map<string, Budget[]>();
   for (const b of (budgetRows ?? []) as Budget[]) {
@@ -333,11 +359,28 @@ export async function GET(request: Request) {
     const inact = detectInactivity(latest, avgGapDays(a.dates), todayISO);
     if (inact) candidates.push(inact);
 
+    // Back-off automático: familias con ≥ BACKOFF_UNREAD avisos sin leer se
+    // pausan solas (upsert muted_until) y no se emiten esta corrida.
+    const muted = mutedByUser.get(userId) ?? new Set<string>();
+    const unreadFam = unreadByUserFamily.get(userId);
+    if (unreadFam) {
+      const until = new Date(nowMs + BACKOFF_DAYS * 86_400_000).toISOString();
+      for (const [fam, count] of unreadFam) {
+        if (count >= BACKOFF_UNREAD && !muted.has(fam)) {
+          muted.add(fam);
+          await supabase.from("neo_notification_prefs")
+            .upsert({ user_id: userId, family: fam, muted_until: until, updated_at: new Date().toISOString() }, { onConflict: "user_id,family" });
+        }
+      }
+    }
+
     // Filtrar ya enviados (una query por usuario) y duplicados de esta corrida
-    // (misma clave, ej. P&L de un espacio en dos monedas); prioridad; emitir cap.
+    // (misma clave, ej. P&L de un espacio en dos monedas); silenciados/pausados;
+    // prioridad; emitir cap.
     const { data: sentRows } = await supabase.from("notification_log").select("alert_type").eq("user_id", userId);
     const sent = new Set((sentRows ?? []).map((r: { alert_type: string }) => r.alert_type));
     const fresh = candidates
+      .filter((c) => !muted.has(notifFamily(c.type)))
       .filter((c) => !sent.has(c.alertType) && sent.add(c.alertType))
       .sort((x, y) => y.priority - x.priority);
 

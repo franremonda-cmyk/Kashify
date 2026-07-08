@@ -9,6 +9,7 @@ import { toWhatsappFrom } from "@/lib/phone";
 import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
 import RowsSkeleton from "@/components/RowsSkeleton";
+import { NOTIF_FAMILIES } from "@/lib/neo/insights";
 import type { Profile } from "@/types";
 
 interface UserPhone { id: string; phone_number: string; verified: boolean }
@@ -153,6 +154,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const [showMisCats, setShowMisCats]   = useState(false);
   const [showLimits, setShowLimits]     = useState(false);
 
+  // Avisos de Neo: familias silenciadas
+  const [mutedFamilies, setMutedFamilies] = useState<string[]>([]);
+  const [togglingFamily, setTogglingFamily] = useState<string | null>(null);
+
   // Metas y cuotas (vista previa inline)
   const [goals, setGoals] = useState<import("@/types").SavingsGoal[]>([]);
   const [plans, setPlans] = useState<(import("@/types").InstallmentPlan & { installment_payments?: { status: string }[] })[]>([]);
@@ -184,7 +189,18 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   useEffect(() => {
     fetch("/api/goals").then(r => r.ok ? r.json() : []).then(d => setGoals(Array.isArray(d) ? d : [])).catch(() => {});
     fetch("/api/installments").then(r => r.ok ? r.json() : []).then(d => setPlans(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch("/api/neo/notif-prefs").then(r => r.ok ? r.json() : { muted: [] }).then(d => setMutedFamilies(Array.isArray(d.muted) ? d.muted : [])).catch(() => {});
   }, []);
+
+  async function toggleFamily(family: string, silence: boolean) {
+    setTogglingFamily(family);
+    setMutedFamilies(prev => silence ? [...prev, family] : prev.filter(f => f !== family));
+    await fetch("/api/neo/notif-prefs", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ family, action: silence ? "silence" : "enable" }),
+    }).catch(() => {});
+    setTogglingFamily(null);
+  }
 
   function applyTheme(t: string) {
     setTheme(t);
@@ -485,6 +501,34 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                 </div>
                 {active && <div style={{ fontSize: 13, color: "var(--accent)", flexShrink: 0 }}>✓</div>}
               </button>
+            );
+          })}
+        </div>
+      </Accordion>
+
+      {/* Avisos de Neo */}
+      <Accordion label="Avisos de Neo" {...sec("avisos")}>
+        <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>
+          Elegí de qué te avisa Neo. Si desactivás algo, deja de mostrarte esos mensajes.
+          Podés volver a activarlo cuando quieras.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {NOTIF_FAMILIES.map((f) => {
+            const on = !mutedFamilies.includes(f.family);
+            return (
+              <div key={f.family} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{f.label}</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 2 }}>{f.desc}</p>
+                </div>
+                <button
+                  role="switch" aria-checked={on} aria-label={`${f.label}: ${on ? "activado" : "silenciado"}`}
+                  disabled={togglingFamily === f.family}
+                  onClick={() => toggleFamily(f.family, on)}
+                  style={{ width: 46, height: 28, borderRadius: 999, flexShrink: 0, padding: 3, background: on ? "var(--accent)" : "var(--glass-border)", border: "none", position: "relative", transition: "background 160ms", cursor: "pointer" }}>
+                  <span style={{ display: "block", width: 22, height: 22, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.3)", transform: on ? "translateX(18px)" : "translateX(0)", transition: "transform 160ms" }} />
+                </button>
+              </div>
             );
           })}
         </div>

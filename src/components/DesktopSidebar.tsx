@@ -15,6 +15,7 @@ const NAV = [
 const PERFIL_SUBS = [
   { id: "datos",      label: "Datos personales" },
   { id: "apariencia", label: "Apariencia" },
+  { id: "avisos",     label: "Avisos de Neo" },
   { id: "categorias", label: "Categorías" },
   { id: "metas",      label: "Metas de ahorro" },
   { id: "cuotas",     label: "Cuotas" },

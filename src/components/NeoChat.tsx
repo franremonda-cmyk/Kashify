@@ -7,6 +7,8 @@ import NeoOrb from "./NeoOrb";
 import { NeoFace } from "./NeoMascot";
 import NeoImg from "./NeoImg";
 import { setNeoMood } from "@/lib/neo/mascot-bus";
+import { createClient } from "@/lib/supabase/client";
+import { notifFamily, NOTIF_FAMILIES } from "@/lib/neo/insights";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -37,6 +39,7 @@ interface ChatMessage {
   text: string;
   ts: Date;
   isNotification?: boolean;
+  notifType?: string;
   isPending?: boolean;
   pendingData?: PendingTransaction;
   action?: ChatAction;
@@ -82,7 +85,7 @@ function dateSeparator(d: Date): string {
 }
 
 function notifToMessage(n: NeoNotification): ChatMessage {
-  return { id: n.id, role: "neo", text: n.message, ts: new Date(n.created_at), isNotification: true };
+  return { id: n.id, role: "neo", text: n.message, ts: new Date(n.created_at), isNotification: true, notifType: n.type };
 }
 
 function pendingToMessage(p: PendingTransaction): ChatMessage {
@@ -309,10 +312,26 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     }, 150);
   };
 
+  // Marcar leídos los avisos al abrir el feed (frena el back-off automático).
+  useEffect(() => {
+    const ids = notifications.map(n => n.id);
+    if (!ids.length) return;
+    createClient().from("neo_notifications").update({ read_at: new Date().toISOString() }).in("id", ids).then(() => {});
+  }, [notifications]);
+
   // ── Handlers ─────────────────────────────────────────────────────────────
 
   function dismissAction(msgId: string) {
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, action: m.action ? { ...m.action, resolved: true } : undefined } : m));
+  }
+
+  // "No mostrarme más estos avisos": silencia la familia y saca del feed sus mensajes.
+  async function silenceFamily(family: string) {
+    setMessages(prev => prev.filter(m => !(m.isNotification && m.notifType && notifFamily(m.notifType) === family)));
+    await fetch("/api/neo/notif-prefs", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ family, action: "silence" }),
+    }).catch(() => {});
   }
 
   async function deleteTransaction(msgId: string, txId: string, txDesc: string) {
@@ -593,6 +612,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
                     onCancelInstallment={cancelInstallment}
                     onCreateInstallment={createInstallment}
                     onDismissAction={dismissAction}
+                    onSilenceFamily={silenceFamily}
                   />
                 </div>
               );
@@ -632,7 +652,7 @@ function SendIcon({ color = "#fff" }: { color?: string }) {
 
 function WaBubble({
   msg, busyPending,
-  onConfirmPending, onDismissPending, onDelete, onDeleteGoal, onCancelInstallment, onCreateInstallment, onDismissAction,
+  onConfirmPending, onDismissPending, onDelete, onDeleteGoal, onCancelInstallment, onCreateInstallment, onDismissAction, onSilenceFamily,
 }: {
   msg: ChatMessage;
   busyPending: string | null;
@@ -643,6 +663,7 @@ function WaBubble({
   onCancelInstallment: (msgId: string, planId: string, planName: string) => void;
   onCreateInstallment: (msgId: string, data: { name: string; nInstallments: number; installmentAmount: number; firstPaymentDate: string }) => void;
   onDismissAction: (msgId: string) => void;
+  onSilenceFamily: (family: string) => void;
 }) {
   const isUser = msg.role === "user";
 
@@ -685,6 +706,16 @@ function WaBubble({
         <p style={{ fontSize: 12.5, color: timeColor, textAlign: "right", marginTop: 2, lineHeight: 1 }}>
           {fmtTime(msg.ts)}
         </p>
+
+        {/* Silenciar familia — solo en avisos de Neo */}
+        {msg.isNotification && msg.notifType && (
+          <button
+            onClick={() => onSilenceFamily(notifFamily(msg.notifType!))}
+            style={{ marginTop: 6, fontSize: 12, color: "var(--ink-dim)", background: "transparent", border: "none", padding: "2px 0", textDecoration: "underline", cursor: "pointer" }}
+          >
+            No mostrarme más estos avisos
+          </button>
+        )}
 
         {/* Pending transaction actions */}
         {msg.isPending && msg.pendingData && (
