@@ -6,6 +6,12 @@ export function normalize(s: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
+    // Símbolo de moneda pegado al número ("$4000", "u$s 500"): despegarlo para que
+    // el parser de monto lo agarre. Se preserva "usd" antes de sacar el "$" para no
+    // perder la señal de dólar. En AR "$" solo = pesos (default), así que se descarta.
+    .replace(/u\$s|us\$/g, " usd ")
+    .replace(/\$/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 

@@ -26,6 +26,19 @@ ok(i3.type === "correct_tx_category" && !(i3 as { search?: string }).search && /
 // no debe confundirse con un gasto normal
 ok(detectIntent("almuerzo 850").type === "flow", "‘almuerzo 850’ sigue siendo un gasto, no corrección");
 
+// ── monto con símbolo $ pegado (la forma AR más común) ──
+const amt = (i: ReturnType<typeof detectIntent>) => (i as { ctx?: { amount?: number } }).ctx?.amount;
+const g1 = detectIntent("gaste $4000 gaseosa");
+ok(g1.type === "flow" && amt(g1) === 4000, "‘gaste $4000 gaseosa’ → monto 4000 (no lo mete en la descripción)");
+const g2 = detectIntent("compre cocacola $4000");
+ok(g2.type === "flow" && amt(g2) === 4000, "‘compre cocacola $4000’ → monto 4000");
+const g3 = detectIntent("gaste $4.500 en nafta");
+ok(g3.type === "flow" && amt(g3) === 4500, "‘$4.500’ con miles → 4500");
+const g4 = detectIntent("pague u$s500 hosting");
+ok(g4.type === "flow" && amt(g4) === 500, "‘u$s500’ → monto 500 (moneda antes del número)");
+const g5 = detectIntent("ingreso $45000");
+ok(g5.type === "flow" && (g5 as { ctx?: { flow?: string } }).ctx?.flow === "income" && amt(g5) === 45000, "‘ingreso $45000’ → ingreso 45000");
+
 // ── monto típico (Fase 3): keyword conocida sin monto → ask_amount ──
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const lk: any = [{ keyword: "netflix", type: "expense", currency_code: "ARS", category: "Ocio", last_amount: 2000, weight: 100 }];

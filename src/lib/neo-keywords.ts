@@ -361,8 +361,10 @@ export function detectPurchaseIntent(normalized: string): PurchaseIntent {
   // Extract amount — try multiple patterns in order
   let amount: number | null = null;
 
-  // 1. Number at very start of rest: "gaste 10" → rest="10", "recibi 500" → rest="500"
-  const leadNum = rest.match(/^(\d[\d.,]*)\s*(?:pesos?|ars|usd|eur|uyu)?(?:\s|$)/i);
+  // 1. Number at very start of rest, con moneda opcional antes o después:
+  //    "gaste 10" → "10"; "recibi 500" → "500"; "usd 500 hosting" → "500"
+  //    (normalize ya convirtió "u$s"→"usd" y sacó el "$").
+  const leadNum = rest.match(/^(?:pesos?|ars|usd|eur|uyu)?\s*(\d[\d.,]*)\s*(?:pesos?|ars|usd|eur|uyu)?(?:\s|$)/i);
   if (leadNum) {
     const parsed = parseFloat(leadNum[1].replace(/\./g, "").replace(",", "."));
     if (!isNaN(parsed) && parsed > 0) {
