@@ -1,5 +1,5 @@
 import { generatePaymentDates } from "@/lib/installments/calculator";
-import { categoryForText } from "@/lib/neo-keywords";
+import { categoryForText, CATEGORY_FALLBACK } from "@/lib/neo-keywords";
 import { learnFromCorrection } from "@/lib/neo/learning";
 import { scopeForSpace } from "@/lib/space-scope";
 import { normalize } from "./intent";
@@ -41,10 +41,25 @@ function fmt(n: number, currency: string): string {
   return `${currency} ${Number(n).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`;
 }
 
-async function resolveCategoryId(supabase: NeoSupabase, userId: string, categoryName: string): Promise<string | null> {
+// Resuelve el nombre sugerido por Neo a una categoría REAL del usuario. Orden:
+// exacto → mejor-encaje (CATEGORY_FALLBACK, ej. Hogar→Servicios) → parcial → Otros.
+// Así nada queda sin categorizar y la etiqueta refleja dónde entró de verdad.
+async function resolveCategory(supabase: NeoSupabase, userId: string, categoryName: string): Promise<{ id: string; name: string } | null> {
   const { data: cats } = await supabase.from("categories").select("id, name").eq("user_id", userId);
-  const match = cats?.find((c: { name: string }) => c.name.toLowerCase() === categoryName.toLowerCase());
-  return match?.id ?? null;
+  const list = (cats as { id: string; name: string }[] | null) ?? [];
+  if (!list.length) return null;
+  const lower = categoryName.toLowerCase();
+  const exact = list.find((c) => c.name.toLowerCase() === lower);
+  if (exact) return exact;
+  const fb = CATEGORY_FALLBACK[categoryName];
+  if (fb) {
+    const fbMatch = list.find((c) => c.name.toLowerCase() === fb.toLowerCase());
+    if (fbMatch) return fbMatch;
+  }
+  const n = normalize(categoryName);
+  const partial = list.find((c) => normalize(c.name).includes(n) || n.includes(normalize(c.name)));
+  if (partial) return partial;
+  return list.find((c) => c.name.toLowerCase() === "otros") ?? null;
 }
 
 async function findCategory(supabase: NeoSupabase, userId: string, name: string): Promise<{ id: string; name: string } | null> {
@@ -132,15 +147,15 @@ export async function respondFlow(
       }
       const currency = await primaryCurrency(supabase, userId);
       const catName = ctx.category ?? (ctx.description ? categoryForText(ctx.description) : null);
-      const catId = catName ? await resolveCategoryId(supabase, userId, catName) : null;
+      const cat = catName ? await resolveCategory(supabase, userId, catName) : null;
       const desc = ctx.description || (ctx.flow === "income" ? "Ingreso" : "Gasto");
       const { error } = await supabase.from("transactions").insert({
         user_id: userId, space_id: spaceId, type: ctx.flow, amount: ctx.amount,
         currency_code: currency, description: desc,
-        date: new Date().toISOString().split("T")[0], category_id: catId,
+        date: new Date().toISOString().split("T")[0], category_id: cat?.id ?? null,
       });
       if (error) return { text: "Uh, no pude guardarlo esta vez 😕. Probá de nuevo en un toque." };
-      const catLabel = catName ? ` · ${catName}` : "";
+      const catLabel = cat ? ` · ${cat.name}` : "";
       return { text: `Listo ✅ Anoté ${desc} — ${fmt(ctx.amount!, currency)}${catLabel}.`, effects: [{ type: "refresh" }] };
     }
     case "installment": {

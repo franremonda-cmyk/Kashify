@@ -2,6 +2,7 @@
 // Correr: npx tsx cloudflare-worker/test/learning.test.ts
 import { extractKeyword, promoteGlobalRules } from "../../src/lib/neo/learning.ts";
 import { detectIntent } from "../../src/lib/neo/engine/intent.ts";
+import { categoryForText, KEYWORD_TO_CATEGORY, CATEGORY_FALLBACK } from "../../src/lib/neo-keywords.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {
@@ -38,6 +39,22 @@ const g4 = detectIntent("pague u$s500 hosting");
 ok(g4.type === "flow" && amt(g4) === 500, "‘u$s500’ → monto 500 (moneda antes del número)");
 const g5 = detectIntent("ingreso $45000");
 ok(g5.type === "flow" && (g5 as { ctx?: { flow?: string } }).ctx?.flow === "income" && amt(g5) === 45000, "‘ingreso $45000’ → ingreso 45000");
+
+// ── diccionario global argentino + fallback de categorías ──
+ok(categoryForText("quilmes") === "Comida", "quilmes → Comida");
+ok(categoryForText("fravega") === "Hogar", "fravega → Hogar");
+ok(categoryForText("uba") === "Educación", "uba → Educación");
+ok(categoryForText("royal canin") === "Mascotas", "‘royal canin’ (bigrama) → Mascotas");
+ok(categoryForText("gaste 5000 en fravega") === "Hogar", "reconoce la marca dentro de una frase");
+// Invariante: toda categoría del diccionario que NO es default debe tener fallback
+// a una categoría real, para que por WhatsApp nunca quede sin categorizar.
+const DEFAULTS = new Set(["Comida","Transporte","Servicios","Ocio","Salud","Ahorro","Deudas","Ingresos","Otros"]);
+const usadas = new Set(Object.values(KEYWORD_TO_CATEGORY));
+for (const cat of usadas) {
+  if (DEFAULTS.has(cat)) continue;
+  ok(!!CATEGORY_FALLBACK[cat], `categoría rica "${cat}" tiene fallback`);
+  ok(DEFAULTS.has(CATEGORY_FALLBACK[cat]), `fallback de "${cat}" (${CATEGORY_FALLBACK[cat]}) es una categoría real`);
+}
 
 // ── monto típico (Fase 3): keyword conocida sin monto → ask_amount ──
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

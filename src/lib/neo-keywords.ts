@@ -299,6 +299,120 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
   // ── Regalos / Celebraciones ───────────────────────────────────────────────
   regalo:"Regalos", cumple:"Regalos", casamiento:"Regalos",
   boda:"Regalos", flores:"Regalos", torta:"Regalos",
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // LISTA GLOBAL ARGENTINA — marcas y productos comunes (2026-07). Claves de ≤2
+  // palabras (el matcher solo mira palabra suelta y bigrama). Sin ambiguos.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // Comida — súper / mayoristas
+  maxiconsumo:"Comida", makro:"Comida", diarco:"Comida", yaguar:"Comida",
+  "la gallega":"Comida", cordiez:"Comida", maxikiosco:"Comida", autoservicio:"Comida",
+  // Comida — cadenas / heladerías / cafés
+  grido:"Comida", freddo:"Comida", rapanui:"Comida", havanna:"Comida",
+  chungo:"Comida", lucciano:"Comida", luccianos:"Comida", persicco:"Comida",
+  volta:"Comida", bonafide:"Comida", kentucky:"Comida", ugis:"Comida",
+  "green eat":"Comida", "el noble":"Comida",
+  // Comida — bebidas / gaseosas
+  quilmes:"Comida", brahma:"Comida", stella:"Comida", andes:"Comida",
+  schneider:"Comida", manaos:"Comida", cunnington:"Comida", villavicencio:"Comida",
+  cepita:"Comida", baggio:"Comida", cindor:"Comida", levite:"Comida",
+  aquarius:"Comida", speed:"Comida", monster:"Comida", redbull:"Comida",
+  gatorade:"Comida", powerade:"Comida", "seven up":"Comida", "7up":"Comida",
+  // Comida — golosinas / snacks
+  bonobon:"Comida", rocklets:"Comida", tita:"Comida", rhodesia:"Comida",
+  cofler:"Comida", marroc:"Comida", vauquita:"Comida", aguila:"Comida",
+  milka:"Comida", oreo:"Comida", pepitos:"Comida", sugus:"Comida",
+  menthoplus:"Comida", lays:"Comida", pringles:"Comida", doritos:"Comida",
+  cheetos:"Comida", chizitos:"Comida", palitos:"Comida", chocolinas:"Comida",
+  traviata:"Comida", toddy:"Comida", vainillas:"Comida", golosina:"Comida",
+  caramelos:"Comida", chicle:"Comida", chupetin:"Comida", turron:"Comida",
+  // Comida — yerba / mate
+  playadito:"Comida", rosamonte:"Comida", amanda:"Comida", taragui:"Comida",
+  cbse:"Comida", bombilla:"Comida", termo:"Comida",
+  // Comida — marcas de almacén / lácteos
+  serenisima:"Comida", "la serenisima":"Comida", sancor:"Comida", ilolay:"Comida",
+  milkaut:"Comida", danone:"Comida", yogurisimo:"Comida", casancrem:"Comida",
+  arcor:"Comida", matarazzo:"Comida", lucchetti:"Comida", marolio:"Comida",
+  knorr:"Comida", maggi:"Comida", hellmanns:"Comida", cocinero:"Comida",
+  granix:"Comida", "la campagnola":"Comida", "la virginia":"Comida",
+
+  // Transporte — micros / servicio del auto
+  micro:"Transporte", chevallier:"Transporte", andesmar:"Transporte", plusmar:"Transporte",
+  gomeria:"Transporte", alineacion:"Transporte", balanceo:"Transporte",
+  cubierta:"Transporte", escape:"Transporte", matafuego:"Transporte",
+
+  // Servicios / conectividad (usa el esquema Hogar → fallback Servicios)
+  iplan:"Hogar", gigared:"Hogar", supercanal:"Hogar", dgo:"Hogar",
+
+  // Ocio — cines / salidas
+  hoyts:"Ocio", cinemark:"Ocio", showcase:"Ocio", village:"Ocio",
+  ticketek:"Ocio", plateanet:"Ocio", entrada:"Ocio", boliche:"Ocio",
+  previa:"Ocio", "escape room":"Ocio", metegol:"Ocio", pool:"Ocio",
+  futbol:"Ocio", cancha:"Ocio", "futbol 5":"Ocio",
+
+  // Hogar — electro / muebles / equipamiento
+  fravega:"Hogar", garbarino:"Hogar", musimundo:"Hogar", megatone:"Hogar",
+  naldo:"Hogar", cetrogar:"Hogar", ribeiro:"Hogar", sommier:"Hogar",
+  drean:"Hogar", ventilador:"Hogar", estufa:"Hogar", termotanque:"Hogar",
+  calefon:"Hogar", "aire acondicionado":"Hogar", bazar:"Hogar", cristaleria:"Hogar",
+
+  // Salud — farmacias / prepagas / productos
+  medife:"Salud", "dr ahorro":"Salud", "hospital italiano":"Salud", "hospital aleman":"Salud",
+  geniol:"Salud", actron:"Salud", curitas:"Salud", termometro:"Salud",
+  pañales:"Salud", "protector solar":"Salud", barbijo:"Salud",
+
+  // Educación — instituciones / útiles
+  uba:"Educación", utn:"Educación", uade:"Educación", "siglo 21":"Educación",
+  kumon:"Educación", berlitz:"Educación", fotocopias:"Educación", apunte:"Educación",
+  apuntes:"Educación", utiles:"Educación", cuaderno:"Educación", lapicera:"Educación",
+  libreria:"Educación",
+
+  // Indumentaria — marcas / prendas
+  kevingston:"Indumentaria", tascani:"Indumentaria", yagmour:"Indumentaria", rapsodia:"Indumentaria",
+  portsaid:"Indumentaria", wanama:"Indumentaria", mistral:"Indumentaria", cardon:"Indumentaria",
+  montagne:"Indumentaria", dexter:"Indumentaria", grimoldi:"Indumentaria", "47 street":"Indumentaria",
+  cheeky:"Indumentaria", mimo:"Indumentaria", grisino:"Indumentaria", zapateria:"Indumentaria",
+  jean:"Indumentaria", jeans:"Indumentaria", gorra:"Indumentaria", cinturon:"Indumentaria",
+  bufanda:"Indumentaria", guantes:"Indumentaria",
+
+  // Trabajo / Tech — freelance / hosting
+  fiverr:"Trabajo", upwork:"Trabajo", workana:"Trabajo", zapier:"Trabajo",
+  make:"Trabajo", hostinger:"Trabajo", namecheap:"Trabajo", godaddy:"Trabajo",
+  donweb:"Trabajo", heroku:"Trabajo", netlify:"Trabajo",
+
+  // Suscripción — herramientas
+  midjourney:"Suscripción", copilot:"Suscripción", grammarly:"Suscripción",
+  "google one":"Suscripción", onedrive:"Suscripción", patreon:"Suscripción", medium:"Suscripción",
+
+  // Mascotas — alimento / servicios
+  puppis:"Mascotas", "royal canin":"Mascotas", "dog chow":"Mascotas", "cat chow":"Mascotas",
+  "old prince":"Mascotas", eukanuba:"Mascotas", vitalcan:"Mascotas", sieger:"Mascotas",
+  pipeta:"Mascotas", antipulgas:"Mascotas", "peluqueria canina":"Mascotas",
+
+  // Viajes — pasajes / alojamiento
+  aerolineas:"Viajes", avantrip:"Viajes", atrapalo:"Viajes", trivago:"Viajes",
+  expedia:"Viajes", civitatis:"Viajes", turismo:"Viajes", cabaña:"Viajes",
+  cabañas:"Viajes", resort:"Viajes", termas:"Viajes", spa:"Viajes",
+
+  // Regalos — celebraciones
+  souvenir:"Regalos", "baby shower":"Regalos", ramo:"Regalos", bombones:"Regalos",
+  peluche:"Regalos", juguete:"Regalos", juguetes:"Regalos", "gift card":"Regalos",
+  cumpleaños:"Regalos",
+};
+
+// Encaje de una categoría "rica" del diccionario en las 9 categorías por defecto,
+// para usuarios que no crearon las extra. Garantiza que TODO caiga en una real
+// (por WhatsApp, y como red de seguridad en la app). Ver resolveCategory en el engine.
+export const CATEGORY_FALLBACK: Record<string, string> = {
+  Hogar: "Servicios",
+  "Suscripción": "Servicios",
+  Educación: "Otros",
+  Indumentaria: "Otros",
+  Trabajo: "Otros",
+  Mascotas: "Otros",
+  Viajes: "Otros",
+  Regalos: "Otros",
 };
 
 // ─── Función principal de detección ──────────────────────────────────────────
