@@ -96,12 +96,12 @@ export default function DesktopSidebar() {
           }}>
             <span style={{
               fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
-              fontSize: 15, fontWeight: 700, color: "#FFFFFF",
+              fontSize: "var(--text-row)", fontWeight: 700, color: "#FFFFFF",
             }}>K</span>
           </div>
           <span className="sidebar-label" style={{
             fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
-            fontSize: 16, fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.01em",
+            fontSize: "var(--text-base)", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.01em",
           }}>Kashify</span>
         </div>
       </div>
@@ -112,10 +112,10 @@ export default function DesktopSidebar() {
           style={{
             width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             padding: "12px", borderRadius: 12, border: "none", cursor: "pointer",
-            background: "var(--accent)", color: "#04130D", fontWeight: 700, fontSize: 14,
+            background: "var(--accent)", color: "var(--on-accent)", fontWeight: 700, fontSize: "var(--text-sm)",
             boxShadow: "0 4px 16px var(--shadow-accent)",
           }}>
-          <span style={{ fontSize: 19, lineHeight: 1, marginTop: -1 }}>+</span>
+          <span style={{ fontSize: "var(--text-lg)", lineHeight: 1, marginTop: -1 }}>+</span>
           <span className="sidebar-label">Registrar</span>
         </button>
       </div>
@@ -141,7 +141,7 @@ export default function DesktopSidebar() {
                   aria-label={item.label}
                   style={{ ...rowStyle, width: "100%", border: "none", cursor: "pointer" }}>
                   <item.icon active={active} />
-                  <span className="nav-label" style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>{item.label}</span>
+                  <span className="nav-label" style={{ fontSize: "var(--text-sm)", fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>{item.label}</span>
                   <svg className="sidebar-label" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                     style={{ marginLeft: "auto", color: "var(--ink-dim)", transition: "transform 200ms", transform: perfilOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
                     <polyline points="6 9 12 15 18 9"/>
@@ -155,7 +155,7 @@ export default function DesktopSidebar() {
                         <Link key={s.id} href={`/perfil?section=${s.id}`}
                           style={{
                             display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8,
-                            textDecoration: "none", fontSize: 13, fontWeight: subActive ? 600 : 400,
+                            textDecoration: "none", fontSize: "var(--text-xs)", fontWeight: subActive ? 600 : 400,
                             background: subActive ? "var(--accent-soft)" : "transparent",
                             color: subActive ? "var(--accent)" : "var(--ink-muted)",
                           }}>
@@ -184,7 +184,7 @@ export default function DesktopSidebar() {
               }}
             >
               <item.icon active={active} />
-              <span className="nav-label" style={{ fontSize: 14, fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>
+              <span className="nav-label" style={{ fontSize: "var(--text-sm)", fontWeight: active ? 600 : 400, letterSpacing: "-0.01em" }}>
                 {item.label}
               </span>
               {active && (
@@ -209,7 +209,7 @@ export default function DesktopSidebar() {
           style={{
             width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             padding: "10px", borderRadius: 12, cursor: "pointer",
-            background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 600, fontSize: 13,
+            background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 600, fontSize: "var(--text-xs)",
             border: "0.5px solid var(--glass-border)",
           }}>
           {invited ? "✓" : (
@@ -224,7 +224,7 @@ export default function DesktopSidebar() {
       </div>
 
       <div className="sidebar-label" style={{ padding: "0 20px" }}>
-        <p style={{ fontSize: 12.5, color: "var(--ink-dim)", letterSpacing: "0.06em", fontWeight: 600 }}>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", letterSpacing: "0.06em", fontWeight: 600 }}>
           KASHIFY · BETA
         </p>
       </div>
@@ -253,7 +253,7 @@ function NeoIcon({ active }: { active: boolean }) {
   return (
     <NeoOrb size={24} alive={active}>
       <span style={{
-        fontSize: 11, fontWeight: 800, color: "#04130D", lineHeight: 1,
+        fontSize: "var(--text-2xs)", fontWeight: 800, color: "var(--on-accent)", lineHeight: 1,
         letterSpacing: "-0.5px", textShadow: "0 1px 1px rgba(255,255,255,0.3)",
       }}>N</span>
     </NeoOrb>

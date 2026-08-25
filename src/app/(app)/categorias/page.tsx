@@ -25,7 +25,7 @@ function MonthGrid({ selected, onToggle }: { selected: number[]; onToggle: (m: n
         const on = selected.includes(month);
         return (
           <button key={m} type="button" onClick={() => onToggle(month)}
-            style={{ padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, background: on ? "var(--accent-soft)" : "var(--base)", border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: on ? "var(--accent)" : "var(--ink-dim)" }}>
+            style={{ padding: "6px 0", borderRadius: 8, fontSize: "var(--text-2xs)", fontWeight: 600, background: on ? "var(--accent-soft)" : "var(--base)", border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: on ? "var(--accent)" : "var(--ink-dim)" }}>
             {m}
           </button>
         );
@@ -39,7 +39,7 @@ function PeriodToggle({ value, onChange }: { value: PeriodType; onChange: (p: Pe
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
       {(["always", "specific_months"] as const).map((pt) => (
         <button key={pt} type="button" onClick={() => onChange(pt)}
-          style={{ padding: "7px 14px", borderRadius: "var(--radius-pill)", fontSize: 12, fontWeight: 600, background: value === pt ? "var(--accent-soft)" : "var(--base)", border: value === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: value === pt ? "var(--accent)" : "var(--ink-muted)" }}>
+          style={{ padding: "7px 14px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-2xs)", fontWeight: 600, background: value === pt ? "var(--accent-soft)" : "var(--base)", border: value === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: value === pt ? "var(--accent)" : "var(--ink-muted)" }}>
           {pt === "always" ? "Siempre" : "Mes específico"}
         </button>
       ))}
@@ -53,7 +53,7 @@ const inp: React.CSSProperties = {
   borderRadius: 12,
   padding: "11px 14px",
   color: "var(--ink)",
-  fontSize: 14,
+  fontSize: "var(--text-sm)",
   width: "100%",
   outline: "none",
 };
@@ -143,11 +143,11 @@ export default function CategoriasPage() {
           <BackButton />
           <div>
             <h1 className="page-title">Categorías</h1>
-            <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>Organizá y controlá tus gastos</p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 2 }}>Organizá y controlá tus gastos</p>
           </div>
         </div>
         <button onClick={() => setEditingCat("new")}
-          style={{ fontSize: 13, fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}>
+          style={{ fontSize: "var(--text-xs)", fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "var(--on-accent)", flexShrink: 0 }}>
           + Nueva
         </button>
       </div>
@@ -169,24 +169,24 @@ export default function CategoriasPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{cat.name}</span>
+                      <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>{cat.name}</span>
                       {cat.is_default && (
-                        <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 999, background: "var(--raised)", color: "var(--ink-dim)", border: "0.5px solid var(--glass-border)" }}>default</span>
+                        <span style={{ fontSize: "var(--text-2xs)", padding: "1px 6px", borderRadius: 999, background: "var(--raised)", color: "var(--ink-dim)", border: "0.5px solid var(--glass-border)" }}>default</span>
                       )}
                     </div>
                     {budget && (
-                      <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
+                      <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 2 }}>
                         Límite: {budget.currency_code} {Number(budget.monthly_limit).toLocaleString("es-AR")}
                       </p>
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button onClick={() => { setConfirmDeleteBudget(false); setEditBudget(isEditing ? null : { id: cat.id, budgetId: budget?.id ?? "", limit: String(budget?.monthly_limit ?? ""), currency: budget?.currency_code ?? "ARS", period: budget?.period_type ?? "always", months: budget?.applies_months ?? [] }); }}
-                      style={{ fontSize: 13, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: budget ? "var(--accent)" : "var(--ink-muted)", fontWeight: 600 }}>
+                      style={{ fontSize: "var(--text-xs)", padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: budget ? "var(--accent)" : "var(--ink-muted)", fontWeight: 600 }}>
                       {budget ? "Límite" : "+ Límite"}
                     </button>
                     <button onClick={() => setEditingCat(cat)}
-                      style={{ fontSize: 13, padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 600 }}>
+                      style={{ fontSize: "var(--text-xs)", padding: "5px 10px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 600 }}>
                       Editar
                     </button>
                   </div>
@@ -206,7 +206,7 @@ export default function CategoriasPage() {
                       />
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                      <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
                       <PeriodToggle value={editBudget.period} onChange={(p) => setEditBudget(b => b ? { ...b, period: p } : b)} />
                     </div>
                     {editBudget.period === "specific_months" && (
@@ -214,10 +214,10 @@ export default function CategoriasPage() {
                     )}
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => editBudget && saveBudget(cat.id, editBudget)}
-                        style={{ padding: "9px 20px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Guardar límite</button>
+                        style={{ padding: "9px 20px", borderRadius: "var(--radius-control)", fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>Guardar límite</button>
                       {editBudget.budgetId && (
                         <button onClick={() => confirmDeleteBudget ? deleteBudget(editBudget.budgetId) : setConfirmDeleteBudget(true)}
-                          style={{ padding: "9px 16px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: confirmDeleteBudget ? 700 : 600, background: confirmDeleteBudget ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmDeleteBudget ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)" }}>
+                          style={{ padding: "9px 16px", borderRadius: "var(--radius-control)", fontSize: "var(--text-xs)", fontWeight: confirmDeleteBudget ? 700 : 600, background: confirmDeleteBudget ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmDeleteBudget ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)" }}>
                           {confirmDeleteBudget ? "¿Eliminar? Tocá de nuevo" : "Eliminar límite"}
                         </button>
                       )}
@@ -236,8 +236,8 @@ export default function CategoriasPage() {
           <button onClick={() => setShowNewBudget(v => !v)}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "transparent" }}>
             <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Agregar límite mensual</p>
-              <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>Asignale un techo de gasto a una categoría</p>
+              <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>Agregar límite mensual</p>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 2 }}>Asignale un techo de gasto a una categoría</p>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
               style={{ color: "var(--ink-dim)", transition: "transform 200ms ease-out", transform: showNewBudget ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
@@ -256,7 +256,7 @@ export default function CategoriasPage() {
               </select>
               {/* Opción: crear categoría nueva */}
               <button onClick={() => setEditingCat("new")}
-                style={{ fontSize: 12, color: "var(--accent)", textAlign: "left", background: "transparent", paddingLeft: 4, fontWeight: 600 }}>
+                style={{ fontSize: "var(--text-2xs)", color: "var(--accent)", textAlign: "left", background: "transparent", paddingLeft: 4, fontWeight: 600 }}>
                 + Crear nueva categoría
               </button>
               <div style={{ display: "flex", gap: 8 }}>
@@ -268,14 +268,14 @@ export default function CategoriasPage() {
                 />
               </div>
               <div>
-                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
                 <PeriodToggle value={newBudgetPeriod} onChange={setNewBudgetPeriod} />
               </div>
               {newBudgetPeriod === "specific_months" && (
                 <MonthGrid selected={newBudgetMonths} onToggle={(m) => setNewBudgetMonths(arr => toggleMonth(arr, m))} />
               )}
               <button onClick={saveNewBudget} disabled={!newBudgetCatId || !newBudgetLimit}
-                style={{ alignSelf: "flex-start", padding: "10px 20px", borderRadius: "var(--radius-control)", fontSize: 13, fontWeight: 600, background: newBudgetCatId && newBudgetLimit ? "var(--accent)" : "var(--raised)", color: newBudgetCatId && newBudgetLimit ? "#04130D" : "var(--ink-dim)" }}>
+                style={{ alignSelf: "flex-start", padding: "10px 20px", borderRadius: "var(--radius-control)", fontSize: "var(--text-xs)", fontWeight: 600, background: newBudgetCatId && newBudgetLimit ? "var(--accent)" : "var(--raised)", color: newBudgetCatId && newBudgetLimit ? "var(--on-accent)" : "var(--ink-dim)" }}>
                 Guardar límite
               </button>
             </div>

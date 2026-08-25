@@ -232,7 +232,7 @@ export default async function DashboardPage() {
             mood="happy"
             size={44}
             fallback={
-              <span className="font-bold" style={{ fontSize: 17, color: "var(--accent)" }}>
+              <span className="font-bold" style={{ fontSize: "var(--text-md)", color: "var(--accent)" }}>
                 {(firstName?.[0] ?? "K").toUpperCase()}
               </span>
             }

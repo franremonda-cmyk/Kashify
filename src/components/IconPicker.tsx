@@ -103,9 +103,9 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           <div style={{ height: 4 }} />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0" }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>Elegir ícono</p>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>Elegir ícono</p>
             <button onClick={onClose}
-              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               ✕
             </button>
           </div>
@@ -114,7 +114,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           <div style={{ display: "flex", gap: 6, padding: "12px 18px 0", overflowX: "auto", scrollbarWidth: "none" }}>
             {STYLE_TABS.map(t => (
               <button key={t.id} onClick={() => setStyle(t.id)}
-                style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: style === t.id ? "var(--accent)" : "var(--raised)", color: style === t.id ? "#04130D" : "var(--ink-muted)", border: style === t.id ? "none" : "0.5px solid var(--glass-border)", transition: "all 160ms ease-out" }}>
+                style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: "var(--text-2xs)", fontWeight: 600, background: style === t.id ? "var(--accent)" : "var(--raised)", color: style === t.id ? "var(--on-accent)" : "var(--ink-muted)", border: style === t.id ? "none" : "0.5px solid var(--glass-border)", transition: "all 160ms ease-out" }}>
                 {t.label}
               </button>
             ))}
@@ -128,14 +128,14 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
               </svg>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ícono…"
                 type="search" aria-label="Buscar ícono" autoComplete="off"
-                style={{ width: "100%", paddingLeft: 32, paddingRight: 12, paddingTop: 9, paddingBottom: 9, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 12, fontSize: 13, color: "var(--ink)", outline: "none" }}
+                style={{ width: "100%", paddingLeft: 32, paddingRight: 12, paddingTop: 9, paddingBottom: 9, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 12, fontSize: "var(--text-xs)", color: "var(--ink)", outline: "none" }}
               />
             </div>
           </div>
 
           {/* Color palette */}
           <div style={{ padding: "10px 18px 0" }}>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Color</p>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Color</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {CATEGORY_COLORS.map(c => (
                 <button key={c} onClick={() => setPickedColor(c)}
@@ -152,11 +152,11 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
           style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 18px 0", touchAction: "pan-y" }}
         >
           {filteredGroups.length === 0 && (
-            <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Sin resultados</p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", textAlign: "center", padding: "24px 0" }}>Sin resultados</p>
           )}
           {filteredGroups.map(g => (
             <div key={g.group} style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>{g.group}</p>
+              <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>{g.group}</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6 }}>
                 {g.icons.map(icon => {
                   const isSelected = pickedIcon === icon.id;
@@ -175,7 +175,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
         {/* Confirm button */}
         <div style={{ flexShrink: 0, padding: "10px 18px 16px" }}>
           <button onClick={confirmSelect} disabled={!pickedIcon}
-            style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: pickedIcon ? "var(--accent)" : "var(--raised)", color: pickedIcon ? "#04130D" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
+            style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: pickedIcon ? "var(--accent)" : "var(--raised)", color: pickedIcon ? "var(--on-accent)" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
             {pickedIcon ? "Confirmar ícono" : "Seleccioná un ícono"}
           </button>
         </div>

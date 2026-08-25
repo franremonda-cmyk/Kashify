@@ -35,7 +35,7 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
             <button
               key={c.id}
               onClick={() => setActiveSpace(c.id)}
-              className="press glow-hover glass-card spaces-card"
+              className="press glow-hover card-glass spaces-card"
               aria-label={`Ver espacio ${c.name}`}
               style={{
                 padding: "16px 18px", borderRadius: 18, textAlign: "left", cursor: "pointer",
@@ -46,9 +46,9 @@ export default function SpacesOverview({ cards }: { cards: SpaceCardData[] }) {
                 <div style={{ width: 30, height: 30, borderRadius: 9, background: color + "22", border: `1px solid ${color}33`, display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0 }}>
                   <CategoryIcon icon={c.icon} name={c.name} color={color} size={16} />
                 </div>
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{c.name}</span>
+                <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{c.name}</span>
               </div>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 4 }}>Balance</p>
+              <p style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 4 }}>Balance</p>
               {/* cqi: el monto escala con el ancho real de la card → nunca se sale */}
               <p className="mono" style={{ fontSize: "clamp(0.9rem, 12cqi, 1.5rem)", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "clip", maxWidth: "100%", lineHeight: 1.1 }}>
                 {sym} {c.balance.toLocaleString("es-AR", { maximumFractionDigits: 0 })}

@@ -74,7 +74,7 @@ function UploadStep({ onParsed, onCancel }: {
           </svg>
         </div>
         <h2 style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>Importar movimientos</h2>
-        <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 6, lineHeight: 1.5 }}>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginTop: 6, lineHeight: 1.5 }}>
           Subí tu planilla de banco o app de finanzas. Soportamos Excel y CSV.
         </p>
       </div>
@@ -93,14 +93,14 @@ function UploadStep({ onParsed, onCancel }: {
         }}
       >
         {loading ? (
-          <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Procesando...</p>
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)" }}>Procesando...</p>
         ) : (
           <>
-            <p style={{ fontSize: 14, fontWeight: 600, color: dragging ? "var(--accent)" : "var(--ink)" }}>
+            <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: dragging ? "var(--accent)" : "var(--ink)" }}>
               {dragging ? "Soltá el archivo" : "Arrastrá tu archivo aquí"}
             </p>
-            <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>o tocá para elegir</p>
-            <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 10, letterSpacing: "0.04em" }}>CSV · XLSX · XLS</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 4 }}>o tocá para elegir</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 10, letterSpacing: "0.04em" }}>CSV · XLSX · XLS</p>
           </>
         )}
       </div>
@@ -108,17 +108,17 @@ function UploadStep({ onParsed, onCancel }: {
         onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
 
       {error && (
-        <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(255,59,48,0.08)", border: "0.5px solid rgba(255,59,48,0.25)", color: "var(--negative)", fontSize: 12 }}>
+        <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(255,59,48,0.08)", border: "0.5px solid rgba(255,59,48,0.25)", color: "var(--negative)", fontSize: "var(--text-2xs)" }}>
           {error}
         </div>
       )}
 
-      <p style={{ fontSize: 13, color: "var(--ink-dim)", textAlign: "center" }}>
+      <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", textAlign: "center" }}>
         El archivo se procesa en tu dispositivo — nunca se sube al servidor.
       </p>
 
       {onCancel && (
-        <button onClick={onCancel} style={{ fontSize: 13, color: "var(--ink-muted)", padding: "8px", borderRadius: 10, background: "transparent" }}>
+        <button onClick={onCancel} style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", padding: "8px", borderRadius: 10, background: "transparent" }}>
           Cancelar
         </button>
       )}
@@ -146,7 +146,7 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
 
   const selStyle: React.CSSProperties = {
     background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-    borderRadius: 9, padding: "7px 10px", color: "var(--ink)", fontSize: 12,
+    borderRadius: 9, padding: "7px 10px", color: "var(--ink)", fontSize: "var(--text-2xs)",
     width: "100%", outline: "none",
   };
 
@@ -154,7 +154,7 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
         <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>Mapear columnas</h2>
-        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 4 }}>
           Decile a Kashify qué columna de tu archivo corresponde a cada campo.
         </p>
       </div>
@@ -163,10 +163,10 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
         {KASHIFY_FIELDS.map(f => (
           <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 90, flexShrink: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: f.required ? "var(--ink)" : "var(--ink-muted)" }}>
+              <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: f.required ? "var(--ink)" : "var(--ink-muted)" }}>
                 {f.label}{f.required ? " *" : ""}
               </p>
-              <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>{f.desc}</p>
+              <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 1 }}>{f.desc}</p>
             </div>
             <select
               style={selStyle}
@@ -183,24 +183,24 @@ function MapStep({ headers, rows, mapping, onChange, onNext, onBack }: {
       {/* Live preview */}
       {preview.length > 0 && mapping.date && mapping.description && (
         <div style={{ borderRadius: 10, background: "var(--raised)", border: "0.5px solid var(--glass-border)", overflow: "hidden" }}>
-          <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", padding: "8px 12px 4px" }}>
+          <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", padding: "8px 12px 4px" }}>
             Vista previa ({preview.length} filas)
           </p>
           {preview.map((row, i) => (
             <div key={i} style={{ padding: "8px 12px", borderTop: i > 0 ? "0.5px solid var(--glass-border-dim)" : "none", display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {mapping.date && <span style={{ fontSize: 12, color: "var(--ink-muted)", background: "var(--base)", padding: "2px 6px", borderRadius: 5 }}>{row[mapping.date]}</span>}
-              {mapping.description && <span style={{ fontSize: 12, color: "var(--ink)", flex: 1, minWidth: 80 }}>{row[mapping.description]}</span>}
-              {mapping.amount && <span style={{ fontSize: 12, color: "var(--positive)", fontWeight: 600 }}>{row[mapping.amount]}</span>}
-              {mapping.debit && <span style={{ fontSize: 12, color: "var(--negative)", fontWeight: 600 }}>D:{row[mapping.debit]}</span>}
-              {mapping.credit && <span style={{ fontSize: 12, color: "var(--positive)", fontWeight: 600 }}>C:{row[mapping.credit]}</span>}
+              {mapping.date && <span style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", background: "var(--base)", padding: "2px 6px", borderRadius: 5 }}>{row[mapping.date]}</span>}
+              {mapping.description && <span style={{ fontSize: "var(--text-2xs)", color: "var(--ink)", flex: 1, minWidth: 80 }}>{row[mapping.description]}</span>}
+              {mapping.amount && <span style={{ fontSize: "var(--text-2xs)", color: "var(--positive)", fontWeight: 600 }}>{row[mapping.amount]}</span>}
+              {mapping.debit && <span style={{ fontSize: "var(--text-2xs)", color: "var(--negative)", fontWeight: 600 }}>D:{row[mapping.debit]}</span>}
+              {mapping.credit && <span style={{ fontSize: "var(--text-2xs)", color: "var(--positive)", fontWeight: 600 }}>C:{row[mapping.credit]}</span>}
             </div>
           ))}
         </div>
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
-        <button onClick={onNext} disabled={!canProceed} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: canProceed ? 1 : 0.4 }}>
+        <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
+        <button onClick={onNext} disabled={!canProceed} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: canProceed ? 1 : 0.4 }}>
           Ver preview →
         </button>
       </div>
@@ -254,14 +254,14 @@ function DetectStep({ matrix, initialYear, defaultCurrency, onContinue, onBack }
 
   const selStyle: React.CSSProperties = {
     background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-    borderRadius: 9, padding: "7px 10px", color: "var(--ink)", fontSize: 13, outline: "none",
+    borderRadius: 9, padding: "7px 10px", color: "var(--ink)", fontSize: "var(--text-xs)", outline: "none",
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
         <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>Detectamos una tabla mensual</h2>
-        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4, lineHeight: 1.5 }}>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 4, lineHeight: 1.5 }}>
           Tu planilla tiene los montos agrupados por mes. Vamos a convertir cada total en un movimiento.
           {estimated > 0 && <> Estimamos <b style={{ color: "var(--ink)" }}>{estimated}</b> movimientos.</>}
         </p>
@@ -269,20 +269,20 @@ function DetectStep({ matrix, initialYear, defaultCurrency, onContinue, onBack }
 
       {/* Resumen de hojas */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", borderRadius: 10, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
-        {incomeSheets.length > 0 && <p style={{ fontSize: 12, color: "var(--positive)" }}>↑ Ingresos: {incomeSheets.join(", ")}</p>}
-        {expenseSheets.length > 0 && <p style={{ fontSize: 12, color: "var(--negative)" }}>↓ Gastos: {expenseSheets.join(", ")}</p>}
+        {incomeSheets.length > 0 && <p style={{ fontSize: "var(--text-2xs)", color: "var(--positive)" }}>↑ Ingresos: {incomeSheets.join(", ")}</p>}
+        {expenseSheets.length > 0 && <p style={{ fontSize: "var(--text-2xs)", color: "var(--negative)" }}>↓ Gastos: {expenseSheets.join(", ")}</p>}
       </div>
 
       {/* Año */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <label style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Año</label>
+        <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>Año</label>
         <input
           value={year}
           onChange={e => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
           type="text" inputMode="numeric" placeholder="2025"
           style={{ ...selStyle, width: 110 }}
         />
-        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>
           {initialYear
             ? "Lo tomamos del nombre del archivo. Cambialo si no es correcto."
             : "No encontré el año en el nombre del archivo, ¿de qué año son estos datos?"}
@@ -292,19 +292,19 @@ function DetectStep({ matrix, initialYear, defaultCurrency, onContinue, onBack }
 
       {/* Moneda */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <label style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Moneda</label>
+        <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>Moneda</label>
         <select value={currency} onChange={e => setCurrency(e.target.value)} style={{ ...selStyle, width: 110 }}>
           {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Se aplica a todos los movimientos. Podés ajustarla por fila en el preview.</p>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>Se aplica a todos los movimientos. Podés ajustarla por fila en el preview.</p>
       </div>
 
       {/* Bloques sueltos */}
       {matrix.looseItems.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Items sueltos ({matrix.looseItems.length})</p>
-            <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>
+            <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>Items sueltos ({matrix.looseItems.length})</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 1 }}>
               Estos no tienen mes. Tildá los que quieras registrar y elegí tipo y mes.
             </p>
           </div>
@@ -325,18 +325,18 @@ function DetectStep({ matrix, initialYear, defaultCurrency, onContinue, onBack }
                   {loose[i].selected && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#FFF" strokeWidth="2"><polyline points="2 6 5 9 10 3"/></svg>}
                 </button>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.description}</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>{it.sourceLabel} · {it.amount}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink)", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.description}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>{it.sourceLabel} · {it.amount}</p>
                 </div>
                 {loose[i].selected && (
                   <>
                     <select value={loose[i].type} onChange={e => setLooseAt(i, { type: e.target.value as "income" | "expense" })}
-                      style={{ fontSize: 12, background: "transparent", border: "0.5px solid var(--glass-border)", borderRadius: 6, padding: "3px 5px", color: "var(--ink-muted)" }}>
+                      style={{ fontSize: "var(--text-2xs)", background: "transparent", border: "0.5px solid var(--glass-border)", borderRadius: 6, padding: "3px 5px", color: "var(--ink-muted)" }}>
                       <option value="expense">Gasto</option>
                       <option value="income">Ingreso</option>
                     </select>
                     <select value={loose[i].month} onChange={e => setLooseAt(i, { month: parseInt(e.target.value, 10) })}
-                      style={{ fontSize: 12, background: "transparent", border: "0.5px solid var(--glass-border)", borderRadius: 6, padding: "3px 5px", color: "var(--ink-muted)" }}>
+                      style={{ fontSize: "var(--text-2xs)", background: "transparent", border: "0.5px solid var(--glass-border)", borderRadius: 6, padding: "3px 5px", color: "var(--ink-muted)" }}>
                       {MONTH_NAMES_ES.map((m, mi) => <option key={mi} value={mi + 1}>{m.slice(0, 3)}</option>)}
                     </select>
                   </>
@@ -348,8 +348,8 @@ function DetectStep({ matrix, initialYear, defaultCurrency, onContinue, onBack }
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
-        <button onClick={handleContinue} disabled={!yearValid} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: yearValid ? 1 : 0.4 }}>
+        <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
+        <button onClick={handleContinue} disabled={!yearValid} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: yearValid ? 1 : 0.4 }}>
           Ver preview →
         </button>
       </div>
@@ -383,19 +383,19 @@ function PreviewStep({ transactions, onChange, onImport, onBack }: {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div>
         <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>Revisar movimientos</h2>
-        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 4 }}>
           {transactions.length} detectados · {selected.length} seleccionados para importar
         </p>
       </div>
 
       {withErrors.length > 0 && (
-        <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(255,149,0,0.08)", border: "0.5px solid rgba(255,149,0,0.25)", fontSize: 12, color: "var(--warning)" }}>
+        <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(255,149,0,0.08)", border: "0.5px solid rgba(255,149,0,0.25)", fontSize: "var(--text-2xs)", color: "var(--warning)" }}>
           {withErrors.length} fila{withErrors.length > 1 ? "s" : ""} con errores — revisalas antes de importar.
         </div>
       )}
 
       {/* Select all */}
-      <button onClick={toggleAll} style={{ fontSize: 13, color: "var(--accent)", textAlign: "left", fontWeight: 600 }}>
+      <button onClick={toggleAll} style={{ fontSize: "var(--text-xs)", color: "var(--accent)", textAlign: "left", fontWeight: 600 }}>
         {transactions.every(t => t._selected) ? "Deseleccionar todo" : "Seleccionar todo"}
       </button>
 
@@ -427,12 +427,12 @@ function PreviewStep({ transactions, onChange, onImport, onBack }: {
                     <input
                       value={t.description}
                       onChange={e => updateField(i, "description", e.target.value)}
-                      style={{ flex: 1, fontSize: 12, fontWeight: 500, color: "var(--ink)", background: "transparent", border: "none", outline: "none", minWidth: 0 }}
+                      style={{ flex: 1, fontSize: "var(--text-2xs)", fontWeight: 500, color: "var(--ink)", background: "transparent", border: "none", outline: "none", minWidth: 0 }}
                     />
                     <select
                       value={t.type}
                       onChange={e => updateField(i, "type", e.target.value)}
-                      style={{ fontSize: 12, background: t.type === "income" ? "rgba(52,199,89,0.10)" : "rgba(255,59,48,0.07)", color: t.type === "income" ? "var(--positive)" : "var(--negative)", border: "none", borderRadius: 6, padding: "2px 6px", flexShrink: 0 }}>
+                      style={{ fontSize: "var(--text-2xs)", background: t.type === "income" ? "rgba(52,199,89,0.10)" : "rgba(255,59,48,0.07)", color: t.type === "income" ? "var(--positive)" : "var(--negative)", border: "none", borderRadius: 6, padding: "2px 6px", flexShrink: 0 }}>
                       <option value="expense">Gasto</option>
                       <option value="income">Ingreso</option>
                     </select>
@@ -443,32 +443,32 @@ function PreviewStep({ transactions, onChange, onImport, onBack }: {
                     <select
                       value={t.currency_code}
                       onChange={e => updateField(i, "currency_code", e.target.value)}
-                      style={{ fontSize: 13, background: "transparent", border: "none", color: "var(--ink-muted)", outline: "none" }}>
+                      style={{ fontSize: "var(--text-xs)", background: "transparent", border: "none", color: "var(--ink-muted)", outline: "none" }}>
                       {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                     <input
                       value={t.amount}
                       onChange={e => updateField(i, "amount", e.target.value)}
                       type="number" inputMode="decimal"
-                      style={{ width: 80, fontSize: 13, fontWeight: 600, color: t.type === "income" ? "var(--positive)" : "var(--negative)", background: "transparent", border: "none", outline: "none" }}
+                      style={{ width: 80, fontSize: "var(--text-xs)", fontWeight: 600, color: t.type === "income" ? "var(--positive)" : "var(--negative)", background: "transparent", border: "none", outline: "none" }}
                     />
                     <input
                       value={t.date}
                       onChange={e => updateField(i, "date", e.target.value)}
                       type="date"
-                      style={{ fontSize: 12, color: "var(--ink-muted)", background: "transparent", border: "none", outline: "none" }}
+                      style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", background: "transparent", border: "none", outline: "none" }}
                     />
                     <input
                       value={t.category_name}
                       onChange={e => updateField(i, "category_name", e.target.value)}
                       placeholder="Categoría"
-                      style={{ flex: 1, minWidth: 60, fontSize: 12, color: "var(--ink-muted)", background: "transparent", border: "none", outline: "none" }}
+                      style={{ flex: 1, minWidth: 60, fontSize: "var(--text-2xs)", color: "var(--ink-muted)", background: "transparent", border: "none", outline: "none" }}
                     />
                   </div>
 
                   {/* Errors */}
                   {hasError && (
-                    <p style={{ fontSize: 12, color: "var(--warning)" }}>{t._errors.join(" · ")}</p>
+                    <p style={{ fontSize: "var(--text-2xs)", color: "var(--warning)" }}>{t._errors.join(" · ")}</p>
                   )}
                 </div>
               </div>
@@ -478,8 +478,8 @@ function PreviewStep({ transactions, onChange, onImport, onBack }: {
       </div>
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
-        <button onClick={onImport} disabled={selected.length === 0} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: selected.length > 0 ? 1 : 0.4 }}>
+        <button onClick={onBack} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>← Atrás</button>
+        <button onClick={onImport} disabled={selected.length === 0} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: selected.length > 0 ? 1 : 0.4 }}>
           Importar {selected.length} →
         </button>
       </div>
@@ -499,8 +499,8 @@ function ImportingStep({ progress, total }: { progress: number; total: number })
         </svg>
       </div>
       <div style={{ textAlign: "center" }}>
-        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>Importando...</p>
-        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>{progress} de {total}</p>
+        <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>Importando...</p>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 4 }}>{progress} de {total}</p>
       </div>
       <div style={{ width: "100%", height: 6, borderRadius: 3, background: "var(--raised)", overflow: "hidden" }}>
         <div style={{ height: "100%", borderRadius: 3, background: "var(--accent)", width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", transition: "transform 300ms ease-out" }}/>
@@ -528,17 +528,17 @@ function ResultStep({ inserted, duplicates, errors, onDone }: {
       </div>
       <div style={{ textAlign: "center" }}>
         <h2 style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>¡Listo!</h2>
-        <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 6 }}>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginTop: 6 }}>
           {inserted} movimiento{inserted !== 1 ? "s" : ""} importado{inserted !== 1 ? "s" : ""} correctamente.
         </p>
       </div>
       {(duplicates > 0 || errors > 0) && (
         <div style={{ width: "100%", padding: "12px 14px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", gap: 6 }}>
-          {duplicates > 0 && <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>· {duplicates} duplicado{duplicates !== 1 ? "s" : ""} omitido{duplicates !== 1 ? "s" : ""}</p>}
-          {errors > 0 && <p style={{ fontSize: 12, color: "var(--negative)" }}>· {errors} con error</p>}
+          {duplicates > 0 && <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}>· {duplicates} duplicado{duplicates !== 1 ? "s" : ""} omitido{duplicates !== 1 ? "s" : ""}</p>}
+          {errors > 0 && <p style={{ fontSize: "var(--text-2xs)", color: "var(--negative)" }}>· {errors} con error</p>}
         </div>
       )}
-      <button onClick={onDone} style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D", boxShadow: "0 0 24px var(--accent-glow)" }}>
+      <button onClick={onDone} style={{ width: "100%", padding: "13px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", boxShadow: "0 0 24px var(--accent-glow)" }}>
         Ver movimientos →
       </button>
     </div>
@@ -643,11 +643,11 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
   }, [newSpaceName, creatingSpace, reloadSpaces]);
 
   // Selector de espacio destino (incluye "crear nuevo") al configurar el import.
-  const inputStyle: React.CSSProperties = { flex: 1, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: 16, outline: "none" };
+  const inputStyle: React.CSSProperties = { flex: 1, background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: "var(--text-base)", outline: "none" };
   const spaceSelector = ["detect", "map", "preview"].includes(step) ? (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 13, color: "var(--ink-muted)", flexShrink: 0 }}>Importar a</span>
+        <span style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", flexShrink: 0 }}>Importar a</span>
         <select value={spaceId} onChange={(e) => setSpaceId(e.target.value)} aria-label="Espacio destino del import" style={inputStyle}>
           {spaces.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
           <option value="__new__">＋ Crear nuevo espacio…</option>
@@ -665,7 +665,7 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
             style={inputStyle}
           />
           <button onClick={createSpace} disabled={!newSpaceName.trim() || creatingSpace}
-            style={{ flexShrink: 0, padding: "0 16px", borderRadius: 10, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: (!newSpaceName.trim() || creatingSpace) ? 0.5 : 1 }}>
+            style={{ flexShrink: 0, padding: "0 16px", borderRadius: 10, fontSize: "var(--text-sm)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: (!newSpaceName.trim() || creatingSpace) ? 0.5 : 1 }}>
             {creatingSpace ? "…" : "Crear"}
           </button>
         </div>

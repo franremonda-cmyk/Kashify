@@ -21,7 +21,7 @@ const inp: React.CSSProperties = {
   borderRadius: 12,
   padding: "12px 14px",
   color: "var(--ink)",
-  fontSize: 16,
+  fontSize: "var(--text-base)",
   width: "100%",
   outline: "none",
 };
@@ -95,12 +95,12 @@ export default function MetasPage() {
           <BackButton />
           <div>
             <h1 className="page-title">Metas de ahorro</h1>
-            <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>Objetivos y tu progreso hacia ellos</p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 2 }}>Objetivos y tu progreso hacia ellos</p>
           </div>
         </div>
         <button
           onClick={() => setShowNew(true)}
-          style={{ fontSize: 13, fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
+          style={{ fontSize: "var(--text-xs)", fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "var(--on-accent)", flexShrink: 0 }}
         >
           + Nueva
         </button>
@@ -110,17 +110,17 @@ export default function MetasPage() {
         <RowsSkeleton rows={3} />
       ) : loadError ? (
         <div className="card-solid p-8 text-center enter-up" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-          <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>No pudimos cargar tus metas.</p>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Puede ser la conexión — tus datos están a salvo.</p>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", fontWeight: 500 }}>No pudimos cargar tus metas.</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>Puede ser la conexión — tus datos están a salvo.</p>
           <button onClick={load}
-            style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+            style={{ padding: "10px 20px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>
             Reintentar
           </button>
         </div>
       ) : goals.length === 0 ? (
         <div className="card-glass p-8 text-center enter-up">
-          <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>Sin metas todavía</p>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", fontWeight: 500 }}>Sin metas todavía</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 4 }}>
             Creá una meta (un viaje, un fondo de emergencia) y seguí tu progreso.
           </p>
         </div>
@@ -143,14 +143,14 @@ export default function MetasPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="flex items-center gap-2">
-                      <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{g.name}</p>
+                      <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--ink)" }}>{g.name}</p>
                       {reached && (
-                        <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 7px", borderRadius: 999, background: "rgba(52,199,89,0.12)", color: "var(--positive)" }}>
+                        <span style={{ fontSize: "var(--text-2xs)", fontWeight: 700, padding: "2px 7px", borderRadius: 999, background: "rgba(52,199,89,0.12)", color: "var(--positive)" }}>
                           ¡Lograda!
                         </span>
                       )}
                     </div>
-                    <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
+                    <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 2 }}>
                       {fmt(g.current_amount, g.currency_code)} de {fmt(g.target_amount, g.currency_code)}
                       {g.target_date && ` · para ${new Date(g.target_date).toLocaleDateString("es-AR", { month: "short", year: "numeric" })}`}
                     </p>
@@ -166,7 +166,7 @@ export default function MetasPage() {
                     <button onClick={() => remove(g.id)}
                       aria-label="Eliminar meta" className="tap-target"
                       style={confirmingDelete === g.id
-                        ? { height: 28, padding: "0 10px", borderRadius: 8, background: "rgba(255,59,48,0.14)", border: "0.5px solid rgba(255,59,48,0.45)", color: "var(--negative)", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap", transition: "all 150ms ease-out" }
+                        ? { height: 28, padding: "0 10px", borderRadius: 8, background: "rgba(255,59,48,0.14)", border: "0.5px solid rgba(255,59,48,0.45)", color: "var(--negative)", fontSize: "var(--text-2xs)", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap", transition: "all 150ms ease-out" }
                         : { width: 28, height: 28, borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {confirmingDelete === g.id ? "¿Eliminar?" : (
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -182,8 +182,8 @@ export default function MetasPage() {
                     <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "transform 300ms ease-out" }} />
                   </div>
                   <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : g.color }}>{pct.toFixed(0)}%</span>
-                    <span style={{ fontSize: 13, color: "var(--ink-dim)" }}>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: reached ? "var(--positive)" : g.color }}>{pct.toFixed(0)}%</span>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>
                       {reached ? "Meta alcanzada" : `Faltan ${fmt(remaining, g.currency_code)}`}
                     </span>
                   </div>
@@ -201,15 +201,15 @@ export default function MetasPage() {
                       onKeyDown={(e) => e.key === "Enter" && contribute(g.id, 1)}
                     />
                     <button onClick={() => contribute(g.id, -1)}
-                      style={{ padding: "0 12px", borderRadius: 12, fontSize: 16, fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>−</button>
+                      style={{ padding: "0 12px", borderRadius: 12, fontSize: "var(--text-base)", fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>−</button>
                     <button onClick={() => contribute(g.id, 1)}
-                      style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Sumar</button>
+                      style={{ padding: "0 14px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>Sumar</button>
                     <button onClick={() => { setContributing(null); setAddAmount(""); }}
-                      style={{ padding: "0 10px", borderRadius: 12, fontSize: 13, background: "transparent", color: "var(--ink-dim)" }}>✕</button>
+                      style={{ padding: "0 10px", borderRadius: 12, fontSize: "var(--text-xs)", background: "transparent", color: "var(--ink-dim)" }}>✕</button>
                   </div>
                 ) : (
                   <button onClick={() => { setContributing(g.id); setAddAmount(""); }}
-                    style={{ padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}>
+                    style={{ padding: "10px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}>
                     Registrar aporte
                   </button>
                 )}
@@ -324,9 +324,9 @@ function GoalModal({
           style={{ width: "100%", maxWidth: 400, borderRadius: 20, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "0 24px 60px rgba(0,0,0,0.40)", maxHeight: "90dvh", display: "flex", flexDirection: "column" }}
         >
           <div className="flex items-center justify-between" style={{ padding: "16px 18px 0", flexShrink: 0 }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{isEdit ? "Editar meta" : "Nueva meta"}</p>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>{isEdit ? "Editar meta" : "Nueva meta"}</p>
             <button onClick={onClose} aria-label="Cerrar"
-              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span aria-hidden="true">✕</span>
             </button>
           </div>
@@ -338,7 +338,7 @@ function GoalModal({
                 <CategoryIcon icon={icon} color={color} size={28} style={iconStyle} />
               </button>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6 }}>Toca para cambiar el ícono</p>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 6 }}>Toca para cambiar el ícono</p>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {CATEGORY_COLORS.map((c) => (
                     <button key={c} onClick={() => setColor(c)}
@@ -362,12 +362,12 @@ function GoalModal({
             )}
 
             <div>
-              <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6 }}>Fecha objetivo (opcional)</p>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 6 }}>Fecha objetivo (opcional)</p>
               <input style={inp} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
 
             <button onClick={save} disabled={!name.trim() || !target || saving}
-              style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() && target ? "var(--accent)" : "var(--raised)", color: name.trim() && target ? "#04130D" : "var(--ink-dim)" }}>
+              style={{ padding: "13px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: name.trim() && target ? "var(--accent)" : "var(--raised)", color: name.trim() && target ? "var(--on-accent)" : "var(--ink-dim)" }}>
               {saving ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear meta"}
             </button>
           </div>

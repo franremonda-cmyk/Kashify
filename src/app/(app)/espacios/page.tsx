@@ -44,7 +44,7 @@ export default function EspaciosPage() {
       </p>
 
       {error && (
-        <div className="enter-up" style={{ background: "rgba(255,59,48,0.10)", border: "0.5px solid rgba(255,59,48,0.25)", color: "var(--negative)", borderRadius: 12, padding: "10px 14px", fontSize: 13 }}>
+        <div className="enter-up" style={{ background: "rgba(255,59,48,0.10)", border: "0.5px solid rgba(255,59,48,0.25)", color: "var(--negative)", borderRadius: 12, padding: "10px 14px", fontSize: "var(--text-xs)" }}>
           {error}
         </div>
       )}
@@ -56,21 +56,21 @@ export default function EspaciosPage() {
               {s.icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>
+              <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--ink)" }}>
                 {s.name}
-                {s.is_default && <span style={{ marginLeft: 8, fontSize: 11, color: "var(--accent)" }}>default</span>}
+                {s.is_default && <span style={{ marginLeft: 8, fontSize: "var(--text-2xs)", color: "var(--accent)" }}>default</span>}
               </p>
-              <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
+              <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>
                 {s.primary_currency} · {s.include_in_total ? "suma al total" : "aislado"}
               </p>
             </div>
-            <span style={{ color: "var(--ink-dim)", fontSize: 18 }}>›</span>
+            <span style={{ color: "var(--ink-dim)", fontSize: "var(--text-lg)" }}>›</span>
           </button>
         ))}
       </div>
 
       <button onClick={() => { setError(null); setEditing("new"); }} className="press"
-        style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+        style={{ padding: "13px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>
         + Nuevo espacio
       </button>
 

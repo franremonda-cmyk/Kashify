@@ -59,7 +59,7 @@ export default function SplashScreen() {
       }}>
         <span style={{
           fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
-          fontSize: 16, fontWeight: 500,
+          fontSize: "var(--text-base)", fontWeight: 500,
           color: "var(--ink-dim)",
           letterSpacing: "0.08em", userSelect: "none",
         }}>KASHIFY</span>

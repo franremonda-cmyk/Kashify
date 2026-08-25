@@ -48,7 +48,7 @@ const inp: React.CSSProperties = {
   borderRadius: 12,
   padding: "12px 14px",
   color: "var(--ink)",
-  fontSize: 16,
+  fontSize: "var(--text-base)",
   width: "100%",
   outline: "none",
 };
@@ -77,7 +77,7 @@ function Accordion({ label, sectionId, activeSection, isDesktop, defaultOpen = f
     if (sectionId && activeSection !== sectionId) return null;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <h2 style={{ fontSize: 19, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.01em", marginBottom: 2 }}>{label}</h2>
+        <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.01em", marginBottom: 2 }}>{label}</h2>
         {children}
       </div>
     );
@@ -88,7 +88,7 @@ function Accordion({ label, sectionId, activeSection, isDesktop, defaultOpen = f
       <button
         onClick={() => setOpen(v => !v)}
         style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "transparent", textAlign: "left" }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{label}</p>
+        <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>{label}</p>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
           style={{ color: "var(--ink-dim)", transition: "transform 200ms ease-out", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
           <polyline points="6 9 12 15 18 9"/>
@@ -107,7 +107,7 @@ function Accordion({ label, sectionId, activeSection, isDesktop, defaultOpen = f
 function SaveButton({ onClick, saving, label = "Guardar" }: { onClick: () => void; saving: boolean; label?: string }) {
   return (
     <button onClick={onClick} disabled={saving}
-      style={{ padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", flexShrink: 0, opacity: saving ? 0.5 : 1 }}>
+      style={{ padding: "10px 16px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", flexShrink: 0, opacity: saving ? 0.5 : 1 }}>
       {saving ? "..." : label}
     </button>
   );
@@ -341,14 +341,14 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     <div className="flex flex-col gap-6">
       {/* Avatar header */}
       <div className="flex items-center gap-4 enter-up">
-        <div style={{ width: 56, height: 56, borderRadius: 18, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#04130D", boxShadow: "0 4px 20px var(--accent-glow)", flexShrink: 0 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 18, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "var(--on-accent)", boxShadow: "0 4px 20px var(--accent-glow)", flexShrink: 0 }}>
           {initials}
         </div>
         <div>
           <h1 className="page-title">
             {displayName || "Sin nombre"}
           </h1>
-          <p style={{ fontSize: 13, marginTop: 2, color: "var(--ink-dim)" }}>{email}</p>
+          <p style={{ fontSize: "var(--text-xs)", marginTop: 2, color: "var(--ink-dim)" }}>{email}</p>
         </div>
       </div>
 
@@ -356,7 +356,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       <Accordion label="Datos personales" {...sec("datos")}>
         {/* Nombre */}
         <div>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>Nombre y apellido</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginBottom: 8 }}>Nombre y apellido</p>
           <div className="flex gap-2">
             <input style={{ ...inp, flex: 1 }} placeholder="Tu nombre"
               aria-label="Nombre y apellido" autoComplete="name"
@@ -370,7 +370,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
         {/* Moneda */}
         <div>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
           <div className="flex gap-2">
             <select style={{ ...inp, flex: 1 }} value={primaryCurrency} onChange={(e) => setPrimaryCurrency(e.target.value)}>
               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -383,7 +383,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
         {/* Tipo de cambio manual (para unificar el Total multi-divisa) */}
         <div>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>Tipo de cambio (1 USD = {primaryCurrency})</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginBottom: 8 }}>Tipo de cambio (1 USD = {primaryCurrency})</p>
           <div className="flex gap-2">
             <input
               style={{ ...inp, flex: 1 }}
@@ -393,7 +393,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             />
             <SaveButton onClick={saveUsdRate} saving={savingRate} label={savedRate ? "✓" : "Guardar"} />
           </div>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6 }}>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 6 }}>
             Con esto el balance te muestra el total unificado en {primaryCurrency}. Dejalo vacío para no convertir.
           </p>
         </div>
@@ -402,15 +402,15 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
         {/* WhatsApp */}
         <div>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 8 }}>WhatsApp vinculado</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginBottom: 8 }}>WhatsApp vinculado</p>
           {phones.length > 0 ? phones.map((p) => (
             <div key={p.id} className="flex items-center justify-between" style={{ marginBottom: 8 }}>
               <div className="flex items-center gap-2">
                 <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: p.verified ? "var(--positive)" : "var(--warning)" }} />
-                <span style={{ fontSize: 13, color: "var(--ink)" }}>{p.phone_number}</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--ink)" }}>{p.phone_number}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, fontWeight: 600, background: p.verified ? "rgba(52,199,89,0.10)" : "rgba(255,149,0,0.10)", color: p.verified ? "var(--positive)" : "var(--warning)", border: `0.5px solid ${p.verified ? "rgba(52,199,89,0.25)" : "rgba(255,149,0,0.25)"}` }}>
+                <span style={{ fontSize: "var(--text-2xs)", padding: "2px 8px", borderRadius: 999, fontWeight: 600, background: p.verified ? "rgba(52,199,89,0.10)" : "rgba(255,149,0,0.10)", color: p.verified ? "var(--positive)" : "var(--warning)", border: `0.5px solid ${p.verified ? "rgba(52,199,89,0.25)" : "rgba(255,149,0,0.25)"}` }}>
                   {p.verified ? "verificado" : "pendiente"}
                 </span>
                 <button onClick={() => deletePhone(p.id)} aria-label="Eliminar número"
@@ -421,17 +421,17 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                 </button>
               </div>
             </div>
-          )) : <p style={{ fontSize: 13, color: "var(--ink-dim)", marginBottom: 8 }}>Ningún número vinculado</p>}
+          )) : <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginBottom: 8 }}>Ningún número vinculado</p>}
           <div className="flex gap-2">
             <input style={{ ...inp, flex: 1 }} placeholder="+54 11 0000-0000" value={newPhone}
               aria-label="Número de WhatsApp" type="tel" inputMode="tel" autoComplete="tel"
               onChange={(e) => setNewPhone(e.target.value)} />
             <button onClick={addPhone}
-              style={{ padding: "0 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", flexShrink: 0 }}>
+              style={{ padding: "0 14px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", flexShrink: 0 }}>
               Agregar
             </button>
           </div>
-          <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 8, lineHeight: 1.4 }}>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 8, lineHeight: 1.4 }}>
             Importante: ingresá tu número <strong style={{ color: "var(--ink)" }}>sin el 9</strong> después
             del código de país (ej: <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 11 …</span>, no <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 9 11 …</span>).
           </p>
@@ -442,7 +442,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
               style={{
                 marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                 padding: "12px", borderRadius: 12, textDecoration: "none",
-                background: "#25D366", color: "#FFFFFF", fontWeight: 700, fontSize: 14,
+                background: "#25D366", color: "#04130D", fontWeight: 700, fontSize: "var(--text-sm)",
                 boxShadow: "0 4px 14px rgba(37,211,102,0.30)",
               }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -458,19 +458,19 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         {/* Cuenta (email + badge) */}
         <div className="flex items-center justify-between">
           <div>
-            <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>Cuenta</p>
-            <p style={{ fontSize: 13, marginTop: 2, color: "var(--ink)" }}>{email}</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>Cuenta</p>
+            <p style={{ fontSize: "var(--text-xs)", marginTop: 2, color: "var(--ink)" }}>{email}</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--positive)", boxShadow: "0 0 6px rgba(52,199,89,0.35)" }} />
-            <span style={{ fontSize: 12, color: "var(--positive)", fontWeight: 600 }}>activa</span>
+            <span style={{ fontSize: "var(--text-2xs)", color: "var(--positive)", fontWeight: 600 }}>activa</span>
           </div>
         </div>
       </Accordion>
 
       {/* ② Apariencia */}
       <Accordion label="Apariencia" {...sec("apariencia")}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Tema</p>
+        <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Tema</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {THEMES.map((t) => {
             const active = theme === t.id;
@@ -479,16 +479,16 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                 style={{ padding: "12px 14px", borderRadius: "var(--radius-control)", textAlign: "left", background: t.bg, border: active ? `2px solid ${t.preview}` : "1px solid var(--glass-border)", boxShadow: active ? `0 0 0 3px ${t.preview}22` : "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 14, height: 14, borderRadius: "50%", background: t.preview, flexShrink: 0, boxShadow: `0 0 8px ${t.preview}66` }} />
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 12.5, fontWeight: 600, color: t.ink }}>{t.label}</p>
-                  <p style={{ fontSize: 12, color: t.sub, marginTop: 1 }}>{t.desc}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: t.ink }}>{t.label}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", color: t.sub, marginTop: 1 }}>{t.desc}</p>
                 </div>
-                {active && <div style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: t.preview }}>✓</div>}
+                {active && <div style={{ marginLeft: "auto", fontSize: "var(--text-xs)", fontWeight: 700, color: t.preview }}>✓</div>}
               </button>
             );
           })}
         </div>
         <Divider />
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Estilo de íconos</p>
+        <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Estilo de íconos</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {ICON_STYLES.map((s) => {
             const active = iconStyle === s.id;
@@ -496,10 +496,10 @@ export default function PerfilClient({ profile, phones, email }: Props) {
               <button key={s.id} onClick={() => setIconStyle(s.id)}
                 style={{ padding: "10px 12px", borderRadius: 12, textAlign: "left", background: active ? "var(--accent-soft)" : "var(--raised)", border: active ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{s.label}</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: active ? "var(--accent)" : "var(--ink)" }}>{s.label}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 1 }}>{s.desc}</p>
                 </div>
-                {active && <div style={{ fontSize: 13, color: "var(--accent)", flexShrink: 0 }}>✓</div>}
+                {active && <div style={{ fontSize: "var(--text-xs)", color: "var(--accent)", flexShrink: 0 }}>✓</div>}
               </button>
             );
           })}
@@ -508,7 +508,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
       {/* Avisos de Neo */}
       <Accordion label="Avisos de Neo" {...sec("avisos")}>
-        <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>
           Elegí de qué te avisa Neo. Si desactivás algo, deja de mostrarte esos mensajes.
           Podés volver a activarlo cuando quieras.
         </p>
@@ -518,8 +518,8 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             return (
               <div key={f.family} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{f.label}</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 2 }}>{f.desc}</p>
+                  <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>{f.label}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 2 }}>{f.desc}</p>
                 </div>
                 <button
                   role="switch" aria-checked={on} aria-label={`${f.label}: ${on ? "activado" : "silenciado"}`}
@@ -536,12 +536,12 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
       {/* Espacios */}
       <Accordion label="Espacios" {...sec("espacios")}>
-        <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>
           Separá tus finanzas (personal, freelance, un emprendimiento…), cada una con su moneda.
           Las que sumás al total aparecen en tu balance personal; las aisladas quedan aparte.
         </p>
         <Link href="/espacios"
-          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--glass-border)", color: "var(--accent)", textDecoration: "none", marginTop: 10 }}>
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 14px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--glass-border)", color: "var(--accent)", textDecoration: "none", marginTop: 10 }}>
           Administrar espacios →
         </Link>
       </Accordion>
@@ -553,7 +553,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           <button
             onClick={() => setShowMisCats(v => !v)}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "var(--raised)", textAlign: "left" }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Mis categorías</span>
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>Mis categorías</span>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
               style={{ color: "var(--ink-dim)", transition: "transform 200ms", transform: showMisCats ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
               <polyline points="6 9 12 15 18 9"/>
@@ -562,13 +562,13 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           {showMisCats && (
             <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 8, borderTop: "0.5px solid var(--glass-border-dim)" }}>
               <button onClick={() => setEditingCat("new")}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)" }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva categoría
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)" }}>
+                <span style={{ fontSize: "var(--text-base)", lineHeight: 1 }}>+</span> Nueva categoría
               </button>
               {catLoading ? (
                 <RowsSkeleton rows={4} card={false} />
               ) : categories.length === 0 ? (
-                <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Aún no tenés categorías</p>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>Aún no tenés categorías</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {categories.map((cat) => (
@@ -577,7 +577,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                       <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (cat.color ?? "var(--accent)") + "22", border: `1px solid ${cat.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color ?? "var(--accent)" }}>
                         <CategoryIcon icon={cat.icon} name={cat.name} color={cat.color} size={15} />
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", flex: 1 }}>{cat.name}</span>
+                      <span style={{ fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--ink)", flex: 1 }}>{cat.name}</span>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}>
                         <polyline points="9 18 15 12 9 6"/>
                       </svg>
@@ -594,7 +594,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           <button
             onClick={() => setShowLimits(v => !v)}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "var(--raised)", textAlign: "left" }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Configurar límite por categoría</span>
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>Configurar límite por categoría</span>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
               style={{ color: "var(--ink-dim)", transition: "transform 200ms", transform: showLimits ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
               <polyline points="6 9 12 15 18 9"/>
@@ -604,8 +604,8 @@ export default function PerfilClient({ profile, phones, email }: Props) {
             <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 10, borderTop: "0.5px solid var(--glass-border-dim)" }}>
               {budgets.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "8px 0" }}>
-                  <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>No hay límites configurados</p>
-                  <Link href="/categorias" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none", fontWeight: 600, display: "inline-block", marginTop: 6 }}>
+                  <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>No hay límites configurados</p>
+                  <Link href="/categorias" style={{ fontSize: "var(--text-2xs)", color: "var(--accent)", textDecoration: "none", fontWeight: 600, display: "inline-block", marginTop: 6 }}>
                     + Agregar límite →
                   </Link>
                 </div>
@@ -620,14 +620,14 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                           <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: (b.categories?.color ?? "var(--accent)") + "22", border: `1px solid ${b.categories?.color ?? "var(--accent)"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.categories?.color ?? "var(--accent)" }}>
                             <CategoryIcon icon={b.categories?.icon} name={b.categories?.name ?? ""} color={b.categories?.color} size={15} />
                           </div>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", flex: 1, minWidth: 0 }}>{b.categories?.name ?? "—"}</p>
+                          <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)", flex: 1, minWidth: 0 }}>{b.categories?.name ?? "—"}</p>
                         </div>
                         <div style={{ display: "flex", gap: 8 }}>
-                          <select style={{ ...inp, width: 84, padding: "9px 10px", fontSize: 13 }} value={edit.currency}
+                          <select style={{ ...inp, width: 84, padding: "9px 10px", fontSize: "var(--text-xs)" }} value={edit.currency}
                             onChange={(e) => setBudgetEdits((prev) => ({ ...prev, [b.id]: { ...edit, currency: e.target.value } }))}>
                             {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
                           </select>
-                          <input style={{ ...inp, flex: 1, padding: "9px 12px", fontSize: 13 }} type="number" inputMode="decimal" placeholder="Límite mensual"
+                          <input style={{ ...inp, flex: 1, padding: "9px 12px", fontSize: "var(--text-xs)" }} type="number" inputMode="decimal" placeholder="Límite mensual"
                             value={edit.limit}
                             onChange={(e) => setBudgetEdits((prev) => ({ ...prev, [b.id]: { ...edit, limit: e.target.value } }))}
                           />
@@ -636,7 +636,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                           {(["always", "specific_months"] as const).map((pt) => (
                             <button key={pt}
                               onClick={() => setBudgetEdits((prev) => ({ ...prev, [b.id]: { ...edit, period_type: pt } }))}
-                              style={{ flex: 1, padding: "7px 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: edit.period_type === pt ? "var(--accent-soft)" : "var(--raised)", border: edit.period_type === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: edit.period_type === pt ? "var(--accent)" : "var(--ink-muted)" }}>
+                              style={{ flex: 1, padding: "7px 10px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: edit.period_type === pt ? "var(--accent-soft)" : "var(--raised)", border: edit.period_type === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: edit.period_type === pt ? "var(--accent)" : "var(--ink-muted)" }}>
                               {pt === "always" ? "Siempre" : "Meses específicos"}
                             </button>
                           ))}
@@ -648,7 +648,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                               const selected = edit.applies_months.includes(month);
                               return (
                                 <button key={m} onClick={() => toggleMonth(b.id, month)}
-                                  style={{ padding: "6px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, background: selected ? "var(--accent-soft)" : "var(--raised)", border: selected ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: selected ? "var(--accent)" : "var(--ink-dim)" }}>
+                                  style={{ padding: "6px 0", borderRadius: 8, fontSize: "var(--text-xs)", fontWeight: 600, background: selected ? "var(--accent-soft)" : "var(--raised)", border: selected ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: selected ? "var(--accent)" : "var(--ink-dim)" }}>
                                   {m}
                                 </button>
                               );
@@ -657,11 +657,11 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                         )}
                         <div style={{ display: "flex", gap: 8 }}>
                           <button onClick={() => saveBudget(b)} disabled={savingBudget === b.id}
-                            style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: savingBudget === b.id ? 0.6 : 1 }}>
+                            style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: savingBudget === b.id ? 0.6 : 1 }}>
                             {savingBudget === b.id ? "Guardando..." : "Guardar"}
                           </button>
                           <button onClick={() => confirming ? deleteBudget(b.id) : setConfirmDeleteBudget(b.id)} disabled={savingBudget === b.id}
-                            style={{ padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: confirming ? 700 : 600, background: confirming ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirming ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)" }}>
+                            style={{ padding: "8px 14px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: confirming ? 700 : 600, background: confirming ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirming ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)" }}>
                             {confirming ? "¿Eliminar?" : "Eliminar"}
                           </button>
                         </div>
@@ -669,7 +669,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                     );
                   })}
                   <Link href="/categorias"
-                    style={{ display: "block", textAlign: "center", padding: "10px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", textDecoration: "none" }}>
+                    style={{ display: "block", textAlign: "center", padding: "10px", borderRadius: 12, fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--accent)", background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", textDecoration: "none" }}>
                     + Agregar límite
                   </Link>
                 </div>
@@ -681,7 +681,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
       {/* ④ Metas de ahorro */}
       <Accordion label="Metas de ahorro" {...sec("metas")}>
-        <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Seguí el progreso de tus objetivos de ahorro.</p>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>Seguí el progreso de tus objetivos de ahorro.</p>
         {goals.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {goals.map((g) => {
@@ -695,8 +695,8 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>{reached ? "✓ Lograda" : `${pct.toFixed(0)}%`}</span>
+                      <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
+                      <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>{reached ? "✓ Lograda" : `${pct.toFixed(0)}%`}</span>
                     </div>
                     <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--base)", overflow: "hidden" }}>
                       <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : (g.color ?? "var(--accent)") }} />
@@ -708,14 +708,14 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           </div>
         )}
         <Link href="/metas?new=1"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva meta
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
+          <span style={{ fontSize: "var(--text-base)", lineHeight: 1 }}>+</span> Nueva meta
         </Link>
       </Accordion>
 
       {/* ⑤ Cuotas */}
       <Accordion label="Cuotas" {...sec("cuotas")}>
-        <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>Administrá tus compras en cuotas.</p>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>Administrá tus compras en cuotas.</p>
         {plans.filter(p => p.status === "active").length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {plans.filter(p => p.status === "active").map((plan) => {
@@ -726,8 +726,8 @@ export default function PerfilClient({ profile, phones, email }: Props) {
                 <Link key={plan.id} href="/cuotas"
                   style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>{plan.name}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>cuota {Math.min(paidCount + 1, plan.n_installments)}/{plan.n_installments}</span>
+                    <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>{plan.name}</span>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>cuota {Math.min(paidCount + 1, plan.n_installments)}/{plan.n_installments}</span>
                   </div>
                   <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--base)", overflow: "hidden" }}>
                     <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "var(--accent)" }} />
@@ -738,8 +738,8 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           </div>
         )}
         <Link href="/cuotas?new=1"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva cuota
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
+          <span style={{ fontSize: "var(--text-base)", lineHeight: 1 }}>+</span> Nueva cuota
         </Link>
       </Accordion>
 
@@ -747,7 +747,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       <div style={{ marginTop: 16, paddingTop: 18, borderTop: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", gap: 10 }}>
       <button
         onClick={inviteFriend}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--accent-glow)" }}>
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--accent-glow)" }}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
@@ -760,7 +760,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       {/* Sugerencias de edición — entre invitar amigo y cerrar sesión */}
       <a
         href={`mailto:kashify.finanzas@gmail.com?subject=${encodeURIComponent("Sugerencia para Kashify")}&body=${encodeURIComponent("Hola! Tengo una sugerencia para Kashify:\n\n")}`}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "var(--raised)", color: "var(--ink)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: "var(--raised)", color: "var(--ink)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
           <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
@@ -771,7 +771,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       {/* Botón cerrar sesión — fuera de acordeones */}
       <button
         onClick={signOut}
-        style={{ padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: "rgba(255,59,48,0.07)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
+        style={{ padding: "14px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: "rgba(255,59,48,0.07)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
         Cerrar sesión
       </button>
       </div>

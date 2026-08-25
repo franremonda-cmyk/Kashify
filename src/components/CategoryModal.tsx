@@ -30,7 +30,7 @@ const inp: React.CSSProperties = {
   borderRadius: 12,
   padding: "12px 14px",
   color: "var(--ink)",
-  fontSize: 16,
+  fontSize: "var(--text-base)",
   width: "100%",
   outline: "none",
 };
@@ -88,11 +88,11 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>
               {isNew ? "Nueva categoría" : "Editar categoría"}
             </p>
             <button onClick={onClose}
-              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               ✕
             </button>
           </div>
@@ -108,7 +108,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
                 {icon ? <CategoryIcon icon={icon} color={color} size={28} style={currentStyle} /> : <span style={{ fontSize: 22 }}>＋</span>}
               </button>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 4 }}>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 4 }}>
                   {icon ? "Toca para cambiar el ícono" : "Toca para elegir un ícono"}
                 </p>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -130,18 +130,18 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
             />
 
             <button onClick={handleSave} disabled={!name.trim() || saving}
-              style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "#04130D" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
+              style={{ padding: "13px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "var(--on-accent)" : "var(--ink-dim)", transition: "all 160ms ease-out" }}>
               {saving ? "Guardando..." : isNew ? "Crear categoría" : "Guardar cambios"}
             </button>
 
             {!isNew && onDelete && (
               confirmDel ? (
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>Sí, eliminar</button>
-                  <button onClick={() => setConfirmDel(false)} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
+                  <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>Sí, eliminar</button>
+                  <button onClick={() => setConfirmDel(false)} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: "var(--text-xs)", background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
                 </div>
               ) : (
-                <button onClick={() => setConfirmDel(true)} style={{ padding: "10px", borderRadius: 12, fontSize: 12, color: "var(--negative)", background: "transparent", border: "0.5px solid var(--glass-border)" }}>Eliminar categoría</button>
+                <button onClick={() => setConfirmDel(true)} style={{ padding: "10px", borderRadius: 12, fontSize: "var(--text-2xs)", color: "var(--negative)", background: "transparent", border: "0.5px solid var(--glass-border)" }}>Eliminar categoría</button>
               )
             )}
           </div>

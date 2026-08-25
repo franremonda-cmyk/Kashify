@@ -84,11 +84,11 @@ export default function FilterSheet({ categories, filters, onApply, onClose }: {
         {/* Fixed header */}
         <div style={{ flexShrink: 0, padding: "16px 20px 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>Filtrar y ordenar</h2>
+            <h2 style={{ fontSize: "var(--text-base)", fontWeight: 600, color: "var(--ink)" }}>Filtrar y ordenar</h2>
             <button onClick={onClose} aria-label="Cerrar" style={{
               width: 28, height: 28, borderRadius: "50%",
               background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-              color: "var(--ink-muted)", fontSize: 12,
+              color: "var(--ink-muted)", fontSize: "var(--text-2xs)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>✕</button>
           </div>
@@ -100,13 +100,13 @@ export default function FilterSheet({ categories, filters, onApply, onClose }: {
           style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 20px", display: "flex", flexDirection: "column", gap: 20, touchAction: "pan-y" }}
         >
           <div>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Ordenar por</p>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Ordenar por</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
               {SORT_OPTIONS.map(o => {
                 const on = local.sort === o.value;
                 return (
                   <button key={o.value} onClick={() => setLocal(f => ({ ...f, sort: o.value }))} style={{
-                    padding: "8px 10px", borderRadius: 9, fontSize: 12, fontWeight: 500, textAlign: "left",
+                    padding: "8px 10px", borderRadius: 9, fontSize: "var(--text-2xs)", fontWeight: 500, textAlign: "left",
                     background: on ? "var(--accent-soft)" : "var(--raised)",
                     color: on ? "var(--accent)" : "var(--ink-muted)",
                     border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)",
@@ -116,13 +116,13 @@ export default function FilterSheet({ categories, filters, onApply, onClose }: {
             </div>
           </div>
           <div>
-            <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Tipo</p>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Tipo</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {TX_TYPES.map(t => {
                 const on = local.types.includes(t.value);
                 return (
                   <button key={t.value} onClick={() => setLocal(f => ({ ...f, types: on ? f.types.filter(x=>x!==t.value) : [...f.types, t.value] }))} style={{
-                    padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
+                    padding: "7px 14px", borderRadius: 20, fontSize: "var(--text-2xs)", fontWeight: 500,
                     background: on ? "var(--accent-soft)" : "var(--raised)",
                     color: on ? "var(--accent)" : "var(--ink-muted)",
                     border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)",
@@ -133,14 +133,14 @@ export default function FilterSheet({ categories, filters, onApply, onClose }: {
           </div>
           {categories.length > 0 && (
             <div style={{ paddingBottom: 4 }}>
-              <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Categoría</p>
+              <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>Categoría</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {categories.map(cat => {
                   const on = local.categories.includes(cat.id);
                   return (
                     <button key={cat.id} onClick={() => setLocal(f => ({ ...f, categories: on ? f.categories.filter(x=>x!==cat.id) : [...f.categories, cat.id] }))} style={{
                       display: "flex", alignItems: "center", gap: 5,
-                      padding: "7px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500,
+                      padding: "7px 12px", borderRadius: 20, fontSize: "var(--text-2xs)", fontWeight: 500,
                       background: on ? "var(--accent-soft)" : "var(--raised)",
                       color: on ? "var(--accent)" : "var(--ink-muted)",
                       border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)",
@@ -154,8 +154,8 @@ export default function FilterSheet({ categories, filters, onApply, onClose }: {
 
         {/* Fixed footer */}
         <div style={{ flexShrink: 0, display: "flex", gap: 8, padding: "16px 20px" }}>
-          <button onClick={() => setLocal({ categories: [], types: [], sort: "date_desc" })} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Limpiar</button>
-          <button onClick={() => { onApply(local); onClose(); }} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>Aplicar</button>
+          <button onClick={() => setLocal({ categories: [], types: [], sort: "date_desc" })} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Limpiar</button>
+          <button onClick={() => { onApply(local); onClose(); }} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>Aplicar</button>
         </div>
       </div>
     </div>,

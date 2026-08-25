@@ -53,11 +53,11 @@ export default function UndoToast() {
         boxShadow: "0 8px 30px rgba(0,0,0,0.35)",
       }}
     >
-      <span style={{ fontSize: 13, color: "var(--ink)" }}>Movimiento eliminado</span>
+      <span style={{ fontSize: "var(--text-xs)", color: "var(--ink)" }}>Movimiento eliminado</span>
       <button
         onClick={undo}
         disabled={restoring}
-        style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: "6px 2px" }}
+        style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: "6px 2px" }}
       >
         {restoring ? "Restaurando…" : "Deshacer"}
       </button>

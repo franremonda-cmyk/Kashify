@@ -61,18 +61,18 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
   const formatted = animated.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
   return (
-    <div className="enter-up hero-balance sheen" data-delay="1" data-tour="balance" style={{
+    <div className="enter-up hero-balance" data-delay="1" data-tour="balance" style={{
       overflow: "hidden",
       position: "relative",
     }}>
       <div style={{ padding: "18px 20px 0", position: "relative" }}>
         <p style={{
-          fontSize: 12.5, fontWeight: 700, textTransform: "uppercase",
+          fontSize: "var(--text-2xs)", fontWeight: 700, textTransform: "uppercase",
           letterSpacing: "0.16em", color: "var(--hero-ink-soft)", margin: 0, opacity: 0.85,
         }}>Balance</p>
 
         {balances.length === 0 ? (
-          <p style={{ fontSize: 14, color: "var(--hero-ink-soft)", padding: "12px 0 20px" }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--hero-ink-soft)", padding: "12px 0 20px" }}>
             Enviá tu primer mensaje a Neo para empezar
           </p>
         ) : (
@@ -94,7 +94,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
                     cursor: "pointer", outline: "none",
                   }}>
                   <span style={{
-                    fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
+                    fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "0.04em",
                     color: isActive ? "var(--hero-pill-fg-active)" : "var(--hero-pill-fg)",
                   }}>{b.currency_code}</span>
                 </button>
@@ -114,7 +114,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
           }}>
             {isNeg ? "−" : ""}{symbol} {formatted}
           </div>
-          <p style={{ fontSize: 13, color: "var(--hero-ink-soft)", marginTop: 8, fontWeight: 500 }}>
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--hero-ink-soft)", marginTop: 8, fontWeight: 500 }}>
             {NAMES[selected] ?? selected}
           </p>
           {(() => {
@@ -125,7 +125,7 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
             if (!usd || !Number(usd.amount)) return null;
             const unified = amount + Number(usd.amount) * usdRate;
             return (
-              <p style={{ fontSize: 13, color: "var(--hero-ink-soft)", marginTop: 6, fontWeight: 500 }}>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--hero-ink-soft)", marginTop: 6, fontWeight: 500 }}>
                 ≈ {symbol} {unified.toLocaleString("es-AR", { maximumFractionDigits: 0 })} unificado
                 (US$ 1 = {symbol} {Number(usdRate).toLocaleString("es-AR", { maximumFractionDigits: 0 })})
               </p>

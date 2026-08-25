@@ -40,10 +40,10 @@ interface Props {
 
 const inp: React.CSSProperties = {
   background: "var(--raised)", border: "0.5px solid var(--glass-border)", borderRadius: 12,
-  padding: "12px 14px", color: "var(--ink)", fontSize: 16, width: "100%", outline: "none",
+  padding: "12px 14px", color: "var(--ink)", fontSize: "var(--text-base)", width: "100%", outline: "none",
 };
 
-const label: React.CSSProperties = { fontSize: 13, color: "var(--ink-muted)", marginBottom: 6 };
+const label: React.CSSProperties = { fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 6 };
 
 export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) {
   const isNew = !space?.id;
@@ -83,8 +83,8 @@ export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) 
     >
       <div className="glass-strong" style={{ width: "100%", maxWidth: 400, borderRadius: 20, maxHeight: "100%", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
-          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{isNew ? "Nuevo espacio" : "Editar espacio"}</p>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12 }}>✕</button>
+          <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>{isNew ? "Nuevo espacio" : "Editar espacio"}</p>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)" }}>✕</button>
         </div>
 
         <div ref={scrollRef} style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", touchAction: "pan-y" }}>
@@ -143,18 +143,18 @@ export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) 
           />
 
           <button onClick={handleSave} disabled={!name.trim() || saving}
-            style={{ padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "#04130D" : "var(--ink-dim)" }}>
+            style={{ padding: "13px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600, background: name.trim() ? "var(--accent)" : "var(--raised)", color: name.trim() ? "var(--on-accent)" : "var(--ink-dim)" }}>
             {saving ? "Guardando..." : isNew ? "Crear espacio" : "Guardar cambios"}
           </button>
 
           {!isNew && onDelete && (
             confirmDel ? (
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>Sí, eliminar</button>
-                <button onClick={() => setConfirmDel(false)} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
+                <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>Sí, eliminar</button>
+                <button onClick={() => setConfirmDel(false)} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: "var(--text-xs)", background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
               </div>
             ) : (
-              <button onClick={() => setConfirmDel(true)} style={{ padding: "10px", borderRadius: 12, fontSize: 12, color: "var(--negative)", background: "transparent", border: "0.5px solid var(--glass-border)" }}>Eliminar espacio</button>
+              <button onClick={() => setConfirmDel(true)} style={{ padding: "10px", borderRadius: 12, fontSize: "var(--text-2xs)", color: "var(--negative)", background: "transparent", border: "0.5px solid var(--glass-border)" }}>Eliminar espacio</button>
             )
           )}
         </div>
@@ -172,8 +172,8 @@ function Toggle({ checked, onChange, title, subtitle }: { checked: boolean; onCh
         <div style={{ position: "absolute", top: 2, left: checked ? 20 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 160ms ease-out" }} />
       </div>
       <div>
-        <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>{title}</p>
-        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>{subtitle}</p>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", fontWeight: 500 }}>{title}</p>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>{subtitle}</p>
       </div>
     </button>
   );

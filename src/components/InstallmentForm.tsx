@@ -35,7 +35,7 @@ const inp: React.CSSProperties = {
   borderRadius: 10,
   padding: "11px 13px",
   color: "var(--ink)",
-  fontSize: 16,
+  fontSize: "var(--text-base)",
   width: "100%",
   outline: "none",
 };
@@ -51,7 +51,7 @@ const section: React.CSSProperties = {
 };
 
 const label: React.CSSProperties = {
-  fontSize: 12,
+  fontSize: "var(--text-2xs)",
   fontWeight: 600,
   textTransform: "uppercase",
   letterSpacing: "0.07em",
@@ -134,7 +134,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
 
   return (
     <div style={{ borderRadius: 18, border: "0.5px solid var(--glass-border)", background: "var(--base)", boxShadow: "var(--shadow-sm)", padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
-      <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
+      <h2 style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>
         {editMode ? "Editar cuota" : "Nueva compra en cuotas"}
       </h2>
 
@@ -168,7 +168,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
 
       {/* ③ Tarjeta / banco */}
       <div style={section}>
-        <p style={label}>Tarjeta / banco <span style={{ ...required, color: "var(--ink-dim)", fontSize: 12 }}>(opcional)</span></p>
+        <p style={label}>Tarjeta / banco <span style={{ ...required, color: "var(--ink-dim)", fontSize: "var(--text-2xs)" }}>(opcional)</span></p>
         <input
           style={inp}
           placeholder="Ej. Galicia Visa, Mercado Pago…"
@@ -197,7 +197,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
           <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
             <input style={inp} type="number" inputMode="decimal" placeholder="TNA % (ej: 94.9)"
               value={form.tna ?? ""} onChange={setNum("tna")} />
-            <p style={{ fontSize: 12, color: "var(--ink-dim)", textAlign: "center" }}>— o si sabés el monto de cuota —</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", textAlign: "center" }}>— o si sabés el monto de cuota —</p>
             <input style={inp} type="number" inputMode="decimal" placeholder="Monto de cuota conocido"
               value={form.known_installment ?? ""} onChange={setNum("known_installment")} />
           </div>
@@ -223,16 +223,16 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
       )}
 
       {attempted && !isValid && (
-        <p style={{ fontSize: 13, color: "var(--negative)", textAlign: "center" }}>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--negative)", textAlign: "center" }}>
           Completá los campos obligatorios (marcados con *)
         </p>
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onCancel} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
+        <button onClick={onCancel} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
           Cancelar
         </button>
-        <button onClick={handleSubmit} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: attempted && !isValid ? 0.7 : 1 }}>
+        <button onClick={handleSubmit} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: attempted && !isValid ? 0.7 : 1 }}>
           {editMode ? "Guardar cambios" : "Registrar ✓"}
         </button>
       </div>
@@ -243,8 +243,8 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
 function Row({ label: l, value, bold, color }: { label: string; value: string; bold?: boolean; color?: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span style={{ fontSize: 13, color: "var(--ink-muted)" }}>{l}</span>
-      <span style={{ fontSize: 13, fontWeight: bold ? 700 : 400, color: color ?? "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{value}</span>
+      <span style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)" }}>{l}</span>
+      <span style={{ fontSize: "var(--text-xs)", fontWeight: bold ? 700 : 400, color: color ?? "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{value}</span>
     </div>
   );
 }

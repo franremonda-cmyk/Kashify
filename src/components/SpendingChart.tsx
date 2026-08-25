@@ -70,7 +70,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
   if (slice.length === 0) {
     return (
       <div className="glass" style={{ borderRadius: 16, padding: 20, textAlign: "center" }}>
-        <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>Sin datos para este período</p>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}>Sin datos para este período</p>
       </div>
     );
   }
@@ -137,7 +137,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
     <div ref={wrapRef} className="glass" style={{ borderRadius: 16, padding: "16px 16px 12px" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>
+        <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)" }}>
           Evolución mensual
         </p>
         {/* Period selector */}
@@ -148,7 +148,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
               onClick={() => setPeriod(p)}
               style={{
                 minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
-                padding: "0 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                padding: "0 12px", borderRadius: 6, fontSize: "var(--text-2xs)", fontWeight: 600,
                 background: period === p ? "rgba(0,230,118,0.18)" : "transparent",
                 color: period === p ? "var(--accent)" : "var(--ink-muted)",
                 border: period === p ? "0.5px solid rgba(0,230,118,0.30)" : "none",
@@ -169,7 +169,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
               onClick={() => setMode(mo)}
               style={{
                 minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
-                padding: "0 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                padding: "0 14px", borderRadius: 6, fontSize: "var(--text-2xs)", fontWeight: 600,
                 background: activeMode === mo ? "var(--base)" : "transparent",
                 color: activeMode === mo ? "var(--accent)" : "var(--ink-muted)",
                 boxShadow: activeMode === mo ? "var(--shadow-sm)" : "none",
@@ -187,7 +187,7 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
           {stackVals.map((st) => (
             <div key={st.name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 10, height: 10, borderRadius: 3, background: st.color }} />
-              <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{st.name}</span>
+              <span style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}>{st.name}</span>
             </div>
           ))}
         </div>
@@ -195,11 +195,11 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
         <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--positive)" }} />
-            <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>Ingresos</span>
+            <span style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}>Ingresos</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 16, height: 2, borderRadius: 1, background: "var(--negative)" }} />
-            <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>Gastos</span>
+            <span style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}>Gastos</span>
           </div>
         </div>
       )}
@@ -328,30 +328,30 @@ export default function SpendingChart({ data, currencySymbol = "$", spaceStacks 
           background: "var(--base)", border: "0.5px solid var(--glass-border)",
           borderRadius: 10, padding: "8px 10px", boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
         }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-muted)", marginBottom: 6, textTransform: "capitalize" }}>{slice[ai].label}</p>
+          <p style={{ fontSize: "var(--text-2xs)", fontWeight: 700, color: "var(--ink-muted)", marginBottom: 6, textTransform: "capitalize" }}>{slice[ai].label}</p>
           {activeMode === "space" ? (
             <>
               {stackVals.map((st) => (
                 <div key={st.name} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: st.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 11.5, color: "var(--ink-muted)", flex: 1, whiteSpace: "nowrap" }}>{st.name}</span>
-                  <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(st.vals[ai] ?? 0)}</span>
+                  <span style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", flex: 1, whiteSpace: "nowrap" }}>{st.name}</span>
+                  <span className="mono" style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(st.vals[ai] ?? 0)}</span>
                 </div>
               ))}
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 5, paddingTop: 5, borderTop: "0.5px solid var(--glass-border-dim)" }}>
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--ink-muted)" }}>Total</span>
-                <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(monthTotals[ai])}</span>
+                <span style={{ fontSize: "var(--text-2xs)", fontWeight: 700, color: "var(--ink-muted)" }}>Total</span>
+                <span className="mono" style={{ fontSize: "var(--text-2xs)", fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(monthTotals[ai])}</span>
               </div>
             </>
           ) : (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 3 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--ink-muted)" }}><span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--positive)" }} />Ingresos</span>
-                <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--positive)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(slice[ai].income)}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}><span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--positive)" }} />Ingresos</span>
+                <span className="mono" style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--positive)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(slice[ai].income)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--ink-muted)" }}><span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--negative)" }} />Gastos</span>
-                <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(slice[ai].expense)}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}><span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--negative)" }} />Gastos</span>
+                <span className="mono" style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--negative)", fontVariantNumeric: "tabular-nums" }}>{fmtFull(slice[ai].expense)}</span>
               </div>
             </>
           )}

@@ -87,12 +87,12 @@ export default function CuotasPage() {
           <BackButton />
           <div>
             <h1 className="page-title">Cuotas</h1>
-            <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>Tus compras financiadas y su progreso</p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 2 }}>Tus compras financiadas y su progreso</p>
           </div>
         </div>
         <button
           onClick={() => { setShowForm(true); setEditingId(null); }}
-          style={{ fontSize: 13, fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "#04130D", flexShrink: 0 }}
+          style={{ fontSize: "var(--text-xs)", fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 12, background: "var(--accent)", color: "var(--on-accent)", flexShrink: 0 }}
         >
           + Nueva
         </button>
@@ -101,7 +101,7 @@ export default function CuotasPage() {
       {showForm && (
         <>
           {createError && (
-            <p style={{ fontSize: 12, color: "var(--negative)", padding: "10px 14px", borderRadius: 10, background: "rgba(255,59,48,0.08)", border: "0.5px solid rgba(255,59,48,0.25)" }}>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--negative)", padding: "10px 14px", borderRadius: 10, background: "rgba(255,59,48,0.08)", border: "0.5px solid rgba(255,59,48,0.25)" }}>
               {createError}
             </p>
           )}
@@ -150,8 +150,8 @@ export default function CuotasPage() {
 
       {plans.length === 0 && !showForm && (
         <div className="card-glass p-8 text-center enter-up">
-          <p style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>Sin compras en cuotas</p>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>Registrá una compra financiada para seguir tus pagos.</p>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", fontWeight: 500 }}>Sin compras en cuotas</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 4 }}>Registrá una compra financiada para seguir tus pagos.</p>
         </div>
       )}
     </div>
@@ -197,18 +197,18 @@ function PlanCard({ plan, onCancel, onPay, onDelete, isEditing, onEditToggle, on
             <CategoryIcon icon={plan.categories?.icon ?? "💳"} name={plan.categories?.name ?? plan.name} color={plan.categories?.color} size={18} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{plan.name}</p>
-            <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
+            <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--ink)" }}>{plan.name}</p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 2 }}>
               {plan.card_name ? `${plan.card_name} · ` : ""}
               {plan.interest_type === "french" ? `TNA ${plan.tna}%` : "Sin interés"}
             </p>
           </div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-mono, monospace)" }}>
+          <p style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-mono, monospace)" }}>
             {plan.currency_code} {Number(plan.installment_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
           </p>
-          <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 2 }}>
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 2 }}>
             cuota {Math.min(paidCount + 1, plan.n_installments)}/{plan.n_installments}
           </p>
         </div>
@@ -219,7 +219,7 @@ function PlanCard({ plan, onCancel, onPay, onDelete, isEditing, onEditToggle, on
           <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: plan.status === "paid" ? "var(--positive)" : "var(--accent)", transition: "transform 300ms ease-out" }} />
         </div>
         {isActive && nextDue && (
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6 }}>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 6 }}>
             Próximo vencimiento: {new Date(nextDue.due_date).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
           </p>
         )}
@@ -247,7 +247,7 @@ function PlanCard({ plan, onCancel, onPay, onDelete, isEditing, onEditToggle, on
             <>
               <button
                 onClick={() => onPay(plan.id)}
-                style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}
+                style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}
               >
                 Registrar pago
               </button>
@@ -257,7 +257,7 @@ function PlanCard({ plan, onCancel, onPay, onDelete, isEditing, onEditToggle, on
                   setConfirmingCancel(false);
                   onCancel(plan.id);
                 }}
-                style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: confirmingCancel ? 700 : 600, background: confirmingCancel ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmingCancel ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)", transition: "all 150ms ease-out" }}
+                style={{ padding: "9px 12px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: confirmingCancel ? 700 : 600, background: confirmingCancel ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmingCancel ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)", transition: "all 150ms ease-out" }}
               >
                 {confirmingCancel ? "¿Saldar todo? Tocá de nuevo" : "Saldar"}
               </button>
@@ -265,7 +265,7 @@ function PlanCard({ plan, onCancel, onPay, onDelete, isEditing, onEditToggle, on
           )}
           <button
             onClick={onEditToggle}
-            style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}
+            style={{ padding: "9px 12px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}
           >
             Editar
           </button>
@@ -275,7 +275,7 @@ function PlanCard({ plan, onCancel, onPay, onDelete, isEditing, onEditToggle, on
               setConfirmingDelete(false);
               onDelete(plan.id);
             }}
-            style={{ padding: "9px 12px", borderRadius: 10, fontSize: 12, fontWeight: confirmingDelete ? 700 : 600, background: confirmingDelete ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmingDelete ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)", transition: "all 150ms ease-out" }}
+            style={{ padding: "9px 12px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: confirmingDelete ? 700 : 600, background: confirmingDelete ? "rgba(255,59,48,0.16)" : "rgba(255,59,48,0.08)", color: "var(--negative)", border: confirmingDelete ? "0.5px solid rgba(255,59,48,0.45)" : "0.5px solid rgba(255,59,48,0.18)", transition: "all 150ms ease-out" }}
           >
             {confirmingDelete ? "¿Eliminar? Tocá de nuevo" : "Eliminar"}
           </button>

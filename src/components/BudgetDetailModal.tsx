@@ -120,12 +120,12 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
                 <CategoryIcon icon={budget.icon} name={budget.name} color={budget.color} size={20} />
               </div>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>{budget.name}</p>
-                <p style={{ fontSize: 13, color: "var(--ink-dim)", marginTop: 1 }}>Límite del mes</p>
+                <p style={{ fontSize: "var(--text-row)", fontWeight: 700, color: "var(--ink)" }}>{budget.name}</p>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginTop: 1 }}>Límite del mes</p>
               </div>
             </div>
             <button onClick={onClose} aria-label="Cerrar"
-              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               ✕
             </button>
           </div>
@@ -136,7 +136,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
               <p style={{ fontSize: 22, fontWeight: 800, color: textColor, fontVariantNumeric: "tabular-nums" }}>
                 {Math.round(pct)}%
               </p>
-              <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>
                 {fmt(budget.spent ?? 0, budget.currency_code)} / {fmt(budget.monthly_limit, budget.currency_code)}
               </p>
             </div>
@@ -144,11 +144,11 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
               <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: gradientColor, transition: "transform 400ms ease-out" }} />
             </div>
             {budget.monthly_limit > (budget.spent ?? 0) ? (
-              <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 6 }}>
+              <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 6 }}>
                 Quedan {fmt(budget.monthly_limit - (budget.spent ?? 0), budget.currency_code)} disponibles
               </p>
             ) : (
-              <p style={{ fontSize: 12, color: "var(--negative)", marginTop: 6, fontWeight: 600 }}>
+              <p style={{ fontSize: "var(--text-2xs)", color: "var(--negative)", marginTop: 6, fontWeight: 600 }}>
                 Límite superado por {fmt((budget.spent ?? 0) - budget.monthly_limit, budget.currency_code)}
               </p>
             )}
@@ -157,22 +157,22 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
           {/* Editar límite */}
           {!editing ? (
             <button onClick={() => setEditing(true)}
-              style={{ width: "100%", padding: "9px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--accent)", marginBottom: 14 }}>
+              style={{ width: "100%", padding: "9px", borderRadius: 12, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--accent)", marginBottom: 14 }}>
               Editar límite
             </button>
           ) : (
             <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)", marginBottom: 14, display: "flex", flexDirection: "column", gap: 10 }}>
               <div>
-                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>Límite mensual ({budget.currency_code})</p>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>Límite mensual ({budget.currency_code})</p>
                 <input type="number" inputMode="decimal" value={limitVal} onChange={e => setLimitVal(e.target.value)} placeholder="Monto"
-                  style={{ width: "100%", boxSizing: "border-box", background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: 15, outline: "none" }} />
+                  style={{ width: "100%", boxSizing: "border-box", background: "var(--base)", border: "0.5px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: "var(--text-row)", outline: "none" }} />
               </div>
               <div>
-                <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 6, fontWeight: 600 }}>¿Cuándo aplica?</p>
                 <div style={{ display: "flex", gap: 6 }}>
                   {(["always", "specific_months"] as const).map(pt => (
                     <button key={pt} onClick={() => setPeriod(pt)}
-                      style={{ flex: 1, padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: period === pt ? "var(--accent-soft)" : "var(--base)", border: period === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: period === pt ? "var(--accent)" : "var(--ink-muted)" }}>
+                      style={{ flex: 1, padding: "8px 10px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: period === pt ? "var(--accent-soft)" : "var(--base)", border: period === pt ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: period === pt ? "var(--accent)" : "var(--ink-muted)" }}>
                       {pt === "always" ? "Siempre" : "Mes específico"}
                     </button>
                   ))}
@@ -185,7 +185,7 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
                     const on = months.includes(month);
                     return (
                       <button key={m} onClick={() => setMonths(arr => arr.includes(month) ? arr.filter(x => x !== month) : [...arr, month].sort((a, b) => a - b))}
-                        style={{ padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, background: on ? "var(--accent-soft)" : "var(--base)", border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: on ? "var(--accent)" : "var(--ink-dim)" }}>
+                        style={{ padding: "6px 0", borderRadius: 8, fontSize: "var(--text-2xs)", fontWeight: 600, background: on ? "var(--accent-soft)" : "var(--base)", border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)", color: on ? "var(--accent)" : "var(--ink-dim)" }}>
                         {m}
                       </button>
                     );
@@ -194,16 +194,16 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
               )}
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setEditing(false)}
-                  style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>Cancelar</button>
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: "var(--text-xs)", background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>Cancelar</button>
                 <button onClick={saveLimit} disabled={savingLimit}
-                  style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: savingLimit ? 0.6 : 1 }}>
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: savingLimit ? 0.6 : 1 }}>
                   {savingLimit ? "Guardando..." : "Guardar"}
                 </button>
               </div>
             </div>
           )}
 
-          <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>
+          <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 8 }}>
             Gastos este mes
           </p>
         </div>
@@ -213,18 +213,18 @@ export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props)
           {loading ? (
             <RowsSkeleton rows={4} card={false} />
           ) : txs.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--ink-dim)", textAlign: "center", padding: "20px 0" }}>Sin gastos este mes</p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", textAlign: "center", padding: "20px 0" }}>Sin gastos este mes</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {txs.map(tx => (
                 <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</p>
-                    <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 2 }}>
+                    <p style={{ fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</p>
+                    <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 2 }}>
                       {new Date(tx.date).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
                     </p>
                   </div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--negative)", fontVariantNumeric: "tabular-nums", flexShrink: 0, marginLeft: 10 }}>
+                  <p style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--negative)", fontVariantNumeric: "tabular-nums", flexShrink: 0, marginLeft: 10 }}>
                     −{budget.currency_code} {Number(tx.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                   </p>
                 </div>

@@ -7,9 +7,9 @@ import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 // fontSize 16 en inputs → evita el auto-zoom de iOS Safari.
 const field: React.CSSProperties = {
   width: "100%", background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-  borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: 16, outline: "none",
+  borderRadius: 10, padding: "10px 12px", color: "var(--ink)", fontSize: "var(--text-base)", outline: "none",
 };
-const label: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6, display: "block" };
+const label: React.CSSProperties = { fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)", marginBottom: 6, display: "block" };
 
 export default function ExportSheet({ onClose }: { onClose: () => void }) {
   const { spaces, activeId } = useSpaces();
@@ -59,8 +59,8 @@ export default function ExportSheet({ onClose }: { onClose: () => void }) {
         style={{ borderRadius: 20, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "0 24px 60px rgba(0,0,0,0.30)", maxHeight: "85dvh", minHeight: 0 }}
       >
         <div style={{ flexShrink: 0, padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>Exportar</h2>
-          <button onClick={onClose} aria-label="Cerrar" style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12 }}>✕</button>
+          <h2 style={{ fontSize: "var(--text-base)", fontWeight: 600, color: "var(--ink)" }}>Exportar</h2>
+          <button onClick={onClose} aria-label="Cerrar" style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)" }}>✕</button>
         </div>
 
         <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 16, touchAction: "pan-y" }}>
@@ -70,7 +70,7 @@ export default function ExportSheet({ onClose }: { onClose: () => void }) {
             <div style={{ display: "flex", gap: 8 }}>
               {(["csv", "xlsx"] as const).map((f) => (
                 <button key={f} onClick={() => setFormat(f)} style={{
-                  flex: 1, minHeight: 44, borderRadius: 10, fontSize: 14, fontWeight: 600,
+                  flex: 1, minHeight: 44, borderRadius: 10, fontSize: "var(--text-sm)", fontWeight: 600,
                   background: format === f ? "var(--accent-soft)" : "var(--raised)",
                   color: format === f ? "var(--accent)" : "var(--ink-muted)",
                   border: format === f ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)",
@@ -112,7 +112,7 @@ export default function ExportSheet({ onClose }: { onClose: () => void }) {
         </div>
 
         <div style={{ flexShrink: 0, padding: "12px 20px 16px", borderTop: "0.5px solid var(--glass-border-dim)" }}>
-          <button onClick={doExport} style={{ width: "100%", minHeight: 46, borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+          <button onClick={doExport} style={{ width: "100%", minHeight: 46, borderRadius: 12, fontSize: "var(--text-sm)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>
             Descargar {format === "csv" ? "CSV" : "Excel"}
           </button>
         </div>

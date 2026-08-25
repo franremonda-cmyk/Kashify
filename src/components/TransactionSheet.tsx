@@ -66,7 +66,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   const inpSm: React.CSSProperties = {
     background: "var(--raised)", border: "0.5px solid var(--glass-border)",
     borderRadius: 10, padding: "10px 12px", color: "var(--ink)",
-    fontSize: 16, width: "100%", boxSizing: "border-box", maxWidth: "100%",
+    fontSize: "var(--text-base)", width: "100%", boxSizing: "border-box", maxWidth: "100%",
   };
 
   async function handleSave() {
@@ -147,18 +147,18 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
         >
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>
               {mode === "edit" ? "Editar movimiento" : "Detalle"}
             </p>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {mode === "view" && (
                 <button onClick={() => setMode("edit")}
-                  style={{ fontSize: 12, padding: "5px 12px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>
+                  style={{ fontSize: "var(--text-2xs)", padding: "5px 12px", borderRadius: 8, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>
                   Editar
                 </button>
               )}
               <button onClick={onClose}
-                style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 ✕
               </button>
             </div>
@@ -175,19 +175,19 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                     <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={22}/>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", wordBreak: "break-word" }}>{tx.description}</p>
-                    <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 3 }}>
+                    <p style={{ fontSize: "var(--text-base)", fontWeight: 600, color: "var(--ink)", wordBreak: "break-word" }}>{tx.description}</p>
+                    <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 3 }}>
                       {catData?.name ?? "Sin categoría"} · {TYPE_LABELS[tx.type] ?? tx.type}
                     </p>
                   </div>
                 </div>
 
                 <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
-                  <p style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 2 }}>Monto</p>
+                  <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 2 }}>Monto</p>
                   <p style={{ fontSize: 24, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
                     {isIncome ? "+" : "−"}{tx.currency_code} {Number(tx.amount).toLocaleString("es-AR", { maximumFractionDigits: 2 })}
                   </p>
-                  {tx.date && <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 4 }}>{new Date(tx.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}</p>}
+                  {tx.date && <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginTop: 4 }}>{new Date(tx.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}</p>}
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 4 }}>
@@ -200,8 +200,8 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                       </svg>
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Personalizar categoría</p>
-                      <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 1 }}>{catData?.name ? `Nombre, ícono y color de "${catData.name}"` : "Sin categoría"}</p>
+                      <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)" }}>Personalizar categoría</p>
+                      <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginTop: 1 }}>{catData?.name ? `Nombre, ícono y color de "${catData.name}"` : "Sin categoría"}</p>
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", marginLeft: "auto", flexShrink: 0 }}>
                       <polyline points="9 18 15 12 9 6"/>
@@ -210,27 +210,27 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
 
                   {confirmDel ? (
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>Sí, eliminar</button>
-                      <button onClick={() => setConfirmDel(false)} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
+                      <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.25)" }}>Sí, eliminar</button>
+                      <button onClick={() => setConfirmDel(false)} style={{ flex: 1, padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
                     </div>
                   ) : (
-                    <button onClick={() => setConfirmDel(true)} style={{ padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 500, background: "rgba(255,59,48,0.06)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
+                    <button onClick={() => setConfirmDel(true)} style={{ padding: "12px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 500, background: "rgba(255,59,48,0.06)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.18)" }}>
                       Eliminar movimiento
                     </button>
                   )}
-                  {error && <p style={{ fontSize: 12.5, color: "var(--negative)" }}>{error}</p>}
+                  {error && <p style={{ fontSize: "var(--text-2xs)", color: "var(--negative)" }}>{error}</p>}
                 </div>
               </>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 4 }}>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Tipo</p>
+                  <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Tipo</p>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {TX_TYPES.map(t => {
                       const on = txType === t.value;
                       return (
                         <button key={t.value} onClick={() => setTxType(t.value as typeof txType)}
-                          style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500, background: on ? "var(--accent-soft)" : "var(--raised)", color: on ? "var(--accent)" : "var(--ink-muted)", border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)" }}>
+                          style={{ padding: "6px 14px", borderRadius: 20, fontSize: "var(--text-2xs)", fontWeight: 500, background: on ? "var(--accent-soft)" : "var(--raised)", color: on ? "var(--accent)" : "var(--ink-muted)", border: on ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)" }}>
                           {t.label}
                         </button>
                       );
@@ -238,11 +238,11 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Descripción</p>
+                  <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Descripción</p>
                   <input style={inpSm} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripción" aria-label="Descripción"/>
                 </div>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Monto</p>
+                  <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Monto</p>
                   <div style={{ display: "flex", gap: 8 }}>
                     <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={currency} onChange={e => setCurrency(e.target.value)} aria-label="Moneda">
                       {CURRENCIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
@@ -251,20 +251,20 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Fecha</p>
+                  <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Fecha</p>
                   <input style={inpSm} type="date" value={date} onChange={e => setDate(e.target.value)}/>
                 </div>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Categoría</p>
+                  <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Categoría</p>
                   <select style={inpSm} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
                     <option value="">Sin categoría</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-                {error && <p style={{ fontSize: 12.5, color: "var(--negative)" }}>{error}</p>}
+                {error && <p style={{ fontSize: "var(--text-2xs)", color: "var(--negative)" }}>{error}</p>}
                 <div style={{ display: "flex", gap: 8, paddingTop: 8 }}>
-                  <button onClick={() => setMode("view")} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
-                  <button onClick={handleSave} disabled={saving || !desc.trim() || !amount} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: saving ? 0.6 : 1 }}>{saving ? "Guardando..." : "Guardar"}</button>
+                  <button onClick={() => setMode("view")} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>
+                  <button onClick={handleSave} disabled={saving || !desc.trim() || !amount} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: saving ? 0.6 : 1 }}>{saving ? "Guardando..." : "Guardar"}</button>
                 </div>
               </div>
             )}

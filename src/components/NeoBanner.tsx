@@ -52,17 +52,17 @@ export default function NeoBanner() {
           }}>
             <span style={{
               fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
-              fontSize: 17, fontWeight: 700, color: "#FFFFFF",
+              fontSize: "var(--text-md)", fontWeight: 700, color: "#FFFFFF",
             }}>N</span>
           </div>
         </Link>
 
         {/* Text */}
         <Link href="/neo" onClick={dismiss} style={{ flex: 1, textDecoration: "none" }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3 }}>
+          <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink)", lineHeight: 1.3 }}>
             Neo está activo
           </p>
-          <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 2 }}>
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginTop: 2 }}>
             Enviame un mensaje para empezar
           </p>
         </Link>
@@ -71,7 +71,7 @@ export default function NeoBanner() {
         <button onClick={dismiss} style={{
           width: 26, height: 26, borderRadius: "50%",
           background: "var(--raised)", border: "0.5px solid var(--glass-border)",
-          color: "var(--ink-dim)", fontSize: 12,
+          color: "var(--ink-dim)", fontSize: "var(--text-2xs)",
           display: "flex", alignItems: "center", justifyContent: "center",
           flexShrink: 0,
         }}>

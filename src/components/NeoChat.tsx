@@ -448,7 +448,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingBottom: 2 }}>
           {quickReplies.map(q => (
             <button key={q} type="button" onClick={() => sendMessage(q)}
-              style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--glass-border)" }}>
+              style={{ padding: "7px 14px", borderRadius: 999, fontSize: "var(--text-xs)", fontWeight: 500, background: "var(--accent-soft)", color: "var(--accent)", border: "0.5px solid var(--glass-border)" }}>
               {q}
             </button>
           ))}
@@ -465,7 +465,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             placeholder="Escribir mensaje a Neo…"
             // fontSize must be >= 16px: iOS Safari auto-zooms the page when focusing
             // an input smaller than 16px, which makes everything look bigger and shifted.
-            style={{ flex: 1, fontSize: 16, background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "6px 0" }}
+            style={{ flex: 1, fontSize: "var(--text-base)", background: "transparent", border: "none", outline: "none", color: "var(--ink)", padding: "6px 0" }}
           />
         </div>
         <button
@@ -522,13 +522,13 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
 
             <div className="enter-up" data-delay="1" style={{ textAlign: "center", maxWidth: 320 }}>
               <p style={{ fontSize: 23, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>Hola, soy Neo</p>
-              <p style={{ fontSize: 14.5, color: "var(--ink-muted)", marginTop: 6, lineHeight: 1.5 }}>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--ink-muted)", marginTop: 6, lineHeight: 1.5 }}>
                 Tu asistente personal de finanzas
               </p>
             </div>
 
             {!hasPhone && (
-              <a href="/perfil" className="press enter-up" data-delay="2" style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 18px", borderRadius: 999, fontSize: 13.5, fontWeight: 700, background: "var(--accent)", color: "#04130D", textDecoration: "none", boxShadow: "0 4px 18px var(--shadow-accent)" }}>
+              <a href="/perfil" className="press enter-up" data-delay="2" style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 18px", borderRadius: 999, fontSize: "var(--text-xs)", fontWeight: 700, background: "var(--accent)", color: "var(--on-accent)", textDecoration: "none", boxShadow: "0 4px 18px var(--shadow-accent)" }}>
                 Conectar WhatsApp →
               </a>
             )}
@@ -538,10 +538,10 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
                 {SUGGESTIONS.map((s, i) => (
                   <button key={s} onClick={() => sendMessage(s)} className="glass press enter-up"
                     data-delay={Math.min(6, i + 3)}
-                    style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 16px", borderRadius: 16, fontSize: 14.5, fontWeight: 500, color: "var(--ink)", textAlign: "left", cursor: "pointer" }}>
+                    style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 16px", borderRadius: 16, fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--ink)", textAlign: "left", cursor: "pointer" }}>
                     <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: "var(--accent)", flexShrink: 0 }} />
                     <span style={{ flex: 1 }}>{s}</span>
-                    <span aria-hidden style={{ color: "var(--ink-dim)", fontSize: 16 }}>→</span>
+                    <span aria-hidden style={{ color: "var(--ink-dim)", fontSize: "var(--text-base)" }}>→</span>
                   </button>
                 ))}
               </div>
@@ -575,8 +575,8 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
             <div className={thinking ? "neo-avatar-thinking" : "neo-avatar-active"} style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 18px var(--accent-glow)", flexShrink: 0 }} />
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 }}>Neo</p>
-              <p style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <p style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 }}>Neo</p>
+              <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {thinking ? "escribiendo…" : "asistente personal de finanzas"}
               </p>
             </div>
@@ -597,7 +597,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
                 <div key={msg.id}>
                   {showDate && (
                     <div style={{ display: "flex", justifyContent: "center", margin: "8px 0" }}>
-                      <span style={{ fontSize: 13, color: "var(--ink-muted)", background: "var(--raised)", padding: "3px 10px", borderRadius: 8, border: "0.5px solid var(--glass-border)" }}>
+                      <span style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", background: "var(--raised)", padding: "3px 10px", borderRadius: 8, border: "0.5px solid var(--glass-border)" }}>
                         {dateSeparator(msg.ts)}
                       </span>
                     </div>
@@ -670,8 +670,8 @@ function WaBubble({
   // WhatsApp bubble shapes
   const bubbleBg = isUser ? "var(--accent)" : "var(--raised)";
   const bubbleRadius = isUser ? "18px 2px 18px 18px" : "2px 18px 18px 18px";
-  const textColor = isUser ? "#04130D" : "var(--ink)";
-  const timeColor = isUser ? "rgba(4,19,13,0.55)" : "var(--ink-dim)";
+  const textColor = isUser ? "var(--on-accent)" : "var(--ink)";
+  const timeColor = isUser ? "var(--on-accent-soft)" : "var(--ink-dim)";
 
   return (
     <div style={{
@@ -693,17 +693,17 @@ function WaBubble({
         {msg.isNotification && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
             <NeoOrb size={16} />
-            <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)" }}>Neo</span>
+            <span style={{ fontSize: "var(--text-2xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)" }}>Neo</span>
           </div>
         )}
 
         {/* Text */}
-        <p style={{ fontSize: 14.5, color: textColor, lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+        <p style={{ fontSize: "var(--text-sm)", color: textColor, lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
           {msg.text}
         </p>
 
         {/* Timestamp — inline at bottom right like WhatsApp */}
-        <p style={{ fontSize: 12.5, color: timeColor, textAlign: "right", marginTop: 2, lineHeight: 1 }}>
+        <p style={{ fontSize: "var(--text-2xs)", color: timeColor, textAlign: "right", marginTop: 2, lineHeight: 1 }}>
           {fmtTime(msg.ts)}
         </p>
 
@@ -711,7 +711,7 @@ function WaBubble({
         {msg.isNotification && msg.notifType && (
           <button
             onClick={() => onSilenceFamily(notifFamily(msg.notifType!))}
-            style={{ marginTop: 6, fontSize: 12, color: "var(--ink-dim)", background: "transparent", border: "none", padding: "2px 0", textDecoration: "underline", cursor: "pointer" }}
+            style={{ marginTop: 6, fontSize: "var(--text-2xs)", color: "var(--ink-dim)", background: "transparent", border: "none", padding: "2px 0", textDecoration: "underline", cursor: "pointer" }}
           >
             No mostrarme más estos avisos
           </button>
@@ -721,11 +721,11 @@ function WaBubble({
         {msg.isPending && msg.pendingData && (
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <button onClick={() => onConfirmPending(msg.pendingData!)} disabled={busyPending === msg.pendingData.id}
-              style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--accent)", color: "#04130D", opacity: busyPending === msg.pendingData.id ? 0.5 : 1, border: "none" }}>
+              style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: busyPending === msg.pendingData.id ? 0.5 : 1, border: "none" }}>
               {busyPending === msg.pendingData.id ? "..." : "Confirmar"}
             </button>
             <button onClick={() => onDismissPending(msg.pendingData!)} disabled={!!busyPending}
-              style={{ padding: "8px 12px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)" }}>
+              style={{ padding: "8px 12px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)" }}>
               Descartar
             </button>
           </div>
@@ -737,17 +737,17 @@ function WaBubble({
             {msg.action.candidates.map(c => (
               <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: 10, background: "var(--base)", border: "0.5px solid var(--glass-border)" }}>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{c.description}</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 1 }}>{fmt(c.amount, c.currency_code)} · {fmtDate(c.date)}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", fontWeight: 500, color: "var(--ink)" }}>{c.description}</p>
+                  <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 1 }}>{fmt(c.amount, c.currency_code)} · {fmtDate(c.date)}</p>
                 </div>
                 <button onClick={() => onDelete(msg.id, c.id, c.description)} disabled={busyPending === c.id}
-                  style={{ padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)", flexShrink: 0 }}>
+                  style={{ padding: "6px 10px", borderRadius: 8, fontSize: "var(--text-xs)", fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)", flexShrink: 0 }}>
                   {busyPending === c.id ? "..." : "Eliminar"}
                 </button>
               </div>
             ))}
             <button onClick={() => onDismissAction(msg.id)}
-              style={{ padding: "7px", borderRadius: 10, fontSize: 13, color: "var(--ink-dim)", background: "transparent", border: "none" }}>
+              style={{ padding: "7px", borderRadius: 10, fontSize: "var(--text-xs)", color: "var(--ink-dim)", background: "transparent", border: "none" }}>
               Cancelar
             </button>
           </div>
@@ -757,11 +757,11 @@ function WaBubble({
         {msg.action?.type === "confirm_delete_goal" && !msg.action.resolved && (
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <button onClick={() => onDeleteGoal(msg.id, (msg.action as Extract<ChatAction, { type: "confirm_delete_goal" }>).goalId, (msg.action as Extract<ChatAction, { type: "confirm_delete_goal" }>).goalName)} disabled={!!busyPending}
-              style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)", opacity: busyPending ? 0.5 : 1 }}>
+              style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)", opacity: busyPending ? 0.5 : 1 }}>
               {busyPending ? "..." : "Sí, eliminar"}
             </button>
             <button onClick={() => onDismissAction(msg.id)}
-              style={{ padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink)" }}>
+              style={{ padding: "8px 14px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink)" }}>
               Cancelar
             </button>
           </div>
@@ -771,11 +771,11 @@ function WaBubble({
         {msg.action?.type === "confirm_cancel_installment" && !msg.action.resolved && (
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <button onClick={() => onCancelInstallment(msg.id, (msg.action as Extract<ChatAction, { type: "confirm_cancel_installment" }>).planId, (msg.action as Extract<ChatAction, { type: "confirm_cancel_installment" }>).planName)} disabled={!!busyPending}
-              style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)", opacity: busyPending ? 0.5 : 1 }}>
+              style={{ flex: 1, padding: "8px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "rgba(255,59,48,0.10)", color: "var(--negative)", border: "0.5px solid rgba(255,59,48,0.22)", opacity: busyPending ? 0.5 : 1 }}>
               {busyPending ? "..." : "Sí, saldar"}
             </button>
             <button onClick={() => onDismissAction(msg.id)}
-              style={{ padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink)" }}>
+              style={{ padding: "8px 14px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink)" }}>
               Cancelar
             </button>
           </div>
@@ -818,7 +818,7 @@ function InstallmentFormCard({ prefill, busy, onSubmit, onDismiss }: {
   const total = canSubmit ? (nInt * amt).toLocaleString("es-AR", { maximumFractionDigits: 0 }) : null;
 
   const inp: React.CSSProperties = {
-    padding: "9px 12px", borderRadius: 10, fontSize: 16, // >=16px avoids iOS focus auto-zoom
+    padding: "9px 12px", borderRadius: 10, fontSize: "var(--text-base)", // >=16px avoids iOS focus auto-zoom
     background: "var(--base)", border: "0.5px solid var(--glass-border)",
     color: "var(--ink)", outline: "none", width: "100%",
   };
@@ -832,15 +832,15 @@ function InstallmentFormCard({ prefill, busy, onSubmit, onDismiss }: {
       </div>
       <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} />
       {total && (
-        <p style={{ fontSize: 13, color: "var(--ink-muted)", textAlign: "right" }}>Total: ARS {total}</p>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", textAlign: "right" }}>Total: ARS {total}</p>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
-        <button onClick={onDismiss} style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 600, background: "transparent", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
+        <button onClick={onDismiss} style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "transparent", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
           Cancelar
         </button>
         <button onClick={() => canSubmit && onSubmit({ name: name.trim(), nInstallments: nInt, installmentAmount: amt, firstPaymentDate: date })}
           disabled={!canSubmit || busy}
-          style={{ flex: 2, padding: "9px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: canSubmit && !busy ? "var(--accent)" : "var(--raised)", color: canSubmit && !busy ? "#04130D" : "var(--ink-muted)", border: "none", transition: "background 140ms" }}>
+          style={{ flex: 2, padding: "9px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 700, background: canSubmit && !busy ? "var(--accent)" : "var(--raised)", color: canSubmit && !busy ? "var(--on-accent)" : "var(--ink-muted)", border: "none", transition: "background 140ms" }}>
           {busy ? "Creando..." : "Crear cuota"}
         </button>
       </div>

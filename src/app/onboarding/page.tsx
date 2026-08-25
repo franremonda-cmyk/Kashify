@@ -16,7 +16,7 @@ const inp: React.CSSProperties = {
   borderRadius: 14,
   padding: "14px 16px",
   color: "var(--ink)",
-  fontSize: 16, // ≥16 evita el auto-zoom de iOS Safari al enfocar
+  fontSize: "var(--text-base)", // ≥16 evita el auto-zoom de iOS Safari al enfocar
   width: "100%",
   outline: "none",
 };
@@ -109,7 +109,7 @@ export default function OnboardingPage() {
           <h1 className="display font-bold" style={{ fontSize: "1.75rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>
             Bienvenido a Kashify
           </h1>
-          <p style={{ fontSize: 14, marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
+          <p style={{ fontSize: "var(--text-sm)", marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
             Menos de un minuto para empezar.
           </p>
         </div>
@@ -125,14 +125,14 @@ export default function OnboardingPage() {
           />
 
           <div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
+            <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Moneda principal</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
               {CURRENCIES.map((c) => (
                 <button key={c} onClick={() => setCurrency(c)}
                   style={{
-                    padding: "7px 14px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+                    padding: "7px 14px", borderRadius: 999, fontSize: "var(--text-2xs)", fontWeight: 600,
                     background: currency === c ? "var(--accent)" : "var(--raised)",
-                    color: currency === c ? "#04130D" : "var(--ink-muted)",
+                    color: currency === c ? "var(--on-accent)" : "var(--ink-muted)",
                     border: currency === c ? "none" : "0.5px solid var(--glass-border)",
                     transition: "all 180ms cubic-bezier(0.22,1,0.36,1)",
                   }}>
@@ -161,7 +161,7 @@ export default function OnboardingPage() {
           <h2 className="display font-bold" style={{ fontSize: "1.45rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>
             Conectá WhatsApp
           </h2>
-          <p style={{ fontSize: 13, marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
+          <p style={{ fontSize: "var(--text-xs)", marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
             Mandále un mensaje a Neo y él registra el gasto automáticamente. Podés saltear esto.
           </p>
         </div>
@@ -175,7 +175,7 @@ export default function OnboardingPage() {
           inputMode="tel"
           autoComplete="tel"
         />
-        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: -12, lineHeight: 1.4 }}>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: -12, lineHeight: 1.4 }}>
           Importante: ingresá tu número <strong style={{ color: "var(--ink)" }}>sin el 9</strong> después
           del código de país (ej: <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 11 …</span>, no <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 9 11 …</span>).
         </p>
@@ -185,10 +185,10 @@ export default function OnboardingPage() {
           background: "var(--accent-soft)",
           border: "0.5px solid var(--accent-glow)",
         }}>
-          <p style={{ fontSize: 12, color: "var(--accent)", fontFamily: "var(--font-mono, monospace)" }}>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--accent)", fontFamily: "var(--font-mono, monospace)" }}>
             "Almuerzo 1500"
           </p>
-          <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 4 }}>
             Así de fácil — Neo lo categoriza y registra solo.
           </p>
         </div>
@@ -225,7 +225,7 @@ export default function OnboardingPage() {
               <h2 className="display font-bold" style={{ fontSize: "1.4rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>
                 ¿Tenés movimientos anteriores?
               </h2>
-              <p style={{ fontSize: 13, marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
+              <p style={{ fontSize: "var(--text-xs)", marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
                 Podés importar tu historial desde Excel o CSV, o empezar de cero ahora mismo.
               </p>
             </div>
@@ -246,8 +246,8 @@ export default function OnboardingPage() {
                   </svg>
                 </div>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Importar archivo</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>Excel · CSV · Planilla de banco</p>
+                  <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--ink)" }}>Importar archivo</p>
+                  <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>Excel · CSV · Planilla de banco</p>
                 </div>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", marginLeft: "auto", flexShrink: 0 }}>
                   <polyline points="9 18 15 12 9 6"/>
@@ -268,8 +268,8 @@ export default function OnboardingPage() {
                   </svg>
                 </div>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Empezar de cero</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>Neo registra todo desde hoy</p>
+                  <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--ink)" }}>Empezar de cero</p>
+                  <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>Neo registra todo desde hoy</p>
                 </div>
               </button>
             </div>
@@ -287,7 +287,7 @@ export default function OnboardingPage() {
           display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: "0 0 48px var(--accent-glow)",
         }}>
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#04130D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--on-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
@@ -295,7 +295,7 @@ export default function OnboardingPage() {
           <h2 className="display font-bold" style={{ fontSize: "1.6rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>
             Todo listo{name ? `, ${name.split(" ")[0]}` : ""}
           </h2>
-          <p style={{ fontSize: 13, marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
+          <p style={{ fontSize: "var(--text-xs)", marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
             {importedCount > 0
               ? `${importedCount} movimiento${importedCount !== 1 ? "s" : ""} importado${importedCount !== 1 ? "s" : ""}. Kashify ya tiene tu historial.`
               : phone.trim()
@@ -310,7 +310,7 @@ export default function OnboardingPage() {
             style={{
               width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
               padding: "14px", borderRadius: 14, textDecoration: "none",
-              background: "#25D366", color: "#FFFFFF", fontWeight: 700, fontSize: 15,
+              background: "#25D366", color: "#04130D", fontWeight: 700, fontSize: "var(--text-row)",
               boxShadow: "0 6px 20px rgba(37,211,102,0.35)",
             }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -325,10 +325,10 @@ export default function OnboardingPage() {
             background: "var(--base)", border: "0.5px solid var(--glass-border)",
             boxShadow: "var(--shadow-sm)", textAlign: "left",
           }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Empezá con</p>
+            <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-dim)", marginBottom: 8 }}>Empezá con</p>
             {["Almuerzo 850", "Netflix 2990 ocio", "Sueldo 500000 ingreso"].map((msg) => (
               <div key={msg} style={{
-                fontSize: 12, padding: "7px 12px", borderRadius: 10, marginBottom: 5,
+                fontSize: "var(--text-2xs)", padding: "7px 12px", borderRadius: 10, marginBottom: 5,
                 background: "var(--accent-soft)", color: "var(--accent)",
                 fontFamily: "var(--font-mono, monospace)",
               }}>
@@ -337,7 +337,7 @@ export default function OnboardingPage() {
             ))}
           </div>
         )}
-        <p style={{ fontSize: 12, color: "var(--ink-dim)", lineHeight: 1.5 }}>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", lineHeight: 1.5 }}>
           Tip: más adelante podés separar tus finanzas en <span style={{ color: "var(--ink-muted)", fontWeight: 600 }}>espacios</span> (Personal, Freelance, un emprendimiento) desde el menú.
         </p>
       </div>
@@ -349,9 +349,9 @@ export default function OnboardingPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div style={{
           width: 44, height: 44, borderRadius: 12,
-          background: "var(--accent)", color: "#04130D",
+          background: "var(--accent)", color: "var(--on-accent)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 16, fontWeight: 700,
+          fontSize: "var(--text-base)", fontWeight: 700,
           animation: "pageFade 600ms ease-in-out infinite alternate",
         }}>K</div>
       </div>
@@ -374,7 +374,7 @@ export default function OnboardingPage() {
           {step > 0 && (
             <button onClick={back}
               style={{
-                flex: 1, padding: "13px", borderRadius: 14, fontSize: 13, fontWeight: 500,
+                flex: 1, padding: "13px", borderRadius: 14, fontSize: "var(--text-xs)", fontWeight: 500,
                 background: "var(--raised)", border: "0.5px solid var(--glass-border)",
                 color: "var(--ink-muted)",
               }}>
@@ -389,8 +389,8 @@ export default function OnboardingPage() {
                 disabled={step === 0 && !name.trim()}
                 className="lift"
                 style={{
-                  flex: 1, padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-                  background: "var(--accent)", color: "#04130D",
+                  flex: 1, padding: "13px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600,
+                  background: "var(--accent)", color: "var(--on-accent)",
                   opacity: step === 0 && !name.trim() ? 0.35 : 1,
                 }}>
                 {step === 1 && !phone.trim() ? "Saltear →" : "Continuar →"}
@@ -399,8 +399,8 @@ export default function OnboardingPage() {
               <button onClick={finishOnboarding} disabled={saving}
                 className="lift"
                 style={{
-                  flex: 1, padding: "13px", borderRadius: 14, fontSize: 14, fontWeight: 600,
-                  background: "var(--accent)", color: "#04130D",
+                  flex: 1, padding: "13px", borderRadius: 14, fontSize: "var(--text-sm)", fontWeight: 600,
+                  background: "var(--accent)", color: "var(--on-accent)",
                   boxShadow: "0 0 28px var(--accent-glow)",
                   opacity: saving ? 0.6 : 1,
                 }}>

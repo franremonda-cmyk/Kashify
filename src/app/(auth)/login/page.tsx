@@ -68,18 +68,18 @@ export default function LoginPage() {
           <h1 className="display font-bold" style={{ fontSize: "2.1rem", color: "var(--ink)", letterSpacing: "-0.03em", lineHeight: 1.05 }}>
             Tus finanzas,<br/><span style={{ color: "var(--accent)" }}>claras y al día.</span>
           </h1>
-          <p className="mt-3" style={{ fontSize: 15, color: "var(--ink-muted)", lineHeight: 1.5 }}>
+          <p className="mt-3" style={{ fontSize: "var(--text-row)", color: "var(--ink-muted)", lineHeight: 1.5 }}>
             Cargá gastos por WhatsApp y dejá que Neo, tu asistente, ordene todo por vos.
           </p>
         </div>
 
         {/* Card */}
-        <div className="card-v2 w-full flex flex-col gap-4" style={{ padding: 20 }}>
+        <div className="card-glass w-full flex flex-col gap-4" style={{ padding: 20 }}>
           <button
             onClick={() => signInWithGoogle()}
             className="w-full flex items-center justify-center gap-3 lift"
             style={{
-              minHeight: 52, borderRadius: 16, fontWeight: 600, fontSize: 15,
+              minHeight: 52, borderRadius: 16, fontWeight: 600, fontSize: "var(--text-row)",
               background: "var(--ink)", color: "var(--void)", border: "none", cursor: "pointer",
             }}
           >
@@ -106,14 +106,14 @@ export default function LoginPage() {
               className="text-center"
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                fontSize: 13, color: "var(--ink-muted)", textDecoration: "underline",
+                fontSize: "var(--text-xs)", color: "var(--ink-muted)", textDecoration: "underline",
               }}
             >
               Usar otra cuenta
             </button>
           )}
 
-          <p className="text-center" style={{ fontSize: 12, color: "var(--ink-dim)" }}>
+          <p className="text-center" style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>
             Al continuar, aceptás los términos de uso
           </p>
         </div>

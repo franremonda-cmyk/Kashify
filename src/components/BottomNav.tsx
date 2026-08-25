@@ -331,7 +331,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     borderRadius: 12,
     padding: "11px 14px",
     color: "var(--ink)",
-    fontSize: 16,
+    fontSize: "var(--text-base)",
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,
@@ -341,7 +341,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
 
   // Label chico arriba de cada campo — Registrar se explica solo.
   const FieldLabel = ({ text, hint }: { text: string; hint?: string }) => (
-    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 5 }}>
+    <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)", marginBottom: 5 }}>
       {text}
       {hint && <span style={{ fontWeight: 400, color: "var(--ink-dim)" }}> · {hint}</span>}
     </p>
@@ -376,7 +376,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
               width: 28, height: 28, borderRadius: "50%",
               background: "var(--raised)",
               border: "0.5px solid var(--glass-border)",
-              color: "var(--ink-muted)", fontSize: 12,
+              color: "var(--ink-muted)", fontSize: "var(--text-2xs)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>✕</span>
           </button>
@@ -418,7 +418,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
             />
             {/* Neo auto-eligió */}
             {suggestedCat && form.category_id === suggestion && (
-              <div className="flex items-center gap-1.5 mt-1.5 px-1" style={{ fontSize: 13 }}>
+              <div className="flex items-center gap-1.5 mt-1.5 px-1" style={{ fontSize: "var(--text-xs)" }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "var(--accent)", flexShrink: 0 }}>
                   <circle cx="12" cy="12" r="9"/><path d="M9 8v8M15 8v8"/>
                 </svg>
@@ -481,7 +481,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
               type="button"
               onClick={() => setShowNewCat(true)}
               title="Nueva categoría"
-              style={{ ...inp, width: 42, flexShrink: 0, fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", padding: "0" }}
+              style={{ ...inp, width: 42, flexShrink: 0, fontSize: "var(--text-lg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", padding: "0" }}
             >+</button>
           </div>
           </div>
@@ -521,9 +521,9 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
             className="w-full py-3.5 rounded-xl font-semibold text-sm disabled:opacity-40"
             style={{
               background: "var(--accent)",
-              color: "#04130D",
+              color: "var(--on-accent)",
               boxShadow: "0 0 24px var(--accent-glow)",
-              fontSize: 15,
+              fontSize: "var(--text-row)",
             }}
           >
             {saving ? "Guardando..." : "Guardar"}
@@ -649,7 +649,7 @@ export default function BottomNav() {
               height: 52,
               borderRadius: "50%",
               background: "var(--accent)",
-              color: "#04130D",
+              color: "var(--on-accent)",
               border: "3px solid var(--void)",
               boxShadow: "0 6px 20px rgba(0,0,0,0.40)",
               fontSize: 28,
@@ -737,7 +737,7 @@ function NavItem({ href, label, Icon, active, badge = 0, tourId }: {
           </span>
         )}
       </div>
-      <span style={{ fontSize: 12.5, fontWeight: 500, letterSpacing: "0.01em" }}>{label}</span>
+      <span style={{ fontSize: "var(--text-2xs)", fontWeight: 500, letterSpacing: "0.01em" }}>{label}</span>
     </Link>
   );
 }
@@ -766,7 +766,7 @@ function NeoIcon({ active }: { active: boolean }) {
     return (
       <NeoOrb size={24} className="neo-nav-avatar">
         <span style={{
-          fontSize: 11, fontWeight: 800, color: "#04130D", lineHeight: 1,
+          fontSize: "var(--text-2xs)", fontWeight: 800, color: "var(--on-accent)", lineHeight: 1,
           letterSpacing: "-0.5px", textShadow: "0 1px 1px rgba(255,255,255,0.30)",
         }}>N</span>
       </NeoOrb>
@@ -782,7 +782,7 @@ function NeoIcon({ active }: { active: boolean }) {
         transition: "background 200ms ease, box-shadow 200ms ease", flexShrink: 0,
       }}
     >
-      <span style={{ fontSize: 13, fontWeight: 800, color: "var(--ink-muted)", lineHeight: 1, letterSpacing: "-0.5px" }}>
+      <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, color: "var(--ink-muted)", lineHeight: 1, letterSpacing: "-0.5px" }}>
         N
       </span>
     </div>

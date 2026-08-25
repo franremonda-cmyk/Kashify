@@ -34,6 +34,11 @@
   --accent:       #46B58C;
   --accent-soft:  rgba(70, 181, 140, 0.10);
   --accent-glow:  rgba(70, 181, 140, 0.0);   /* glow retired */
+  /* Tinta que va ENCIMA del acento. Es un rol aparte del acento mismo: el color
+     que funciona como relleno casi nunca funciona como texto, y viceversa.
+     Sin esto, oscurecer el acento para AA rompe el botón primario. */
+  --on-accent:      #04130D;
+  --on-accent-soft: rgba(4, 19, 13, 0.75);   /* AA 4.8:1 sobre el acento */
 
   /* Hero balance panel — glass in dark (overridden per theme) */
   --hero-ink:            var(--ink);
@@ -42,7 +47,7 @@
   --hero-pill-bg:        rgba(255, 255, 255, 0.06);
   --hero-pill-fg:        var(--ink-muted);
   --hero-pill-bg-active: var(--accent);
-  --hero-pill-fg-active: #04130D;
+  --hero-pill-fg-active: var(--on-accent);
 
   /* Semantic */
   --positive:  #4FC093;
@@ -73,6 +78,7 @@
   --text-2xs:  12px;   /* was 10 — micro-labels, captions */
   --text-xs:   13px;   /* was 11 — section labels, meta */
   --text-sm:   14px;   /* was 13 — secondary body */
+  --text-row:  15px;   /* título de fila de lista (transacciones, metas, cuotas) */
   --text-base: 16px;   /* was 15 — body (WCAG comfortable floor) */
   --text-md:   17px;
   --text-lg:   19px;
@@ -141,15 +147,6 @@ body {
   box-shadow: var(--shadow-md), var(--spec-sm);
 }
 
-.glass-elevated {
-  background: var(--glass-2);
-  backdrop-filter: blur(30px) saturate(160%);
-  -webkit-backdrop-filter: blur(30px) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: 22px;
-  box-shadow: var(--shadow-lg), var(--spec);
-}
-
 .glass-strong {
   background:
     radial-gradient(120% 60% at 50% -10%, rgba(255,255,255,0.10) 0%, transparent 60%),
@@ -167,7 +164,7 @@ body {
    contenido — hero, nav, sheets/modales, globito de Neo — donde hay
    algo detrás que refractar. Glass en todas las cards sobre fondo
    opaco era decorativo y costoso en gama media. */
-.card-glass, .glass-card {
+.card-glass {
   background: var(--base);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
@@ -209,20 +206,6 @@ body {
   background: var(--base);
   border: 0.5px dashed var(--glass-border-hover);
   box-shadow: var(--shadow-sm);
-}
-
-/* Light sweep across a glass surface (premium sheen) */
-.sheen::after {
-  content: "";
-  position: absolute; top: 0; bottom: 0; left: 0; width: 42%;
-  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.10) 50%, transparent 100%);
-  transform: translateX(-140%) skewX(-16deg);
-  pointer-events: none;
-  animation: sheen-sweep 7s ease-in-out 1.2s infinite;
-}
-@keyframes sheen-sweep {
-  0%        { transform: translateX(-140%) skewX(-16deg); }
-  55%, 100% { transform: translateX(320%)  skewX(-16deg); }
 }
 
 /* Drifting aurora behind everything (subtle global motion) */
@@ -280,20 +263,12 @@ body::before {
 
 /* ─── v2 component primitives ─────────────────── */
 
-/* Card — the default container for grouped content */
-.card-v2 {
-  background: var(--base);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  box-shadow: var(--shadow-sm);
-}
-
 /* Primary action button */
 .btn-primary {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 48px; padding: 0 20px;
   border-radius: 14px;
-  background: var(--accent); color: #04130D;
+  background: var(--accent); color: var(--on-accent);
   font-size: var(--text-base); font-weight: 700;
   box-shadow: 0 2px 16px var(--shadow-accent);
   cursor: pointer; border: none;
@@ -306,15 +281,6 @@ body::before {
   font-size: var(--text-base); font-weight: 600;
   border: 1px solid var(--glass-border); cursor: pointer;
 }
-
-/* List row inside a card */
-.row-v2 {
-  display: flex; align-items: center; gap: 12px;
-  width: 100%; padding: 14px 16px;
-  background: transparent; text-align: left;
-  border: none; cursor: pointer;
-}
-.row-v2 + .row-v2 { border-top: 1px solid var(--glass-border-dim); }
 
 /* ─── Typography ─────────────────────────── */
 
@@ -407,17 +373,6 @@ body::before {
   transform: translateY(-2px);
 }
 
-/* AI shimmer — a sweeping sheen for Neo surfaces */
-@keyframes ai-shimmer {
-  0%   { background-position: -160% 0; }
-  100% { background-position: 260% 0; }
-}
-.ai-shimmer {
-  background-image: linear-gradient(
-    105deg, transparent 38%, var(--accent-soft) 50%, transparent 62%);
-  background-size: 220% 100%;
-  animation: ai-shimmer 3.4s ease-in-out infinite;
-}
 
 /* Solo para lectores de pantalla (visualmente oculto, sin quitar del árbol a11y). */
 .sr-only {
@@ -442,30 +397,15 @@ body::before {
 }
 .float-bob { animation: float-bob 3.6s ease-in-out infinite; }
 
-/* Soft breathing glow ring */
-@keyframes breathe-glow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft), 0 0 28px var(--accent-glow); }
-  50%      { box-shadow: 0 0 0 10px transparent, 0 0 44px var(--accent-glow); }
-}
-.breathe-glow { animation: breathe-glow 3s ease-in-out infinite; }
-
 /* ─── Entrance animations ────────────────── */
 
 @keyframes enterUp {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
 @keyframes scaleUp {
   from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1);    }
-}
-@keyframes metricPop {
-  from { opacity: 0.2; transform: translateY(5px) scale(0.96); }
-  to   { opacity: 1;   transform: translateY(0)   scale(1);    }
 }
 @keyframes pageFade {
   from { opacity: 0; transform: translateY(6px); }
@@ -473,9 +413,7 @@ body::before {
 }
 
 .enter-up   { animation: enterUp   300ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.fade-in    { animation: fadeIn    200ms ease-out both; }
 .scale-up   { animation: scaleUp   260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.metric-pop { animation: metricPop 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .page-fade  { animation: pageFade  240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 [data-delay="1"] { animation-delay: 50ms;  }
@@ -536,17 +474,22 @@ button, a, input, select, textarea {
   --glass-border-hover: rgba(26, 44, 34, 0.24);
   --glass-border-dim:   rgba(26, 44, 34, 0.06);
 
-  --accent:       #1F9468;   /* deep emerald for contrast on light */
-  --accent-soft:  rgba(31, 148, 104, 0.11);
-  --accent-glow:  rgba(31, 148, 104, 0.0);
+  /* AA verificado sobre los TRES fondos claros (#FFFFFF / --void #EEF1EA /
+     --raised #E7EBE2). Los valores anteriores (#1F9468 / #D24B49 / #B9760C)
+     daban 3.2-4.3:1 en los importes, por debajo del mínimo de 4.5:1. */
+  --accent:       #197653;   /* 5.59 / 4.90 / 4.63 */
+  --accent-soft:  rgba(25, 118, 83, 0.11);
+  --accent-glow:  rgba(25, 118, 83, 0.0);
+  --on-accent:      #FFFFFF;               /* 5.59:1 sobre el acento claro */
+  --on-accent-soft: rgba(255, 255, 255, 0.90);  /* 4.86:1 */
 
-  --positive:  #1F9468;
-  --negative:  #D24B49;
-  --warning:   #B9760C;
+  --positive:  #197653;   /* 5.59 / 4.90 / 4.63 */
+  --negative:  #C23230;   /* 5.54 / 4.85 / 4.58 */
+  --warning:   #935E0A;   /* 5.46 / 4.79 / 4.52 */
 
   --ink:       #14211A;
   --ink-muted: rgba(20, 33, 26, 0.64);
-  --ink-dim:   rgba(20, 33, 26, 0.60);  /* AA: subido de 0.44 para contraste en texto chico */
+  --ink-dim:   rgba(20, 33, 26, 0.64);  /* AA: 4.65:1 sobre --raised (con .60 daba 4.13) */
 
   --shadow-sm: 0 1px 2px  rgba(26, 44, 34, 0.06), 0 1px 3px rgba(26, 44, 34, 0.04);
   --shadow-md: 0 4px 16px rgba(26, 44, 34, 0.08), 0 1px 3px rgba(26, 44, 34, 0.05);
@@ -727,9 +670,7 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
 
 /* Dashboard bento (tablet y desktop, misma grilla → se ven similares):
    6 columnas con flow dense — los widgets condicionales ausentes NO dejan
-   celdas huecas. La banda .dash-stats reparte 1-4 stats con auto-fit
-   (imposible que quede un hueco). Mobile: apila (flex del shell). */
-.dash-stats { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+   celdas huecas. Mobile: apila (flex del shell). */
 @media (min-width: 768px) {
   .dashboard-shell {
     display: grid;
@@ -737,15 +678,10 @@ button:not(:disabled), [role="button"], summary, a { cursor: pointer; }
     gap: 18px;
     grid-auto-flow: dense;
   }
-  /* dash-full = ancho completo (hero, espacios, banda de stats, gráfico) */
+  /* dash-full = ancho completo (hero, espacios, línea de Neo, gráfico) */
   .dashboard-shell > .dash-full,
   .dashboard-shell > .tile-full { grid-column: 1 / -1; }
   .dash-span-3 { grid-column: span 3; }
-  .dash-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 18px;
-  }
   /* Two rows of budget chips on tablet/desktop */
   .budget-wrap { max-height: 206px; }
 }
@@ -874,7 +810,6 @@ button[aria-label="Cerrar"]::after {
     padding-bottom: 48px !important;
   }
   .dashboard-shell { gap: 22px 26px; }
-  .dash-stats { gap: 22px 26px; }
 }
 
 /* Pantallas grandes: el dashboard aprovecha más ancho. */

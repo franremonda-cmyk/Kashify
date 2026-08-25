@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import HeroBalanceCard from "./HeroBalanceCard";
 import SpacesOverview, { type SpaceCardData } from "./SpacesOverview";
 import CategoryIcon from "./CategoryIcon";
+import NeoImg from "./NeoImg";
+import { buildHomeLines, moodForTone, type HomeLine } from "@/lib/neo/home-line";
 import type { ChartMonth, SpaceExpenseStack } from "./SpendingChart";
 import type { RecurringItem } from "@/lib/recurring";
 const SpendingChart = dynamic(() => import("./SpendingChart"), { ssr: false, loading: () => <div style={{ height: 200 }} /> });
@@ -99,10 +101,10 @@ function MetricCard({ label, value, sym, isIncome, deltaPct, onClick }: {
   const good = hasDelta ? (isIncome ? deltaPct! >= 0 : deltaPct! <= 0) : null;
 
   return (
-    <button onClick={onClick} className="press glow-hover glass-card" style={{ flex: 1, minWidth: 0, containerType: "inline-size", padding: "16px 16px", borderRadius: 18, textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
+    <button onClick={onClick} className="press glow-hover card-glass" style={{ flex: 1, minWidth: 0, containerType: "inline-size", padding: "16px 16px", borderRadius: 18, textAlign: "left", cursor: onClick ? "pointer" : "default" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
         <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flexShrink: 0 }} />
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{label}</p>
+        <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)" }}>{label}</p>
       </div>
       <p className="mono metric-value" style={{
         fontWeight: 700, color, letterSpacing: "-0.02em",
@@ -112,106 +114,64 @@ function MetricCard({ label, value, sym, isIncome, deltaPct, onClick }: {
         {sym} {full}
       </p>
       {hasDelta ? (
-        <p style={{ fontSize: 12, marginTop: 8, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+        <p style={{ fontSize: "var(--text-2xs)", marginTop: 8, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
           <span style={{ color: good ? "var(--positive)" : "var(--negative)" }}>{deltaPct! >= 0 ? "▲" : "▼"} {Math.abs(deltaPct!).toFixed(0)}%</span>
           <span style={{ color: "var(--ink-dim)", fontWeight: 500 }}>vs mes ant.</span>
         </p>
       ) : onClick ? (
-        <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 8, fontWeight: 500 }}>Ver desglose →</p>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 8, fontWeight: 500 }}>Ver desglose →</p>
       ) : null}
     </button>
   );
 }
 
-// Tasa de ahorro del mes (ingresos vs gastos). Se oculta si no hay ingresos.
-function SavingsCard({ income, expense, sym }: { income: number; expense: number; sym: string }) {
-  if (income <= 0) return null;
-  const saved = income - expense;
-  const rate = (saved / income) * 100;
-  const positive = saved >= 0;
-  const barPct = Math.max(0, Math.min(100, rate));
-  const fmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
-  const col = positive ? "var(--positive)" : "var(--negative)";
+// Neo dice UNA cosa: la que hoy importa. El resto queda a un toque.
+// (Antes: 4 cards fijas —ahorro, ritmo, cuotas, fijos— con el mismo peso visual
+// que el hero, que es lo que volvía Inicio una pared de tarjetas.)
+function NeoSays({ lines }: { lines: HomeLine[] }) {
+  const [open, setOpen] = useState(false);
+  if (lines.length === 0) return null;
+  const [first, ...rest] = lines;
   return (
-    <div className="glass-card enter-up" data-delay="2" style={{ padding: "16px 18px", borderRadius: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Tasa de ahorro · este mes</p>
-        <p className="mono" style={{ fontSize: 20, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{Math.round(rate)}%</p>
+    <section className="dash-full enter-up" data-delay="2">
+      <div className="card-glass" style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+        <NeoImg
+          mood={moodForTone[first.tone]}
+          size={36}
+          style={{ flexShrink: 0, marginTop: 1 }}
+          fallback={<span style={{ width: 36, height: 36, borderRadius: 999, background: "var(--accent-soft)", flexShrink: 0 }} />}
+        />
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", lineHeight: 1.45 }}>{first.text}</p>
+          {first.href && (
+            <Link href={first.href} className="section-link">{first.cta ?? "Ver"} →</Link>
+          )}
+          {open && (
+            <div id="neo-says-mas" style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 2 }}>
+              {rest.map((l) => (
+                <p key={l.id} style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", lineHeight: 1.45 }}>
+                  {l.text}{" "}
+                  {l.href && <Link href={l.href} className="section-link">{l.cta ?? "Ver"} →</Link>}
+                </p>
+              ))}
+            </div>
+          )}
+          {rest.length > 0 && (
+            <button
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="neo-says-mas"
+              className="tap-target"
+              style={{
+                alignSelf: "flex-start", background: "none", border: "none", padding: 0,
+                fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-dim)", cursor: "pointer",
+              }}>
+              {open ? "Ver menos ↑" : `Ver ${rest.length} ${rest.length === 1 ? "cosa más" : "cosas más"} ↓`}
+            </button>
+          )}
+        </div>
       </div>
-      <div style={{ width: "100%", height: 6, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-        <div style={{ width: "100%", transform: `scaleX(${barPct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: col, transition: "transform 500ms ease-out" }} />
-      </div>
-      <p style={{ fontSize: 12.5, color: "var(--ink-dim)" }}>
-        {positive
-          ? `Guardaste ${sym} ${fmt(saved)} de ${sym} ${fmt(income)} de ingresos.`
-          : `Gastaste ${sym} ${fmt(-saved)} más de lo que ingresó este mes.`}
-      </p>
-    </div>
-  );
-}
-
-// Ritmo de gasto: pace lineal → proyección de cierre de mes. Estimación.
-function ProjectionCard({ expense, dayOfMonth, daysInMonth, sym }: { expense: number; dayOfMonth: number; daysInMonth: number; sym: string }) {
-  if (expense <= 0 || dayOfMonth < 1 || dayOfMonth >= daysInMonth) return null;
-  const projected = (expense / dayOfMonth) * daysInMonth;
-  const elapsed = Math.min(100, (dayOfMonth / daysInMonth) * 100);
-  const fmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
-  return (
-    <div className="glass-card enter-up" data-delay="3" style={{ padding: "16px 18px", borderRadius: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Ritmo de gasto</p>
-        <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>día {dayOfMonth} de {daysInMonth}</p>
-      </div>
-      <div style={{ width: "100%", height: 6, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
-        <div style={{ width: "100%", transform: `scaleX(${elapsed / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: "var(--warning)", transition: "transform 500ms ease-out" }} />
-      </div>
-      <p style={{ fontSize: 12.5, color: "var(--ink-dim)", lineHeight: 1.45 }}>
-        Llevás <strong style={{ color: "var(--ink)" }}>{sym} {fmt(expense)}</strong> gastados. A este ritmo cerrás el mes en <strong style={{ color: "var(--ink)" }}>~{sym} {fmt(projected)}</strong>.
-      </p>
-    </div>
-  );
-}
-
-// Próximos pagos: cuotas que vencen este mes (mirada hacia adelante).
-function UpcomingCard({ total, count, sym }: { total: number; count: number; sym: string }) {
-  if (count <= 0) return null;
-  const fmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
-  return (
-    <Link href="/cuotas" className="glass-card enter-up press glow-hover" data-delay="3" style={{ display: "block", padding: "16px 18px", borderRadius: 18, textDecoration: "none" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Cuotas por pagar este mes</p>
-        <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>{count} {count === 1 ? "cuota" : "cuotas"}</span>
-      </div>
-      <p className="mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--warning)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{sym} {fmt(total)}</p>
-      <p style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, marginTop: 8 }}>Ver cuotas →</p>
-    </Link>
-  );
-}
-
-// Gastos recurrentes / suscripciones detectados.
-function RecurringCard({ items, sym }: { items: RecurringItem[]; sym: string }) {
-  if (items.length === 0) return null;
-  const total = items.reduce((s, i) => s + i.amount, 0);
-  const top = items.slice(0, 3);
-  const fmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
-  return (
-    <div className="glass-card enter-up" data-delay="3" style={{ padding: "16px 18px", borderRadius: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>Gastos fijos / suscripciones</p>
-        <span style={{ fontSize: 12, color: "var(--ink-dim)" }}>{items.length}</span>
-      </div>
-      <p className="mono" style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>~{sym} {fmt(total)}<span style={{ fontSize: 13, color: "var(--ink-dim)", fontWeight: 500 }}> /mes</span></p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {top.map((it) => (
-          <div key={it.description} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--accent)", flexShrink: 0 }} />
-            <span style={{ fontSize: 12.5, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{it.description}</span>
-            <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{sym} {fmt(it.amount)}</span>
-          </div>
-        ))}
-        {items.length > 3 && <p style={{ fontSize: 12, color: "var(--ink-dim)" }}>+{items.length - 3} más</p>}
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -241,15 +201,15 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>{g.name}</span>
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: reached ? "var(--positive)" : "var(--ink-muted)", flexShrink: 0 }}>
                     {reached ? "¡Lograda!" : `${pct.toFixed(0)}%`}
                   </span>
                 </div>
                 <div style={{ width: "100%", height: 5, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
                   <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: reached ? "var(--positive)" : g.color, transition: "transform 400ms ease-out" }} />
                 </div>
-                <p style={{ fontSize: 12, color: "var(--ink-dim)", marginTop: 4 }}>
+                <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 4 }}>
                   {fmt(g.current_amount, g.currency_code)} de {fmt(g.target_amount, g.currency_code)}
                 </p>
               </div>
@@ -280,9 +240,9 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
       <div className="budget-wrap" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {/* "Agregar" primero para que siempre se vea (incluida la única fila de mobile) */}
         <Link href="/categorias" className="press glow-hover" style={{ textDecoration: "none", flexShrink: 0, background: "none", border: "none", padding: 0, borderRadius: "var(--radius-chip)" }} aria-label="Agregar límite por categoría">
-          <div className="glass-card budget-chip" style={{ borderStyle: "dashed", borderColor: "var(--glass-border-hover)" }}>
-            <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: 18, fontWeight: 400 }}>+</span>
-            <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
+          <div className="card-glass budget-chip" style={{ borderStyle: "dashed", borderColor: "var(--glass-border-hover)" }}>
+            <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", color: "var(--accent)", fontSize: "var(--text-lg)", fontWeight: 400 }}>+</span>
+            <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)", textAlign: "center" }}>Agregar</p>
           </div>
         </Link>
         {relevant.slice(0, 9).map((b) => {
@@ -297,15 +257,15 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
           return (
             <button key={b.id} className="press glow-hover" style={{ flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: "var(--radius-chip)" }}
               onClick={() => onSelect(b)}>
-              <div className="glass-card budget-chip">
+              <div className="card-glass budget-chip">
                 <div style={{ width: 28, height: 28, borderRadius: 8, background: (b.color ?? "#46B58C") + "22", border: `1px solid ${b.color ?? "#46B58C"}33`, display: "flex", alignItems: "center", justifyContent: "center", color: b.color ?? "#46B58C" }}>
                   <CategoryIcon icon={b.icon} name={b.name} color={b.color} size={14} />
                 </div>
-                <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
+                <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{b.name}</p>
                 <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--raised)", overflow: "hidden" }}>
                   <div style={{ width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", height: "100%", borderRadius: 999, background: gradientColor, transition: "transform 400ms ease-out" }} />
                 </div>
-                <p style={{ fontSize: 12.5, fontWeight: 700, color: textColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
+                <p style={{ fontSize: "var(--text-2xs)", fontWeight: 700, color: textColor, fontVariantNumeric: "tabular-nums" }}>{Math.round(pct)}%</p>
               </div>
             </button>
           );
@@ -338,6 +298,12 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
   const up = upcoming.find((u) => u.currency_code === selectedCurrency);
   const recCur = recurring.filter((r) => r.currency_code === selectedCurrency);
   const chartMonths = chartData[selectedCurrency] ?? [];
+  const homeLines = useMemo(() => buildHomeLines({
+    income: m.income, expense: m.expense, dayOfMonth, daysInMonth, sym,
+    upcoming: up ? { total: up.total, count: up.count } : null,
+    recurringTotal: recCur.reduce((s, r) => s + r.amount, 0),
+    recurringCount: recCur.length,
+  }), [m.income, m.expense, dayOfMonth, daysInMonth, sym, up, recCur]);
 
   // Filtro/orden client-side sobre las últimas del mes (mismo sheet que Actividad).
   const txFiltered = useMemo(() => sortTransactions(
@@ -369,18 +335,18 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </div>
-            <p style={{ fontSize: 14, color: "var(--ink)", maxWidth: 300 }}>Todavía no hay movimientos. Cargá el primero y Kashify se pone en marcha.</p>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", maxWidth: 300 }}>Todavía no hay movimientos. Cargá el primero y Kashify se pone en marcha.</p>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }))}
               className="lift"
-              style={{ padding: "12px 24px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+              style={{ padding: "12px 24px", borderRadius: 12, fontSize: "var(--text-sm)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>
               + Agregar movimiento
             </button>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-              <Link href="/neo" style={{ fontSize: 13, color: "var(--ink-muted)", textDecoration: "none" }}>
+              <Link href="/neo" style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", textDecoration: "none" }}>
                 Escribirle a Neo →
               </Link>
-              <Link href="/historial" style={{ fontSize: 13, color: "var(--ink-muted)", textDecoration: "none" }}>
+              <Link href="/historial" style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", textDecoration: "none" }}>
                 Importar desde un archivo →
               </Link>
             </div>
@@ -401,16 +367,8 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
         <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />
       </div>
 
-      {/* Banda de stats del mes — auto-fit reparte el ancho entre los que
-          existan (1 a 4): nunca quedan celdas huecas. */}
-      {(m.income > 0 || (m.expense > 0 && dayOfMonth < daysInMonth) || (up && up.count > 0) || recCur.length > 0) && (
-        <div className="dash-full dash-stats">
-          {m.income > 0 && <SavingsCard income={m.income} expense={m.expense} sym={sym} />}
-          {m.expense > 0 && dayOfMonth < daysInMonth && <ProjectionCard expense={m.expense} dayOfMonth={dayOfMonth} daysInMonth={daysInMonth} sym={sym} />}
-          {up && up.count > 0 && <UpcomingCard total={up.total} count={up.count} sym={sym} />}
-          {recCur.length > 0 && <RecurringCard items={recCur} sym={sym} />}
-        </div>
-      )}
+      {/* Neo dice una sola cosa (el resto, a un toque) */}
+      <NeoSays lines={homeLines} />
 
       {/* Franja de límites por categoría */}
       <BudgetStrip budgets={budgets} currency={selectedCurrency} onSelect={setSelectedBudget} />
@@ -425,7 +383,7 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
                 aria-label="Filtrar y ordenar transacciones"
                 style={{
                   display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
-                  cursor: "pointer", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", fontSize: "var(--text-xs)", fontWeight: 600,
                   color: activeTxFilters > 0 ? "var(--accent)" : "var(--ink-muted)",
                 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
@@ -438,7 +396,7 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
           </div>
           {txFiltered.length === 0 ? (
             <div className="card-solid" style={{ padding: 20, textAlign: "center" }}>
-              <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Nada coincide con estos filtros.</p>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)" }}>Nada coincide con estos filtros.</p>
             </div>
           ) : (
           <div className="card-glass dash-tx-card" style={{ overflow: "hidden" }}>
@@ -454,14 +412,14 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
                     <CategoryIcon name={cat?.name} icon={cat?.icon} color={cat?.color} size={18} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {t.description}
                     </p>
-                    <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>
+                    <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>
                       {cat?.name ?? "Sin categoría"} · {t.date}
                     </p>
                   </div>
-                  <span className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                  <span className="mono" style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                     {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                   </span>
                 </button>
@@ -469,7 +427,7 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
             })}
             {txFiltered.length > 5 && (
               <button onClick={() => setShowAllTx(v => !v)} style={{
-                width: "100%", padding: "10px 16px", fontSize: 12, fontWeight: 600,
+                width: "100%", padding: "10px 16px", fontSize: "var(--text-2xs)", fontWeight: 600,
                 color: "var(--accent)", background: "var(--raised)",
                 borderTop: "0.5px solid var(--glass-border-dim)", textAlign: "center",
               }}>

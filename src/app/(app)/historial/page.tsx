@@ -54,9 +54,9 @@ function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => v
         <div style={{ flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border-hover)", margin: "12px auto 0" }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px 0" }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>Importar transacciones</p>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>Importar transacciones</p>
             <button onClick={onClose} aria-label="Cerrar"
-              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span aria-hidden="true">✕</span>
             </button>
           </div>
@@ -84,7 +84,7 @@ const inp: React.CSSProperties = {
   background: "var(--base)",
   border: "0.5px solid var(--glass-border)",
   borderRadius: 12, padding: "11px 14px",
-  color: "var(--ink)", fontSize: 16, width: "100%", outline: "none",
+  color: "var(--ink)", fontSize: "var(--text-base)", width: "100%", outline: "none",
 };
 
 interface ChartEntry { name: string; amount: number; color?: string; }
@@ -129,8 +129,8 @@ function DonutChart({ data, income }: { data: ChartEntry[]; income: number }) {
         {slices.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 3, height: 14, borderRadius: 2, background: s.color, flexShrink: 0 }}/>
-            <span style={{ fontSize: 13, color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
-            <span style={{ fontSize: 12, color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+            <span style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
               {income > 0 ? `${Math.round(s.pct * 100)}%` : fmt(s.amount)}
             </span>
           </div>
@@ -154,10 +154,10 @@ function BarChart({ data, total }: { data: ChartEntry[]; total: number }) {
         return (
           <div key={i}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-              <span style={{ fontSize: 12, color: "var(--ink-muted)", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", display: "flex", alignItems: "center", gap: 6 }}>
                 <CategoryIcon name={d.name} size={12}/>{d.name}
               </span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.amount)}</span>
+              <span style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.amount)}</span>
             </div>
             <div style={{ height: 5, borderRadius: 3, background: "var(--raised)", overflow: "hidden" }}>
               <div style={{ height: "100%", borderRadius: 3, background: color, width: "100%", transform: `scaleX(${pct / 100})`, transformOrigin: "left", transition: "transform 500ms cubic-bezier(0.22,1,0.36,1)" }}/>
@@ -171,7 +171,7 @@ function BarChart({ data, total }: { data: ChartEntry[]; total: number }) {
 
 const segBtn = (on: boolean): React.CSSProperties => ({
   minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
-  padding: "0 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+  padding: "0 12px", borderRadius: 6, fontSize: "var(--text-2xs)", fontWeight: 600,
   background: on ? "var(--base)" : "transparent",
   color: on ? "var(--accent)" : "var(--ink-muted)",
   boxShadow: on ? "var(--shadow-sm)" : "none",
@@ -191,7 +191,7 @@ function ExpenseBreakdown({ data, spaceData, incomeData, currency, canSplitBySpa
   return (
     <div style={{ borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "var(--shadow-sm)", padding: "14px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{group === "espacio" ? "Gastos por espacio" : "Gastos por categoría"}</p>
+        <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)" }}>{group === "espacio" ? "Gastos por espacio" : "Gastos por categoría"}</p>
         <div style={{ display: "flex", gap: 1, background: "var(--raised)", borderRadius: 7, padding: 2 }}>
           {(["donut","bar"] as const).map((m) => (
             <button key={m} onClick={() => setMode(m)} style={segBtn(mode === m)}>{m === "donut" ? "Circular" : "Barras"}</button>
@@ -206,7 +206,7 @@ function ExpenseBreakdown({ data, spaceData, incomeData, currency, canSplitBySpa
         </div>
       )}
       {total === 0 ? (
-        <p style={{ fontSize: 12.5, color: "var(--ink-dim)", textAlign: "center", padding: "28px 0" }}>Sin gastos en {currency} este mes</p>
+        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", textAlign: "center", padding: "28px 0" }}>Sin gastos en {currency} este mes</p>
       ) : mode === "donut" ? <DonutChart data={active} income={incomeData[currency] ?? 0}/> : <BarChart data={active} total={total}/>}
     </div>
   );
@@ -276,7 +276,7 @@ function TxRow({ t, byDay, onOpen }: { t: Transaction; byDay: boolean; onOpen: (
       <div aria-hidden={offset === 0} style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: W, display: "flex" }}>
         <button onClick={quickDelete} tabIndex={offset === 0 ? -1 : 0}
           aria-label={`Eliminar ${t.description}`}
-          style={{ flex: 1, background: failed ? "var(--warning)" : "var(--negative)", color: "#fff", fontSize: 12.5, fontWeight: 700, border: "none" }}>
+          style={{ flex: 1, background: failed ? "var(--warning)" : "var(--negative)", color: "var(--on-accent)", fontSize: "var(--text-2xs)", fontWeight: 700, border: "none" }}>
           {failed ? "Falló" : "Eliminar"}
         </button>
       </div>
@@ -299,14 +299,14 @@ function TxRow({ t, byDay, onOpen }: { t: Transaction; byDay: boolean; onOpen: (
             <CategoryIcon name={catData?.name} icon={catData?.icon} color={catData?.color} size={18}/>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
-            <p style={{ fontSize: 12.5, color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{!byDay && t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
+            <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{!byDay && t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <p className="mono" style={{ fontSize: 14.5, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
+            <p className="mono" style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
               {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
             </p>
-            <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
           </div>
         </button>
 
@@ -512,8 +512,8 @@ export default function ActividadPage() {
       <div className="flex items-center justify-between enter-up" style={{ position: "relative", zIndex: 10 }}>
         <h1 className="page-title">Actividad</h1>
         <div className="flex gap-2" style={{ position: "relative" }}>
-          <button onClick={() => setShowImport(true)} style={{ fontSize: 13, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
-          <button onClick={() => setShowExport(true)} style={{ fontSize: 13, minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>↓ Exportar</button>
+          <button onClick={() => setShowImport(true)} style={{ fontSize: "var(--text-xs)", minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", fontWeight: 600 }}>↑ Importar</button>
+          <button onClick={() => setShowExport(true)} style={{ fontSize: "var(--text-xs)", minHeight: 44, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, background: "var(--base)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontWeight: 500 }}>↓ Exportar</button>
         </div>
       </div>
 
@@ -547,10 +547,10 @@ export default function ActividadPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
+              <p style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--ink)" }}>
                 {MONTHS_ES[viewMonth - 1]} {viewYear}
               </p>
-              {isCurrentMonth && <p style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, marginTop: 1 }}>mes actual</p>}
+              {isCurrentMonth && <p style={{ fontSize: "var(--text-2xs)", color: "var(--accent)", fontWeight: 600, marginTop: 1 }}>mes actual</p>}
             </div>
             <button onClick={nextMonth} aria-label="Mes siguiente"
               disabled={isCurrentMonth}
@@ -568,9 +568,9 @@ export default function ActividadPage() {
               onClick={() => setSelectedCurrency(c)}
               style={{
                 minHeight: 44, display: "inline-flex", alignItems: "center",
-                padding: "0 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                padding: "0 16px", borderRadius: 20, fontSize: "var(--text-2xs)", fontWeight: 600,
                 background: selectedCurrency === c ? "var(--accent)" : "var(--raised)",
-                color: selectedCurrency === c ? "#04130D" : "var(--ink-muted)",
+                color: selectedCurrency === c ? "var(--on-accent)" : "var(--ink-muted)",
                 border: selectedCurrency === c ? "none" : "0.5px solid var(--glass-border)",
                 transition: "all 180ms ease-out",
               }}>
@@ -588,21 +588,21 @@ export default function ActividadPage() {
           <button onClick={() => setBreakdownType("income")} className="card-glass stat-tile" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--positive)", flexShrink: 0 }} />
-              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Ingresos</p>
+              <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Ingresos</p>
             </div>
             <p className="mono stat-num" style={{ color: "var(--positive)" }}>{incomeTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
           <button onClick={() => setBreakdownType("expense")} className="card-glass stat-tile" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--negative)", flexShrink: 0 }} />
-              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Gastos</p>
+              <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Gastos</p>
             </div>
             <p className="mono stat-num" style={{ color: "var(--negative)" }}>{expenseTotal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </button>
           <div className="card-glass stat-tile" style={{ padding: "14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: net >= 0 ? "var(--positive)" : "var(--negative)", flexShrink: 0 }} />
-              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-muted)" }}>Balance</p>
+              <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Balance</p>
             </div>
             <p className="mono stat-num" style={{ color: net >= 0 ? "var(--positive)" : "var(--negative)" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
@@ -628,7 +628,7 @@ export default function ActividadPage() {
           background: (activeFilters > 0 || activeSort) ? "var(--accent-soft)" : "var(--base)",
           border: (activeFilters > 0 || activeSort) ? "0.5px solid var(--accent-glow)" : "0.5px solid var(--glass-border)",
           color: (activeFilters > 0 || activeSort) ? "var(--accent)" : "var(--ink-muted)",
-          fontSize: 13, fontWeight: 500,
+          fontSize: "var(--text-xs)", fontWeight: 500,
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
@@ -658,10 +658,10 @@ export default function ActividadPage() {
         {loading && <TxListSkeleton />}
         {!loading && loadError && (
           <div style={{ padding: 32, textAlign: "center", borderRadius: 16, background: "var(--base)", border: "0.5px solid var(--glass-border)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <p style={{ fontSize: 13, color: "var(--ink)" }}>No pudimos cargar tus movimientos.</p>
-            <p style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>Puede ser la conexión — tus datos están a salvo.</p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--ink)" }}>No pudimos cargar tus movimientos.</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}>Puede ser la conexión — tus datos están a salvo.</p>
             <button onClick={fetchTransactions}
-              style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+              style={{ padding: "10px 20px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>
               Reintentar
             </button>
           </div>
@@ -671,10 +671,10 @@ export default function ActividadPage() {
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
-            <p style={{ fontSize: 13, color: "var(--ink)" }}>Sin movimientos</p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--ink)" }}>Sin movimientos</p>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("open-quick-add", { detail: { type: "expense" } }))}
-              style={{ padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: "var(--accent)", color: "#04130D" }}>
+              style={{ padding: "10px 20px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)" }}>
               + Agregar movimiento
             </button>
           </div>
@@ -705,7 +705,7 @@ export default function ActividadPage() {
               {groups.map((g) => (
                 <div key={g.key}>
                   {g.label && (
-                    <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-dim)", padding: "0 2px 6px" }}>{g.label}</p>
+                    <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-dim)", padding: "0 2px 6px" }}>{g.label}</p>
                   )}
                   <div className="card-solid" style={{ overflow: "hidden" }}>
                     {g.txs.map((t) => (
@@ -716,7 +716,7 @@ export default function ActividadPage() {
               ))}
               {filtered.length > 5 && (
                 <button onClick={() => setExpanded(v => !v)} style={{
-                  width: "100%", padding: "11px 16px", fontSize: 12.5, fontWeight: 600,
+                  width: "100%", padding: "11px 16px", fontSize: "var(--text-2xs)", fontWeight: 600,
                   color: "var(--accent)", background: "var(--raised)",
                   border: "0.5px solid var(--glass-border)", borderRadius: 12, textAlign: "center",
                 }}>

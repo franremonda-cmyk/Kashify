@@ -137,11 +137,11 @@ export default function Tour() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <span style={{ fontSize: 22 }} aria-hidden>{step.emoji}</span>
-          <p className="display" style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.01em" }}>
+          <p className="display" style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.01em" }}>
             {step.title}
           </p>
         </div>
-        <p style={{ fontSize: 14, color: "var(--ink-muted)", lineHeight: 1.5 }}>{step.body}</p>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--ink-muted)", lineHeight: 1.5 }}>{step.body}</p>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
           {/* Progress dots */}
@@ -157,12 +157,12 @@ export default function Tour() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={finish} className="press" style={{
-              padding: "8px 12px", fontSize: 13, fontWeight: 500, color: "var(--ink-dim)",
+              padding: "8px 12px", fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--ink-dim)",
               background: "transparent", border: "none", cursor: "pointer",
             }}>
               Saltear
             </button>
-            <button onClick={nextStep} className="btn-primary press" style={{ minHeight: 44, padding: "0 18px", fontSize: 14 }}>
+            <button onClick={nextStep} className="btn-primary press" style={{ minHeight: 44, padding: "0 18px", fontSize: "var(--text-sm)" }}>
               {i >= STEPS.length - 1 ? "¡Listo!" : "Siguiente"}
             </button>
           </div>
