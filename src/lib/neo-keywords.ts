@@ -303,6 +303,8 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
   // ══════════════════════════════════════════════════════════════════════════
   // LISTA GLOBAL ARGENTINA — marcas y productos comunes (2026-07). Claves de ≤2
   // palabras (el matcher solo mira palabra suelta y bigrama). Sin ambiguos.
+  // Claves SIN tildes ni ñ: el lookup normaliza el texto (norm), así que una
+  // clave con diacríticos jamás matchea. Lo garantiza un assert en learning.test.ts.
   // ══════════════════════════════════════════════════════════════════════════
 
   // Comida — súper / mayoristas
@@ -360,7 +362,7 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
   // Salud — farmacias / prepagas / productos
   medife:"Salud", "dr ahorro":"Salud", "hospital italiano":"Salud", "hospital aleman":"Salud",
   geniol:"Salud", actron:"Salud", curitas:"Salud", termometro:"Salud",
-  pañales:"Salud", "protector solar":"Salud", barbijo:"Salud",
+  panales:"Salud", "protector solar":"Salud", barbijo:"Salud",
 
   // Educación — instituciones / útiles
   uba:"Educación", utn:"Educación", uade:"Educación", "siglo 21":"Educación",
@@ -392,13 +394,13 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
 
   // Viajes — pasajes / alojamiento
   aerolineas:"Viajes", avantrip:"Viajes", atrapalo:"Viajes", trivago:"Viajes",
-  expedia:"Viajes", civitatis:"Viajes", turismo:"Viajes", cabaña:"Viajes",
-  cabañas:"Viajes", resort:"Viajes", termas:"Viajes", spa:"Viajes",
+  expedia:"Viajes", civitatis:"Viajes", turismo:"Viajes", cabana:"Viajes",
+  cabanas:"Viajes", resort:"Viajes", termas:"Viajes", spa:"Viajes",
 
   // Regalos — celebraciones
   souvenir:"Regalos", "baby shower":"Regalos", ramo:"Regalos", bombones:"Regalos",
   peluche:"Regalos", juguete:"Regalos", juguetes:"Regalos", "gift card":"Regalos",
-  cumpleaños:"Regalos",
+  cumpleanos:"Regalos",
 };
 
 // Encaje de una categoría "rica" del diccionario en las 9 categorías por defecto,

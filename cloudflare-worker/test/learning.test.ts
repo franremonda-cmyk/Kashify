@@ -55,6 +55,15 @@ for (const cat of usadas) {
   ok(!!CATEGORY_FALLBACK[cat], `categoría rica "${cat}" tiene fallback`);
   ok(DEFAULTS.has(CATEGORY_FALLBACK[cat]), `fallback de "${cat}" (${CATEGORY_FALLBACK[cat]}) es una categoría real`);
 }
+// Invariante: toda clave debe estar ya normalizada (sin tildes/ñ), porque el
+// lookup normaliza el texto del usuario — una clave con diacríticos jamás matchea.
+// (Cicatriz 2026-07-09: pañales/cabaña/cumpleaños eran claves muertas.)
+const normKey = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+for (const k of Object.keys(KEYWORD_TO_CATEGORY)) {
+  ok(k === normKey(k), `clave "${k}" está normalizada (sin tildes/ñ)`);
+}
+ok(categoryForText("compre pañales") === "Salud", "pañales (con ñ del usuario) → Salud");
+ok(categoryForText("gaste en la cabaña") === "Viajes", "cabaña (con ñ del usuario) → Viajes");
 
 // ── monto típico (Fase 3): keyword conocida sin monto → ask_amount ──
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
