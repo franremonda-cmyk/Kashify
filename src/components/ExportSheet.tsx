@@ -55,7 +55,7 @@ export default function ExportSheet({ onClose }: { onClose: () => void }) {
     >
       <div
         role="dialog" aria-modal="true" aria-label="Exportar transacciones"
-        className="w-full max-w-sm flex flex-col"
+        className="scale-up w-full max-w-sm flex flex-col"
         style={{ borderRadius: 20, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "0 24px 60px rgba(0,0,0,0.30)", maxHeight: "85dvh", minHeight: 0 }}
       >
         <div style={{ flexShrink: 0, padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>

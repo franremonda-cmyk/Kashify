@@ -48,7 +48,7 @@ function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => v
     >
       <div
         role="dialog" aria-modal="true" aria-label="Importar transacciones"
-        className="w-full max-w-sm flex flex-col"
+        className="enter-up w-full max-w-sm flex flex-col"
         style={{ borderRadius: "24px 24px 0 0", background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "0 -8px 40px rgba(0,0,0,0.20)", maxHeight: "92dvh", minHeight: 0 }}
       >
         <div style={{ flexShrink: 0 }}>

@@ -81,7 +81,7 @@ export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) 
       style={{ position: "fixed", inset: 0, zIndex: 9100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.72)", padding: "20px 16px", touchAction: "none" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="glass-strong" style={{ width: "100%", maxWidth: 400, borderRadius: 20, maxHeight: "100%", display: "flex", flexDirection: "column" }}>
+      <div className="glass-strong scale-up" style={{ width: "100%", maxWidth: 400, borderRadius: 20, maxHeight: "100%", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
           <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>{isNew ? "Nuevo espacio" : "Editar espacio"}</p>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)" }}>✕</button>

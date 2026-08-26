@@ -73,7 +73,7 @@ export default function FilterSheet({ categories, filters, onApply, onClose }: {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
         role="dialog" aria-modal="true" aria-label="Filtrar y ordenar"
-        className="w-full max-w-sm flex flex-col"
+        className="scale-up w-full max-w-sm flex flex-col"
         style={{
           borderRadius: 20, background: "var(--base)",
           border: "0.5px solid var(--glass-border)",

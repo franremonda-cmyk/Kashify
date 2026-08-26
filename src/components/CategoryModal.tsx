@@ -78,7 +78,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
-          className="glass-strong"
+          className="glass-strong scale-up"
           style={{
             width: "100%", maxWidth: 400,
             borderRadius: 20,

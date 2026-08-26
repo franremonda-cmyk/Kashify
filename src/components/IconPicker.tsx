@@ -88,7 +88,7 @@ export default function IconPicker({ selectedIcon, selectedColor, selectedStyle 
     >
       <div
         role="dialog" aria-modal="true" aria-label="Elegir ícono"
-        className="w-full max-w-sm flex flex-col"
+        className="scale-up w-full max-w-sm flex flex-col"
         style={{
           borderRadius: 20,
           background: "var(--base)",

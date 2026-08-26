@@ -137,7 +137,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
-          className="glass-strong w-full max-w-sm flex flex-col"
+          className="glass-strong scale-up w-full max-w-sm flex flex-col"
           role="dialog" aria-modal="true" aria-label="Detalle del movimiento"
           style={{
             borderRadius: 20,

@@ -321,6 +321,7 @@ function GoalModal({
       >
         <div
           role="dialog" aria-modal="true" aria-label={isEdit ? "Editar meta de ahorro" : "Nueva meta de ahorro"}
+          className="scale-up"
           style={{ width: "100%", maxWidth: 400, borderRadius: 20, background: "var(--base)", border: "0.5px solid var(--glass-border)", boxShadow: "0 24px 60px rgba(0,0,0,0.40)", maxHeight: "90dvh", display: "flex", flexDirection: "column" }}
         >
           <div className="flex items-center justify-between" style={{ padding: "16px 18px 0", flexShrink: 0 }}>

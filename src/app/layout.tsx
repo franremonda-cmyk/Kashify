@@ -32,6 +32,7 @@ export const metadata: Metadata = {
   description: "Tus finanzas, por WhatsApp. Con Neo, tu asistente personal.",
   applicationName: "Kashify",
   manifest: "/manifest.json",
+  icons: { apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Kashify" },
   openGraph: {
     type: "website",
