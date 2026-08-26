@@ -409,16 +409,26 @@ export default function ActividadPage() {
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
+  // Monedas disponibles: de TODO el historial del espacio, no solo del mes que
+  // se está mirando — si no, una moneda con un único movimiento en un mes sin
+  // nada más queda invisible (el chip para verla no aparece nunca).
+  const [availableCurrencies, setAvailableCurrencies] = useState<string[]>(["ARS"]);
+  const fetchCurrencies = useCallback(async () => {
+    if (!activeId) return;
+    try {
+      const res = await fetch(`/api/transactions?space=${activeId}&limit=1000`);
+      const json = await res.json();
+      const set = new Set<string>((json.data ?? []).map((t: { currency_code?: string }) => t.currency_code ?? "ARS"));
+      setAvailableCurrencies(Array.from(set).sort());
+    } catch { /* deja las monedas como estaban */ }
+  }, [activeId]);
+  useEffect(() => { fetchCurrencies(); }, [fetchCurrencies]);
+
   useEffect(() => {
-    const handler = () => fetchTransactions();
+    const handler = () => { fetchTransactions(); fetchCurrencies(); };
     window.addEventListener("transaction-added", handler);
     return () => window.removeEventListener("transaction-added", handler);
-  }, [fetchTransactions]);
-
-  const availableCurrencies = useMemo(() => {
-    const set = new Set(transactions.map(t => t.currency_code ?? "ARS"));
-    return Array.from(set).sort();
-  }, [transactions]);
+  }, [fetchTransactions, fetchCurrencies]);
 
   // Una sola pipeline: moneda → categorías → tipos → búsqueda → orden.
   // Todo lo que se muestra (lista, totales, donut) sale de acá.
