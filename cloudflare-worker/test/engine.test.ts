@@ -448,6 +448,37 @@ async function main() {
     check("'no' pelado sigue siendo descarte", rNo.text.toLowerCase().includes("cancelado") && db.neo_notification_prefs.length === 0, `reply: ${rNo.text}`);
   }
 
+  // 25) Categorías por chat
+  {
+    const db = seed();
+    const stub = makeStub(db);
+    await runNeo({ supabase: stub, userId: USER, message: "creá la categoría Mascotas", channel: "whatsapp" });
+    check("crea la categoría", db.categories.length === 2 && db.categories[1].name === "Mascotas");
+    await runNeo({ supabase: stub, userId: USER, message: "renombrá la categoría Mascotas a Perros", channel: "whatsapp" });
+    check("renombra la categoría", db.categories[1].name === "Perros");
+    await runNeo({ supabase: stub, userId: USER, message: "borrá la categoría Perros", channel: "whatsapp" });
+    check("borra una categoría propia y vacía", db.categories.length === 1);
+  }
+  {
+    // Guardas del borrado de categoría
+    const db = seed();
+    db.categories[0].is_default = true;
+    db.categories.push({ id: "cat-mascotas", user_id: USER, name: "Mascotas", is_default: false });
+    db.transactions.push({ id: "t1", user_id: USER, space_id: SPACE, type: "expense", amount: 100, currency_code: "ARS", description: "x", date: "2026-08-01", deleted_at: null, category_id: "cat-mascotas" });
+    const stub = makeStub(db);
+    const rDef = await runNeo({ supabase: stub, userId: USER, message: "borrá la categoría Comida", channel: "whatsapp" });
+    check("no borra una categoría base", db.categories.length === 2 && rDef.text.includes("base"), `reply: ${rDef.text}`);
+    const rTx = await runNeo({ supabase: stub, userId: USER, message: "borrá la categoría Mascotas", channel: "whatsapp" });
+    check("no borra una categoría con movimientos", db.categories.length === 2 && rTx.text.includes("movimiento"), `reply: ${rTx.text}`);
+  }
+  {
+    // No confundir renombrar una categoría con corregir la de un movimiento
+    const db = seed();
+    db.transactions.push({ id: "t1", user_id: USER, space_id: SPACE, type: "expense", amount: 100, currency_code: "ARS", description: "netflix", date: "2026-08-01", deleted_at: null, category_id: null });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "cambiá la categoría de netflix a Comida", channel: "whatsapp" });
+    check("'cambiá la categoría de X a Y' corrige el movimiento, no renombra", db.categories.length === 1 && db.transactions[0].category_id === "cat-comida");
+  }
+
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);
   process.exit(failures === 0 ? 0 : 1);
 }

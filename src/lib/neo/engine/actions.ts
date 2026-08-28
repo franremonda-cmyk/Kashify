@@ -472,6 +472,48 @@ export async function executeIntent(
       return { text: bloques.join("\n\n") };
     }
 
+    case "categories_query": {
+      const { data: cats } = await supabase.from("categories").select("name, icon").eq("user_id", userId).order("name");
+      const list = (cats as { name: string; icon: string }[] | null) ?? [];
+      if (!list.length) return { text: "Todavía no tenés categorías." };
+      return { text: `Tus categorías:\n${list.map((c) => `${c.icon ?? "•"} ${c.name}`).join("\n")}` };
+    }
+
+    case "create_category": {
+      const { data: cats } = await supabase.from("categories").select("name").eq("user_id", userId);
+      if ((cats as { name: string }[] | null)?.some((c) => normalize(c.name) === normalize(intent.name))) {
+        return { text: `Ya tenés una categoría "${intent.name}".` };
+      }
+      const { error } = await supabase.from("categories").insert({ user_id: userId, name: intent.name, is_default: false });
+      if (error) return { text: "No pude crear la categoría." };
+      return { text: `✅ Creé la categoría "${intent.name}".`, effects: [{ type: "refresh" }] };
+    }
+
+    case "rename_category": {
+      const match = await findCategory(supabase, userId, intent.oldName);
+      if (!match) return { text: `No encontré la categoría "${intent.oldName}".` };
+      await supabase.from("categories").update({ name: intent.newName }).eq("id", match.id).eq("user_id", userId);
+      return { text: `✅ Ahora "${match.name}" se llama "${intent.newName}".`, effects: [{ type: "refresh" }] };
+    }
+
+    case "delete_category": {
+      const { data: cats } = await supabase.from("categories").select("id, name, is_default").eq("user_id", userId);
+      const norm = normalize(intent.name);
+      const match = (cats as { id: string; name: string; is_default: boolean }[] | null)
+        ?.find((c) => normalize(c.name).includes(norm) || norm.includes(normalize(c.name)));
+      if (!match) return { text: `No encontré la categoría "${intent.name}".` };
+      // Las 9 por defecto sostienen la clasificación automática (el fallback cae
+      // en "Otros"): si se borran, Neo se queda sin dónde poner los gastos.
+      if (match.is_default) return { text: `"${match.name}" es una categoría base, mejor no borrarla. Podés renombrarla si querés.` };
+      // transactions.category_id no tiene cascade: con movimientos, el borrado falla.
+      const { count } = await supabase.from("transactions").select("id", { count: "exact", head: true })
+        .eq("user_id", userId).eq("category_id", match.id).is("deleted_at", null);
+      if ((count ?? 0) > 0) return { text: `"${match.name}" tiene ${count} movimiento(s). Movelos a otra categoría antes de borrarla.` };
+      const { error } = await supabase.from("categories").delete().eq("id", match.id).eq("user_id", userId);
+      if (error) return { text: "No pude borrar la categoría." };
+      return { text: `✅ Borré la categoría "${match.name}".`, effects: [{ type: "refresh" }] };
+    }
+
     case "mute_notifs": {
       const fam = resolveNotifFamily(intent.family);
       if (!fam) {

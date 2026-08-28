@@ -190,6 +190,23 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     if (mov) return { type: "move_tx_space", name: mov[1].trim() };
   }
 
+  // ── Categorías ────────────────────────────────────────────────────────────
+  // Renombrar usa SOLO el verbo "renombrá": "cambiá la categoría de X a Y" ya
+  // significa otra cosa (corregir la categoría de un movimiento, más abajo).
+  {
+    if (/mis\s+categorias|ver\s+categorias|que\s+categorias|listar\s+categorias/.test(m))
+      return { type: "categories_query" };
+
+    const renCat = m.match(/^renombr\w*\s+(?:la\s+)?categoria\s+["']?(.+?)["']?\s+(?:a|por)\s+["']?(.+?)["']?$/);
+    if (renCat) return { type: "rename_category", oldName: renCat[1].trim(), newName: titleCase(renCat[2].trim()) };
+
+    const creaCat = m.match(/^(?:crea|agrega|añad|anad|sum)\w*\s+(?:una\s+|la\s+)?(?:nueva\s+)?categoria\s+(?:llamada\s+)?["']?(.+?)["']?$/);
+    if (creaCat) return { type: "create_category", name: titleCase(creaCat[1].trim()) };
+
+    const delCat = m.match(/^(?:borr|elimin|sac|quit)\w*\s+(?:la\s+)?categoria\s+["']?(.+?)["']?$/);
+    if (delCat) return { type: "delete_category", name: delCat[1].trim() };
+  }
+
   // ── Installments ──────────────────────────────────────────────────────────
   if (/mis cuotas|ver cuotas|cuotas activas|cuotas pendientes|cuantas cuotas|cuántas cuotas|que cuotas tengo|mis pagos en cuotas|mis creditos/.test(m))
     return { type: "installments_query" };

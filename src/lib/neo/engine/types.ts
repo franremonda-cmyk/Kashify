@@ -39,6 +39,10 @@ export type Intent =
   | { type: "deposit_goal"; amount: number; goalName: string }
   | { type: "pay_installment"; name: string }
   | { type: "cancel_installment"; name: string }
+  | { type: "categories_query" }
+  | { type: "create_category"; name: string }
+  | { type: "rename_category"; oldName: string; newName: string }
+  | { type: "delete_category"; name: string }
   | { type: "mute_notifs"; family: string; enable: boolean }
   | { type: "spaces_query" }
   | { type: "create_space"; name: string }
