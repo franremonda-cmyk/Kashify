@@ -432,6 +432,22 @@ async function main() {
     check("'límite de 30000 en Comida' → crea el límite (no pregunta el monto)", db.category_budgets.length === 1 && Number(db.category_budgets[0].monthly_limit) === 30000, `reply: ${r.text}`);
   }
 
+  // 24) Silenciar avisos por chat
+  {
+    const db = seed();
+    db.neo_notification_prefs = [];
+    db.neo_notifications = [{ id: "n1", user_id: USER, type: "alert_budget", read_at: null }];
+    const stub = makeStub(db);
+    const r = await runNeo({ supabase: stub, userId: USER, message: "no me avises más de límites", channel: "whatsapp" });
+    check("'no me avises más de límites' → silencia la familia", db.neo_notification_prefs.length === 1 && db.neo_notification_prefs[0].family === "limites", `reply: ${r.text}`);
+    check("silenciar limpia los avisos ya escritos de esa familia", db.neo_notifications.length === 0);
+    await runNeo({ supabase: stub, userId: USER, message: "volvé a avisarme de límites", channel: "whatsapp" });
+    check("'volvé a avisarme' revierte el silencio", db.neo_notification_prefs.length === 0);
+    // No confundir con el descarte de lo pendiente ("no", "nada").
+    const rNo = await runNeo({ supabase: stub, userId: USER, message: "no", channel: "whatsapp" });
+    check("'no' pelado sigue siendo descarte", rNo.text.toLowerCase().includes("cancelado") && db.neo_notification_prefs.length === 0, `reply: ${rNo.text}`);
+  }
+
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);
   process.exit(failures === 0 ? 0 : 1);
 }

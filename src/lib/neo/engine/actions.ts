@@ -4,6 +4,7 @@ import { learnFromCorrection } from "@/lib/neo/learning";
 import { payDebt } from "@/lib/debts/pay";
 import { scopeForSpace } from "@/lib/space-scope";
 import { deleteSpaceGuarded } from "@/lib/spaces";
+import { NOTIF_FAMILIES, typesForFamily, type NotifFamily } from "@/lib/neo/insights";
 import { normalize } from "./intent";
 import { missingSlot, slotQuestion } from "./flow";
 import type {
@@ -75,6 +76,34 @@ async function findCategory(supabase: NeoSupabase, userId: string, name: string)
 async function primaryCurrency(supabase: NeoSupabase, userId: string): Promise<string> {
   const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
   return profile?.primary_currency ?? "ARS";
+}
+
+// Cómo el usuario nombra una familia de avisos → la familia real. Primero por
+// nombre exacto/parcial, después por sinónimos de lo que dice la gente.
+const FAMILY_SYNONYMS: Record<string, NotifFamily> = {
+  presupuesto: "limites", presupuestos: "limites",
+  pico: "gastos", picos: "gastos", gasto: "gastos",
+  resumenes: "resumen", cierre: "resumen",
+  meta: "metas", ahorro: "metas", ahorros: "metas",
+  cuota: "cuotas", tarjeta: "cuotas",
+  deuda: "deudas", prestamos: "deudas",
+  repiten: "recurrentes", recurrente: "recurrentes", suscripciones: "recurrentes",
+  espacio: "espacios",
+  recordatorios: "registrar", inactividad: "registrar",
+  felicitaciones: "logros", logro: "logros", aniversario: "logros",
+};
+
+function resolveNotifFamily(term: string): { family: NotifFamily; label: string } | null {
+  const t = normalize(term).replace(/[.!?]+$/, "").trim();
+  const exact = NOTIF_FAMILIES.find((f) => f.family === t || t.includes(f.family));
+  if (exact) return exact;
+  for (const [word, fam] of Object.entries(FAMILY_SYNONYMS)) {
+    if (t.includes(word)) {
+      const hit = NOTIF_FAMILIES.find((f) => f.family === fam);
+      if (hit) return hit;
+    }
+  }
+  return null;
 }
 
 // Deuda activa por contraparte (match laxo: "juan" encuentra "Juan Pérez").
@@ -441,6 +470,25 @@ export async function executeIntent(
       if (debo.length) bloques.push(`Le debés a:\n${debo.map(line).join("\n")}`);
       if (meDeben.length) bloques.push(`Te deben:\n${meDeben.map(line).join("\n")}`);
       return { text: bloques.join("\n\n") };
+    }
+
+    case "mute_notifs": {
+      const fam = resolveNotifFamily(intent.family);
+      if (!fam) {
+        const opciones = NOTIF_FAMILIES.map((f) => f.family).join(", ");
+        return { text: `¿De qué avisos? Puedo silenciar: ${opciones}.` };
+      }
+      if (intent.enable) {
+        await supabase.from("neo_notification_prefs").delete().eq("user_id", userId).eq("family", fam.family);
+        return { text: `✅ Listo, reactivé "${fam.label}".`, effects: [{ type: "refresh" }] };
+      }
+      // Silenciar: marcar la familia y limpiar del feed los avisos ya escritos.
+      await supabase.from("neo_notification_prefs").upsert(
+        { user_id: userId, family: fam.family, muted_until: "9999-12-31T00:00:00Z", updated_at: new Date().toISOString() },
+        { onConflict: "user_id,family" },
+      );
+      await supabase.from("neo_notifications").delete().eq("user_id", userId).in("type", typesForFamily(fam.family));
+      return { text: `✅ Dale, silencié "${fam.label}". Si querés volver atrás, decime "volvé a avisarme de ${fam.family}" o cambialo en Perfil.`, effects: [{ type: "refresh" }] };
     }
 
     case "spaces_query": {

@@ -61,6 +61,17 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   if (/^(hola|buen[ao]s?|hey|hi|buenas tardes|buenas noches|buen dia|buen día|que tal|como estas?|como andas?|ola|saludos|buenas)\b/.test(m))
     return { type: "greeting" };
 
+  // ── Silenciar / reactivar familias de aviso ───────────────────────────────
+  // VA ANTES del descarte: "no me avises más de logros" empieza con "no" y si
+  // no, el bloque de dismiss se lo comería como un "cancelá lo pendiente".
+  {
+    const mute = m.match(/^(?:no\s+me\s+avises\s+(?:mas\s+)?(?:de|sobre|con)|deja\s+de\s+avisarme\s+(?:de|sobre|con)|silencia\w*\s+(?:los\s+)?avisos\s+(?:de|sobre)|no\s+quiero\s+(?:mas\s+)?avisos\s+(?:de|sobre))\s+(?:los\s+|las\s+)?(.+)$/);
+    if (mute) return { type: "mute_notifs", family: mute[1].trim(), enable: false };
+
+    const unmute = m.match(/^(?:volve\w*\s+a\s+avisarme\s+(?:de|sobre)|activa\w*\s+(?:los\s+)?avisos\s+(?:de|sobre)|quiero\s+(?:los\s+)?avisos\s+(?:de|sobre))\s+(?:los\s+|las\s+)?(.+)$/);
+    if (unmute) return { type: "mute_notifs", family: unmute[1].trim(), enable: true };
+  }
+
   // ── Cancel / dismiss ──────────────────────────────────────────────────────
   if (/^(no|nada|olvida(lo)?|cancela(lo)?|deja(lo)?|no importa|igual|salir|stop|listo gracias|no gracias|dejame)\b/.test(m) && !DISMISS_OBJECT.test(m))
     return { type: "cancel_pending" };
