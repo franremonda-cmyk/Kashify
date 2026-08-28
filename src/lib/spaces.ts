@@ -41,6 +41,30 @@ export async function includedSpaceIds(
   return included.length ? included : [NONE];
 }
 
+// Borra un espacio aplicando las guardas. El FK es ON DELETE CASCADE: borrar un
+// espacio se llevaría puestos sus movimientos/metas/presupuestos, así que esto
+// es lo único que puede borrar espacios (lo usan la API y el motor de Neo).
+export async function deleteSpaceGuarded(
+  supabase: SupabaseClient,
+  userId: string,
+  spaceId: string
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const { data: space } = await supabase.from("spaces").select("is_default").eq("id", spaceId).eq("user_id", userId).single();
+  if (!space) return { ok: false, error: "No existe", status: 404 };
+  if (space.is_default) return { ok: false, error: "No podés borrar el espacio por defecto. Marcá otro como default primero.", status: 400 };
+
+  const { count: total } = await supabase.from("spaces").select("id", { count: "exact", head: true }).eq("user_id", userId);
+  if ((total ?? 0) <= 1) return { ok: false, error: "Tenés que conservar al menos un espacio.", status: 400 };
+
+  const { count: txCount } = await supabase.from("transactions").select("id", { count: "exact", head: true })
+    .eq("user_id", userId).eq("space_id", spaceId).is("deleted_at", null);
+  if ((txCount ?? 0) > 0) return { ok: false, error: "Ese espacio tiene movimientos. Movélos o borralos antes de eliminarlo.", status: 400 };
+
+  const { error } = await supabase.from("spaces").delete().eq("id", spaceId).eq("user_id", userId);
+  if (error) return { ok: false, error: error.message, status: 500 };
+  return { ok: true };
+}
+
 // ¿El espacio pertenece al usuario? (para validar reasignaciones).
 export async function spaceBelongsTo(
   supabase: SupabaseClient,

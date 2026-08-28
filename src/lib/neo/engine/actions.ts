@@ -3,6 +3,7 @@ import { categoryForText, CATEGORY_FALLBACK } from "@/lib/neo-keywords";
 import { learnFromCorrection } from "@/lib/neo/learning";
 import { payDebt } from "@/lib/debts/pay";
 import { scopeForSpace } from "@/lib/space-scope";
+import { deleteSpaceGuarded } from "@/lib/spaces";
 import { normalize } from "./intent";
 import { missingSlot, slotQuestion } from "./flow";
 import type {
@@ -440,6 +441,67 @@ export async function executeIntent(
       if (debo.length) bloques.push(`Le debés a:\n${debo.map(line).join("\n")}`);
       if (meDeben.length) bloques.push(`Te deben:\n${meDeben.map(line).join("\n")}`);
       return { text: bloques.join("\n\n") };
+    }
+
+    case "spaces_query": {
+      const spaces = await loadUserSpaces(supabase, userId);
+      if (!spaces.length) return { text: "Todavía no tenés espacios." };
+      const lines = spaces.map((s) => `• ${s.name}${s.is_default ? " (principal)" : ""}${s.include_in_total ? "" : " — fuera del total"}`);
+      return { text: `Tus espacios:\n${lines.join("\n")}` };
+    }
+
+    case "create_space": {
+      const spaces = await loadUserSpaces(supabase, userId);
+      if (spaces.some((s) => normalize(s.name) === normalize(intent.name))) {
+        return { text: `Ya tenés un espacio "${intent.name}".` };
+      }
+      const currency = await primaryCurrency(supabase, userId);
+      const { error } = await supabase.from("spaces").insert({
+        user_id: userId, name: intent.name, primary_currency: currency,
+        include_in_total: true, is_default: false, sort_order: spaces.length,
+      });
+      if (error) return { text: "No pude crear el espacio." };
+      return { text: `✅ Creé el espacio "${intent.name}".`, effects: [{ type: "refresh" }] };
+    }
+
+    case "rename_space": {
+      const spaces = await loadUserSpaces(supabase, userId);
+      const target = resolveSpaceReply(intent.oldName, spaces);
+      if (!target) return { text: `No encontré el espacio "${intent.oldName}".` };
+      await supabase.from("spaces").update({ name: intent.newName }).eq("id", target.id).eq("user_id", userId);
+      return { text: `✅ Ahora "${target.name}" se llama "${intent.newName}".`, effects: [{ type: "refresh" }] };
+    }
+
+    case "set_default_space": {
+      const spaces = await loadUserSpaces(supabase, userId);
+      const target = resolveSpaceReply(intent.name, spaces);
+      if (!target) return { text: `No encontré el espacio "${intent.name}".` };
+      // Un solo default por usuario: desmarcar el anterior antes de marcar este.
+      await supabase.from("spaces").update({ is_default: false }).eq("user_id", userId).eq("is_default", true);
+      await supabase.from("spaces").update({ is_default: true }).eq("id", target.id).eq("user_id", userId);
+      return { text: `✅ "${target.name}" es tu espacio principal.`, effects: [{ type: "refresh" }] };
+    }
+
+    case "delete_space": {
+      const spaces = await loadUserSpaces(supabase, userId);
+      const target = resolveSpaceReply(intent.name, spaces);
+      if (!target) return { text: `No encontré el espacio "${intent.name}".` };
+      const res = await deleteSpaceGuarded(supabase, userId, target.id);
+      if (!res.ok) return { text: res.error };
+      return { text: `✅ Borré el espacio "${target.name}".`, effects: [{ type: "refresh" }] };
+    }
+
+    case "move_tx_space": {
+      const spaces = await loadUserSpaces(supabase, userId);
+      const target = resolveSpaceReply(intent.name, spaces);
+      if (!target) return { text: `No encontré el espacio "${intent.name}".` };
+      const { data: last } = await supabase.from("transactions")
+        .select("id, description, amount, currency_code").eq("user_id", userId).is("deleted_at", null)
+        .order("created_at", { ascending: false }).limit(1);
+      const tx = (last as { id: string; description: string; amount: number; currency_code: string }[] | null)?.[0];
+      if (!tx) return { text: "No encontré ningún movimiento para mover." };
+      await supabase.from("transactions").update({ space_id: target.id }).eq("id", tx.id).eq("user_id", userId);
+      return { text: `✅ Moví "${tx.description}" (${fmt(Number(tx.amount), tx.currency_code)}) a ${target.name}.`, effects: [{ type: "refresh" }] };
     }
 
     case "pay_debt": {

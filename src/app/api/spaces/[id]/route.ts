@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { deleteSpaceGuarded } from "@/lib/spaces";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -34,21 +35,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
 
-  // Guardas: el FK es ON DELETE CASCADE → borrar un espacio borraría sus
-  // movimientos/metas/presupuestos. No permitir borrar el default, el último,
-  // ni uno con movimientos.
-  const { data: space } = await supabase.from("spaces").select("is_default").eq("id", id).eq("user_id", user.id).single();
-  if (!space) return NextResponse.json({ error: "No existe" }, { status: 404 });
-  if (space.is_default) return NextResponse.json({ error: "No podés borrar el espacio por defecto. Marcá otro como default primero." }, { status: 400 });
-
-  const { count: total } = await supabase.from("spaces").select("id", { count: "exact", head: true }).eq("user_id", user.id);
-  if ((total ?? 0) <= 1) return NextResponse.json({ error: "Tenés que conservar al menos un espacio." }, { status: 400 });
-
-  const { count: txCount } = await supabase.from("transactions").select("id", { count: "exact", head: true })
-    .eq("user_id", user.id).eq("space_id", id).is("deleted_at", null);
-  if ((txCount ?? 0) > 0) return NextResponse.json({ error: "Ese espacio tiene movimientos. Movélos o borralos antes de eliminarlo." }, { status: 400 });
-
-  const { error } = await supabase.from("spaces").delete().eq("id", id).eq("user_id", user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Las guardas (no borrar el default, ni el último, ni uno con movimientos)
+  // viven en deleteSpaceGuarded porque el motor de Neo también borra espacios.
+  const result = await deleteSpaceGuarded(supabase, user.id, id);
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   return new NextResponse(null, { status: 204 });
 }

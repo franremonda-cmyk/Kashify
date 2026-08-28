@@ -288,7 +288,7 @@ async function main() {
     const db = seed();
     await runNeo({ supabase: makeStub(db), userId: USER, message: "debo 10000 a juan", channel: "whatsapp" });
     const d = db.debts[0];
-    check("'debo 10000 a juan' → deuda direction=debo", db.debts.length === 1 && d?.direction === "debo" && d?.counterparty === "juan" && Number(d?.total_amount) === 10000, JSON.stringify(d));
+    check("'debo 10000 a juan' → deuda direction=debo", db.debts.length === 1 && d?.direction === "debo" && d?.counterparty === "Juan" && Number(d?.total_amount) === 10000, JSON.stringify(d));
     check("'debo 10000 a juan' NO crea una transacción", db.transactions.length === 0);
   }
   {
@@ -299,7 +299,7 @@ async function main() {
   {
     const db = seed();
     await runNeo({ supabase: makeStub(db), userId: USER, message: "le presté 3000 a ana", channel: "whatsapp" });
-    check("'le presté 3000 a ana' → me_deben", db.debts[0]?.direction === "me_deben" && db.debts[0]?.counterparty === "ana");
+    check("'le presté 3000 a ana' → me_deben", db.debts[0]?.direction === "me_deben" && db.debts[0]?.counterparty === "Ana");
   }
   {
     // "me prestaron" salió de INCOME_VERBS: es una deuda, no un ingreso.
@@ -387,6 +387,49 @@ async function main() {
     check("confirm_debt + 'no' → no anota nada", db.debts.length === 0 && rNo.state === null, `reply: ${rNo.text}`);
     const rSi = await runNeo({ supabase: stub, userId: USER, message: "sí", channel: "whatsapp", state: pending });
     check("confirm_debt + 'sí' → crea la deuda", db.debts.length === 1 && db.debts[0].counterparty === "el gordo del taller" && Number(db.debts[0].total_amount) === 12000, `reply: ${rSi.text}`);
+  }
+
+  // 22) Espacios por chat
+  {
+    const db = seed();
+    const stub = makeStub(db);
+    await runNeo({ supabase: stub, userId: USER, message: "creá el espacio Freelance", channel: "whatsapp" });
+    check("'creá el espacio Freelance' → lo crea", db.spaces.length === 2 && db.spaces[1].name === "Freelance");
+    const rDup = await runNeo({ supabase: stub, userId: USER, message: "creá el espacio Freelance", channel: "whatsapp" });
+    check("no duplica un espacio existente", db.spaces.length === 2, `reply: ${rDup.text}`);
+    await runNeo({ supabase: stub, userId: USER, message: "renombrá el espacio Freelance a Laburo", channel: "whatsapp" });
+    check("renombra el espacio", db.spaces[1].name === "Laburo");
+    await runNeo({ supabase: stub, userId: USER, message: "poné Laburo como principal", channel: "whatsapp" });
+    check("marca principal y desmarca el anterior", db.spaces[1].is_default === true && db.spaces[0].is_default === false);
+    const rList = await runNeo({ supabase: stub, userId: USER, message: "mis espacios", channel: "whatsapp" });
+    check("'mis espacios' los lista", rList.text.includes("Laburo") && rList.text.includes("Personal"), `reply: ${rList.text}`);
+  }
+  {
+    // Guardas del borrado: el FK es CASCADE, borrar mal se lleva los movimientos.
+    const db = seed();
+    db.spaces.push({ id: "sp2", user_id: USER, name: "Casa", is_default: false, include_in_total: true, primary_currency: "ARS", sort_order: 1, created_at: "2026-02-01" });
+    const stub = makeStub(db);
+    const rDef = await runNeo({ supabase: stub, userId: USER, message: "borrá el espacio Personal", channel: "whatsapp" });
+    check("no deja borrar el espacio principal", db.spaces.length === 2 && rDef.text.includes("por defecto"), `reply: ${rDef.text}`);
+    db.transactions.push({ id: "t1", user_id: USER, space_id: "sp2", type: "expense", amount: 100, currency_code: "ARS", description: "x", date: "2026-08-01", deleted_at: null, category_id: null });
+    const rTx = await runNeo({ supabase: stub, userId: USER, message: "borrá el espacio Casa", channel: "whatsapp" });
+    check("no deja borrar un espacio con movimientos", db.spaces.length === 2 && rTx.text.includes("movimientos"), `reply: ${rTx.text}`);
+  }
+  {
+    // Mover el último movimiento de espacio
+    const db = seed();
+    db.spaces.push({ id: "sp2", user_id: USER, name: "Casa", is_default: false, include_in_total: true, primary_currency: "ARS", sort_order: 1, created_at: "2026-02-01" });
+    const stub = makeStub(db);
+    await runNeo({ supabase: stub, userId: USER, message: "compré café 800", channel: "web", activeSpaceId: SPACE });
+    const r = await runNeo({ supabase: stub, userId: USER, message: "pasá este gasto a Casa", channel: "web", activeSpaceId: SPACE });
+    check("'pasá este gasto a Casa' mueve el último movimiento", db.transactions[0].space_id === "sp2", `reply: ${r.text}`);
+  }
+
+  // 23) Regresión: el límite acepta el monto antes o después de la categoría
+  {
+    const db = seed();
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "poné un límite de 30000 en Comida", channel: "whatsapp" });
+    check("'límite de 30000 en Comida' → crea el límite (no pregunta el monto)", db.category_budgets.length === 1 && Number(db.category_budgets[0].monthly_limit) === 30000, `reply: ${r.text}`);
   }
 
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);

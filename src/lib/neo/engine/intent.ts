@@ -26,6 +26,13 @@ function parseAmount(raw: string): number {
 // (normalize() ya sacó los acentos, por eso "limite"/"categoria" van sin tilde)
 const DISMISS_OBJECT = /\s+(?:la|el|mi|los|las|mis)?\s*(?:cuota|deuda|plan|meta|objetivo|ahorro|limite|presupuesto|gasto|ingreso|movimiento|transaccion|categoria|espacio)/;
 
+// detectIntent trabaja sobre el texto normalizado (minúsculas), así que los
+// nombres propios que se van a MOSTRAR salen en minúscula. Se capitaliza para
+// que un espacio no quede como "freelance" ni una deuda a nombre de "juan".
+function titleCase(s: string): string {
+  return s.replace(/^\p{Ll}/u, (c) => c.toUpperCase());
+}
+
 // Alta de deuda: los slots que falten los pregunta el flujo (flow.ts).
 function debtFlow(direction: DebtDirection, who?: string, rawAmount?: string): Intent {
   const amount = rawAmount ? parseAmount(rawAmount) : NaN;
@@ -38,7 +45,7 @@ function debtFlow(direction: DebtDirection, who?: string, rawAmount?: string): I
     ctx: {
       flow: "debt",
       direction,
-      counterparty: counterparty || undefined,
+      counterparty: counterparty ? titleCase(counterparty) : undefined,
       amount: !isNaN(amount) && amount > 0 ? amount : undefined,
     },
   };
@@ -149,6 +156,29 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     }
   }
 
+  // ── Espacios ──────────────────────────────────────────────────────────────
+  // delete_space va acá arriba a propósito: delete_tx es muy goloso y se
+  // comería "borrá el espacio Casa" como si fuera un gasto llamado "espacio casa".
+  {
+    if (/mis\s+espacios|ver\s+espacios|que\s+espacios|listar\s+espacios|cuantos\s+espacios/.test(m))
+      return { type: "spaces_query" };
+
+    const ren = m.match(/^(?:renombr|cambi)\w*\s+(?:el\s+)?(?:nombre\s+(?:de[l]?\s+)?)?espacio\s+["']?(.+?)["']?\s+(?:a|por)\s+["']?(.+?)["']?$/);
+    if (ren) return { type: "rename_space", oldName: ren[1].trim(), newName: titleCase(ren[2].trim()) };
+
+    const crea = m.match(/^(?:crea|agrega|añad|anad|sum)\w*\s+(?:un\s+|el\s+)?(?:nuevo\s+)?espacio\s+(?:llamado\s+|nuevo\s+)?["']?(.+?)["']?$/);
+    if (crea) return { type: "create_space", name: titleCase(crea[1].trim()) };
+
+    const delSp = m.match(/^(?:borr|elimin|sac|quit)\w*\s+(?:el\s+)?espacio\s+["']?(.+?)["']?$/);
+    if (delSp) return { type: "delete_space", name: delSp[1].trim() };
+
+    const def = m.match(/^(?:pon|marc|dej|hac)\w*\s+(?:a\s+|el\s+espacio\s+)?["']?(.+?)["']?\s+como\s+(?:espacio\s+)?(?:principal|default|por\s+defecto|predeterminado)$/);
+    if (def) return { type: "set_default_space", name: def[1].trim() };
+
+    const mov = m.match(/^(?:pas|mov|mand|cambi)\w*\s+(?:est[ae]|el\s+ultimo|es[ae])\s*(?:gasto|movimiento|ingreso|registro|compra)?\s*(?:a|al|para)\s+(?:el\s+espacio\s+)?["']?(.+?)["']?$/);
+    if (mov) return { type: "move_tx_space", name: mov[1].trim() };
+  }
+
   // ── Installments ──────────────────────────────────────────────────────────
   if (/mis cuotas|ver cuotas|cuotas activas|cuotas pendientes|cuantas cuotas|cuántas cuotas|que cuotas tengo|mis pagos en cuotas|mis creditos/.test(m))
     return { type: "installments_query" };
@@ -242,6 +272,15 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   }
 
   // ── Create budget / limit → budget flow ──────────────────────────────────
+  // El monto puede ir ANTES de la categoría ("límite de 30000 en Comida", que
+  // es el ejemplo que Neo publicita) o después ("límite de Comida de 30000").
+  // Sin este primer caso, la categoría quedaba como "30000 comida" y no existía.
+  const budgetAmountFirst = m.match(/(?:pon[eé]r?|crea[r]?|agrega[r]?|fija[r]?|nuevo)\s+(?:un\s+)?(?:l[ií]?mite|presupuesto)\s+(?:de\s+)?(\d[\d.,]*)\s+(?:en|para|a)\s+(.+?)$/);
+  if (budgetAmountFirst && !/edit|modific|actualiz|cambi/.test(m)) {
+    const amt = parseAmount(budgetAmountFirst[1]);
+    const cat = budgetAmountFirst[2].trim();
+    return { type: "flow", ctx: { flow: "budget", category: cat || undefined, amount: amt > 0 ? amt : undefined } };
+  }
   const budgetCreateMatch = m.match(/(?:pon[eé]r?|crea[r]?|agrega[r]?|fija[r]?|nuevo)\s+(?:un\s+)?(?:l[ií]?mite|presupuesto)\s+(?:(?:de|para|a|en)\s+)?(.+?)(?:\s+(?:de|a|en)\s+(\d[\d.,]*))?$/);
   if (budgetCreateMatch && !/edit|modific|actualiz|cambi/.test(m)) {
     const cat = budgetCreateMatch[1]?.replace(/\b(de|a|en|para)\b/g, "").trim();
