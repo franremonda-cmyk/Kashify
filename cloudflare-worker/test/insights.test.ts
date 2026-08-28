@@ -4,6 +4,7 @@ import {
   budgetThresholdHit, detectMonthComparison, detectOverspend,
   budgetPaceRatio, goalMilestone, goalBehindPts, savingsRateDelta,
   detectSpacePnl, planJustFinished, missingRecurring, newRecurring,
+  debtDueSoon, debtStale,
   notifFamily, typesForFamily, NOTIF_FAMILIES,
 } from "../../src/lib/neo/insights.ts";
 
@@ -135,10 +136,23 @@ ok(notifFamily("reminder_inactivity") === "registrar", "inactividad → registra
 ok(notifFamily("achievement_anniversary") === "logros", "aniversario → logros");
 // todo type conocido cae en una familia que existe en NOTIF_FAMILIES, y typesForFamily lo devuelve
 const fams = new Set(NOTIF_FAMILIES.map(f => f.family));
-for (const t of ["alert_budget","alert_budget_pace","spend_spike","alert_overspend","alert_month_up","achievement_month_down","monthly_summary","monthly_close","achievement_goal_50","achievement_goal_75","reminder_goal_risk","reminder_leftover_goal","reminder_installment_due","achievement_installments_done","reminder_recurring_missing","reminder_recurring_new","alert_space_pnl","reminder_inactivity","achievement_savings_up","achievement_anniversary"]) {
+for (const t of ["alert_budget","alert_budget_pace","spend_spike","alert_overspend","alert_month_up","achievement_month_down","monthly_summary","monthly_close","achievement_goal_50","achievement_goal_75","reminder_goal_risk","reminder_leftover_goal","reminder_installment_due","achievement_installments_done","reminder_debt_due","reminder_debt_stale","reminder_recurring_missing","reminder_recurring_new","alert_space_pnl","reminder_inactivity","achievement_savings_up","achievement_anniversary"]) {
   const fam = notifFamily(t);
   ok(fams.has(fam), `${t} cae en familia válida (${fam})`);
   ok(typesForFamily(fam).includes(t), `typesForFamily(${fam}) incluye ${t}`);
 }
+
+// ── deudas: vencimiento cerca / plata prestada que no vuelve ──
+const HOY = "2026-08-28";
+ok(debtDueSoon("2026-08-30", HOY) === true, "vence en 2 días → avisa");
+ok(debtDueSoon("2026-08-28", HOY) === true, "vence hoy → avisa");
+ok(debtDueSoon("2026-08-20", HOY) === true, "ya vencida → avisa");
+ok(debtDueSoon("2026-09-15", HOY) === false, "vence en 18 días → todavía no");
+ok(debtDueSoon(null, HOY) === false, "sin vencimiento pactado → nunca avisa");
+
+ok(debtStale("2026-01-10", HOY, 0, null) === true, "prestada hace meses, sin pagos → avisa");
+ok(debtStale("2026-08-20", HOY, 0, null) === false, "prestada hace 8 días → todavía no");
+ok(debtStale("2026-01-10", HOY, 500, null) === false, "si ya devolvió algo → no jode");
+ok(debtStale("2026-01-10", HOY, 0, "2026-09-30") === false, "con vencimiento pactado → lo cubre debtDueSoon, no duplica");
 
 console.log(`✓ insights Neo: ${pass} asserts OK`);

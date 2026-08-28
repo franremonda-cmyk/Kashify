@@ -16,7 +16,7 @@ export interface Candidate {
 // El cron respeta `neo_notification_prefs.family`; el usuario silencia por acá.
 export type NotifFamily =
   | "limites" | "gastos" | "resumen" | "metas"
-  | "cuotas" | "recurrentes" | "espacios" | "registrar" | "logros";
+  | "cuotas" | "deudas" | "recurrentes" | "espacios" | "registrar" | "logros";
 
 export const NOTIF_FAMILIES: { family: NotifFamily; label: string; desc: string }[] = [
   { family: "limites",     label: "Avisos de límites",     desc: "Cuando te acercás o pasás un límite de categoría" },
@@ -24,6 +24,7 @@ export const NOTIF_FAMILIES: { family: NotifFamily; label: string; desc: string 
   { family: "resumen",     label: "Resúmenes del mes",     desc: "Cuánto llevás gastado y el cierre de cada mes" },
   { family: "metas",       label: "Avisos de metas",       desc: "Progreso, metas en riesgo y sugerencias de ahorro" },
   { family: "cuotas",      label: "Recordatorios de cuotas", desc: "Vencimientos próximos y cuotas saldadas" },
+  { family: "deudas",      label: "Recordatorios de deudas", desc: "Vencimientos y plata prestada que sigue sin volver" },
   { family: "recurrentes", label: "Gastos que se repiten", desc: "Cuando falta uno habitual o aparece uno nuevo" },
   { family: "espacios",    label: "Balance por espacio",   desc: "Cuando en un espacio salió más de lo que entró" },
   { family: "registrar",   label: "Recordatorios para registrar", desc: "Cuando hace días que no anotás nada" },
@@ -37,6 +38,7 @@ export function notifFamily(type: string): NotifFamily {
   if (type === "monthly_summary" || type === "monthly_close") return "resumen";
   if (type.startsWith("achievement_goal_") || type === "reminder_goal_risk" || type === "reminder_leftover_goal") return "metas";
   if (type === "reminder_installment_due" || type === "achievement_installments_done") return "cuotas";
+  if (type === "reminder_debt_due" || type === "reminder_debt_stale") return "deudas";
   if (type === "reminder_recurring_missing" || type === "reminder_recurring_new") return "recurrentes";
   if (type === "alert_space_pnl") return "espacios";
   if (type === "reminder_inactivity") return "registrar";
@@ -51,6 +53,7 @@ export function typesForFamily(family: NotifFamily): string[] {
     resumen: ["monthly_summary", "monthly_close"],
     metas: ["achievement_goal_50", "achievement_goal_75", "reminder_goal_risk", "reminder_leftover_goal"],
     cuotas: ["reminder_installment_due", "achievement_installments_done"],
+    deudas: ["reminder_debt_due", "reminder_debt_stale"],
     recurrentes: ["reminder_recurring_missing", "reminder_recurring_new"],
     espacios: ["alert_space_pnl"],
     registrar: ["reminder_inactivity"],
@@ -242,6 +245,26 @@ export function planJustFinished(statuses: string[], dueDates: string[], thisMon
  * Recurrentes de meses previos que este mes todavía no aparecieron. Recién desde
  * el día `minDay` (antes puede simplemente no haber vencido todavía).
  */
+/**
+ * ¿La deuda vence dentro de los próximos `dias`? (o ya está vencida).
+ * `dueDate` null = sin vencimiento pactado → nunca avisa.
+ */
+export function debtDueSoon(dueDate: string | null, todayISO: string, dias = 3): boolean {
+  if (!dueDate) return false;
+  return daysBetween(todayISO, dueDate) <= dias;
+}
+
+/**
+ * Plata prestada que sigue sin volver: deuda "me_deben" sin vencimiento pactado,
+ * vieja y sin ningún pago. Con vencimiento ya avisa debtDueSoon, no se duplica.
+ */
+export function debtStale(
+  createdAt: string, todayISO: string, paidAmount: number, dueDate: string | null, dias = 45
+): boolean {
+  if (dueDate || paidAmount > 0) return false;
+  return daysBetween(createdAt.slice(0, 10), todayISO) >= dias;
+}
+
 export function missingRecurring(
   prior: RecurringItem[], thisMonthNorms: Set<string>, day: number, minDay = 20,
 ): RecurringItem[] {

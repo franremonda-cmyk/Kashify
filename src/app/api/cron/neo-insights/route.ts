@@ -5,6 +5,7 @@ import {
   budgetThresholdHit, detectMonthComparison, detectOverspend,
   budgetPaceRatio, goalMilestone, goalBehindPts, savingsRateDelta,
   detectSpacePnl, planJustFinished, missingRecurring, newRecurring,
+  debtDueSoon, debtStale,
   notifFamily, type Candidate, type NotifFamily,
 } from "@/lib/neo/insights";
 import { detectRecurring, normalizeDesc } from "@/lib/recurring";
@@ -27,6 +28,7 @@ type Row = { user_id: string; amount: number; currency_code: string; category_id
 type Budget = { user_id: string; space_id: string; category_id: string; monthly_limit: number; currency_code: string };
 type Goal = { id: string; user_id: string; name: string; current_amount: number; target_amount: number; target_date: string | null; created_at: string };
 type Payment = { id: string; plan_id: string; user_id: string; status: string; due_date: string; payment_number: number; amount: number; installment_plans: { name: string; currency_code: string } };
+type DebtRow = { id: string; user_id: string; direction: "debo" | "me_deben"; counterparty: string; total_amount: number; paid_amount: number; currency_code: string; due_date: string | null; created_at: string };
 
 const fmtAmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
 
@@ -60,12 +62,13 @@ export async function GET(request: Request) {
 
   // Nombres de categoría, presupuestos, metas, espacios, cuotas, perfiles,
   // preferencias de aviso (silenciado/pausa) y avisos sin leer (para back-off).
-  const [{ data: cats }, { data: budgetRows }, { data: goalRows }, { data: spaceRows }, { data: paymentRows }, { data: profileRows }, { data: prefRows }, { data: unreadRows }] = await Promise.all([
+  const [{ data: cats }, { data: budgetRows }, { data: goalRows }, { data: spaceRows }, { data: paymentRows }, { data: debtRows }, { data: profileRows }, { data: prefRows }, { data: unreadRows }] = await Promise.all([
     supabase.from("categories").select("id, name"),
     supabase.from("category_budgets").select("user_id, space_id, category_id, monthly_limit, currency_code"),
     supabase.from("savings_goals").select("id, user_id, name, current_amount, target_amount, target_date, created_at").eq("status", "active"),
     supabase.from("spaces").select("id, user_id, name"),
     supabase.from("installment_payments").select("id, plan_id, user_id, status, due_date, payment_number, amount, installment_plans(name, currency_code)"),
+    supabase.from("debts").select("id, user_id, direction, counterparty, total_amount, paid_amount, currency_code, due_date, created_at").eq("status", "active"),
     supabase.from("profiles").select("user_id, created_at"),
     supabase.from("neo_notification_prefs").select("user_id, family, muted_until"),
     supabase.from("neo_notifications").select("user_id, type").is("read_at", null),
@@ -109,12 +112,12 @@ export async function GET(request: Request) {
   }
   const createdAt = new Map((profileRows ?? []).map((p: { user_id: string; created_at: string }) => [p.user_id, p.created_at]));
 
-  // Cuotas: candidatos por usuario (última cuota pagada = logro; próximas a vencer).
-  const installmentCands = new Map<string, Candidate[]>();
+  // Candidatos por usuario que se arman antes del agregado (cuotas y deudas).
+  const preCands = new Map<string, Candidate[]>();
   const pushCand = (userId: string, c: Candidate) => {
-    const arr = installmentCands.get(userId) ?? [];
+    const arr = preCands.get(userId) ?? [];
     arr.push(c);
-    installmentCands.set(userId, arr);
+    preCands.set(userId, arr);
   };
   const byPlan = new Map<string, Payment[]>();
   for (const p of (paymentRows ?? []) as unknown as Payment[]) {
@@ -135,6 +138,27 @@ export async function GET(request: Request) {
       pushCand(p.user_id, {
         alertType: `installment_due_${p.id}`, type: "reminder_installment_due", priority: 2,
         message: `📅 El ${p.due_date.slice(8, 10)}/${p.due_date.slice(5, 7)} vence la cuota ${p.payment_number} de ${plan.name} (${plan.currency_code} ${fmtAmt(Number(p.amount))}).`,
+      });
+    }
+  }
+
+  // Deudas: vencimiento cerca (o ya vencida) y plata prestada que no vuelve.
+  for (const d of (debtRows ?? []) as DebtRow[]) {
+    const pend = Number(d.total_amount) - Number(d.paid_amount);
+    if (pend <= 0) continue;
+    const monto = `${d.currency_code} ${fmtAmt(pend)}`;
+    if (debtDueSoon(d.due_date, todayISO)) {
+      const vencida = d.due_date! < todayISO;
+      pushCand(d.user_id, {
+        alertType: `debt_due_${d.id}_${d.due_date}`, type: "reminder_debt_due", priority: 2,
+        message: d.direction === "debo"
+          ? (vencida ? `📅 Venció la deuda con ${d.counterparty} (${monto}).` : `📅 El ${d.due_date!.slice(8, 10)}/${d.due_date!.slice(5, 7)} vence lo que le debés a ${d.counterparty} (${monto}).`)
+          : (vencida ? `📅 ${d.counterparty} tenía que devolverte ${monto}.` : `📅 El ${d.due_date!.slice(8, 10)}/${d.due_date!.slice(5, 7)} ${d.counterparty} tiene que devolverte ${monto}.`),
+      });
+    } else if (d.direction === "me_deben" && debtStale(d.created_at, todayISO, Number(d.paid_amount), d.due_date)) {
+      pushCand(d.user_id, {
+        alertType: `debt_stale_${d.id}_${thisMonthKey}`, type: "reminder_debt_stale", priority: 2,
+        message: `🕰️ Hace rato que ${d.counterparty} te debe ${monto}. ¿Lo hablás?`,
       });
     }
   }
@@ -352,7 +376,7 @@ export async function GET(request: Request) {
     }
 
     // Cuotas (última pagada = logro; próximas a vencer), precalculadas arriba.
-    candidates.push(...(installmentCands.get(userId) ?? []));
+    candidates.push(...(preCands.get(userId) ?? []));
 
     // Hace días que no registrás (recordatorio; se auto-suprime si loguea esporádico).
     const latest = a.dates.reduce((m, d) => (d > m ? d : m), a.dates[0]);
