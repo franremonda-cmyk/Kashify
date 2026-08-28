@@ -378,6 +378,17 @@ async function main() {
     check("confirmar → borra la deuda", db.debts.length === 0);
   }
 
+  // 21) Deuda interpretada por Haiku: SIEMPRE se confirma antes de anotarla.
+  {
+    const db = seed();
+    const stub = makeStub(db);
+    const pending: NeoState = { kind: "confirm_debt", ctx: { flow: "debt", direction: "debo", counterparty: "el gordo del taller", amount: 12000 }, spaceId: null };
+    const rNo = await runNeo({ supabase: stub, userId: USER, message: "no", channel: "whatsapp", state: pending });
+    check("confirm_debt + 'no' → no anota nada", db.debts.length === 0 && rNo.state === null, `reply: ${rNo.text}`);
+    const rSi = await runNeo({ supabase: stub, userId: USER, message: "sí", channel: "whatsapp", state: pending });
+    check("confirm_debt + 'sí' → crea la deuda", db.debts.length === 1 && db.debts[0].counterparty === "el gordo del taller" && Number(db.debts[0].total_amount) === 12000, `reply: ${rSi.text}`);
+  }
+
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);
   process.exit(failures === 0 ? 0 : 1);
 }

@@ -60,6 +60,11 @@ export async function runNeo({ supabase, userId, message, channel, state, active
     if (state.kind === "confirm_amount") {
       return continueConfirmAmount(supabase, userId, state, message, channel, activeSpaceId);
     }
+    if (state.kind === "confirm_debt") {
+      if (!isAffirmative(message) || isCancelMsg(message)) return { text: "Listo, no lo anoté 👍", state: null };
+      const reply = await respondFlow(supabase, userId, state.ctx, channel, state.spaceId ?? activeSpaceId);
+      return { ...reply, state: reply.state ?? null };
+    }
     // Confirmaciones pendientes (WhatsApp): sí/no/número.
     return continueConfirm(supabase, userId, state, message);
   }
@@ -92,7 +97,24 @@ export async function runNeo({ supabase, userId, message, channel, state, active
   const categoryNames = (categories as { name: string }[] | null)?.map((c) => c.name) ?? [];
 
   const fallback = await llmFallback(message, categoryNames);
-  if (fallback) {
+
+  // Deuda interpretada por la IA: se pregunta SIEMPRE, aunque venga con
+  // confianza alta. Anotar un gasto como deuda (o al revés) ensucia el balance.
+  if (fallback?.kind === "debt") {
+    const cur = await primaryCurrency(supabase, userId);
+    const quien = fallback.ctx.counterparty;
+    const monto = fallback.ctx.amount!.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+    const txt = fallback.ctx.direction === "debo"
+      ? `Entendí que le debés ${cur} ${monto}${quien ? ` a *${quien}*` : ""}. ¿Lo anoto como deuda?`
+      : `Entendí que ${quien ? `*${quien}*` : "alguien"} te debe ${cur} ${monto}. ¿Lo anoto como deuda?`;
+    return {
+      text: txt,
+      options: ["Sí", "No"],
+      state: { kind: "confirm_debt", ctx: fallback.ctx, spaceId: activeSpaceId ?? null },
+    };
+  }
+
+  if (fallback?.kind === "tx") {
     const p = fallback.parsed;
     // ¿Es OBVIO? Alta confianza + Haiku no pidió confirmar + categoría que existe.
     const catMatches = !!p.category_name && categoryNames.some((n) => n.toLowerCase() === p.category_name!.toLowerCase());
@@ -155,7 +177,9 @@ async function continueClarifyLearn(
   const fallback = await llmFallback(message, categoryNames);
   if (fallback) {
     const reply = await respondFlow(supabase, userId, fallback.ctx, channel, activeSpaceId);
-    if (reply.effects?.some((e) => e.type === "refresh")) {
+    // Solo se aprende de gastos/ingresos: una deuda tiene contraparte y monto
+    // únicos, no es un patrón repetible como "uber".
+    if (fallback.kind === "tx" && reply.effects?.some((e) => e.type === "refresh")) {
       // Aprende asociando la keyword del ORIGINAL al resultado.
       await learnFromConfirmation(supabase, userId, original, fallback.parsed);
     }

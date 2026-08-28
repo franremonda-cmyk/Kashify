@@ -103,11 +103,20 @@ export interface ConfirmAmount {
   spaceId?: string | null;
 }
 
+// Deuda interpretada por Haiku. SIEMPRE se confirma antes de anotarla, aunque
+// la confianza sea alta: confundir una deuda con un gasto ensucia el balance.
+export interface ConfirmDebt {
+  kind: "confirm_debt";
+  ctx: Extract<FlowContext, { flow: "debt" }>;
+  spaceId?: string | null;
+}
+
 export type NeoState =
   | { kind: "flow"; ctx: FlowContext }
   | { kind: "clarify_learn"; original: string }
   | ConfirmTx
   | ConfirmAmount
+  | ConfirmDebt
   | PendingConfirm;
 
 // ─── Efectos de UI (solo los consume la web) ─────────────────────────────────
