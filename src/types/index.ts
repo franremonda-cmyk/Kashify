@@ -1,6 +1,7 @@
 export type TransactionType = "expense" | "income" | "conversion" | "installment-payment";
 export type InterestType = "none" | "french";
 export type PlanStatus = "active" | "paid";
+export type DebtDirection = "debo" | "me_deben";
 export type PaymentStatus = "pending" | "paid";
 export type PendingStatus = "waiting" | "confirmed" | "dismissed";
 export type WebhookStatus = "pending" | "processing" | "done" | "failed";
@@ -92,6 +93,21 @@ export interface InstallmentPlan {
   card_name: string | null;
   category_id: string | null;
   first_payment_date: string;
+  status: PlanStatus;
+  created_at: string;
+}
+
+export interface Debt {
+  id: string;
+  user_id: string;
+  space_id: string;
+  direction: DebtDirection;
+  counterparty: string;
+  description: string | null;
+  total_amount: number;
+  paid_amount: number;
+  currency_code: string;
+  due_date: string | null;
   status: PlanStatus;
   created_at: string;
 }

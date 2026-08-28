@@ -161,6 +161,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   // Metas y cuotas (vista previa inline)
   const [goals, setGoals] = useState<import("@/types").SavingsGoal[]>([]);
   const [plans, setPlans] = useState<(import("@/types").InstallmentPlan & { installment_payments?: { status: string }[] })[]>([]);
+  const [debts, setDebts] = useState<import("@/types").Debt[]>([]);
 
   const supabase = createClient();
 
@@ -189,6 +190,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   useEffect(() => {
     fetch("/api/goals").then(r => r.ok ? r.json() : []).then(d => setGoals(Array.isArray(d) ? d : [])).catch(() => {});
     fetch("/api/installments").then(r => r.ok ? r.json() : []).then(d => setPlans(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch("/api/debts").then(r => r.ok ? r.json() : []).then(d => setDebts(Array.isArray(d) ? d : [])).catch(() => {});
     fetch("/api/neo/notif-prefs").then(r => r.ok ? r.json() : { muted: [] }).then(d => setMutedFamilies(Array.isArray(d.muted) ? d.muted : [])).catch(() => {});
   }, []);
 
@@ -740,6 +742,36 @@ export default function PerfilClient({ profile, phones, email }: Props) {
         <Link href="/cuotas?new=1"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
           <span style={{ fontSize: "var(--text-base)", lineHeight: 1 }}>+</span> Nueva cuota
+        </Link>
+      </Accordion>
+
+      <Accordion label="Deudas" {...sec("deudas")}>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>Lo que debés y lo que te deben.</p>
+        {debts.filter(d => d.status === "active").length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {debts.filter(d => d.status === "active").map((debt) => {
+              const pct = (Number(debt.paid_amount) / Number(debt.total_amount)) * 100;
+              const remaining = Number(debt.total_amount) - Number(debt.paid_amount);
+              return (
+                <Link key={debt.id} href="/deudas"
+                  style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", borderRadius: 12, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textDecoration: "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>
+                      {debt.direction === "debo" ? "📤" : "📥"} {debt.counterparty}
+                    </span>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{debt.currency_code} {remaining.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div style={{ width: "100%", height: 4, borderRadius: 999, background: "var(--base)", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "var(--accent)" }} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+        <Link href="/deudas?new=1"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px dashed var(--accent-glow)", color: "var(--accent)", textDecoration: "none" }}>
+          <span style={{ fontSize: "var(--text-base)", lineHeight: 1 }}>+</span> Nueva deuda
         </Link>
       </Accordion>
 

@@ -19,12 +19,13 @@ const PERFIL_SUBS = [
   { id: "categorias", label: "Categorías" },
   { id: "metas",      label: "Metas de ahorro" },
   { id: "cuotas",     label: "Cuotas" },
+  { id: "deudas",     label: "Deudas" },
 ];
 
 // Las páginas standalone de seguimiento pertenecen a Perfil en el árbol del
-// sidebar — sin esto, en /metas /cuotas /categorias nada queda marcado activo.
+// sidebar — sin esto, en /metas /cuotas /categorias /deudas nada queda marcado activo.
 const SUB_PATHS: Record<string, string> = {
-  "/categorias": "categorias", "/metas": "metas", "/cuotas": "cuotas",
+  "/categorias": "categorias", "/metas": "metas", "/cuotas": "cuotas", "/deudas": "deudas",
 };
 
 export default function DesktopSidebar() {
