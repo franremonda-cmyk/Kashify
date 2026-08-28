@@ -203,6 +203,20 @@ export async function respondFlow(
       );
       return { text: `✅ Puse un límite de ${fmt(ctx.amount!, currency)} por mes en ${match.name}.`, effects: [{ type: "refresh" }] };
     }
+    case "debt": {
+      const spaceId = await getWriteSpaceId(supabase, userId, ctx.space_id ?? activeSpaceId);
+      const currency = await primaryCurrency(supabase, userId);
+      const { error } = await supabase.from("debts").insert({
+        user_id: userId, space_id: spaceId, direction: ctx.direction,
+        counterparty: ctx.counterparty, total_amount: ctx.amount, paid_amount: 0,
+        currency_code: currency, status: "active",
+      });
+      if (error) return { text: "No pude anotar la deuda. Probá desde la sección Deudas." };
+      const txt = ctx.direction === "debo"
+        ? `✅ Anoté que le debés ${fmt(ctx.amount!, currency)} a ${ctx.counterparty}.`
+        : `✅ Anoté que ${ctx.counterparty} te debe ${fmt(ctx.amount!, currency)}.`;
+      return { text: txt, effects: [{ type: "refresh" }] };
+    }
     case "clarify":
       return slotQuestion(ctx, "clarify");
   }
@@ -386,6 +400,30 @@ export async function executeIntent(
         return `• ${p.name}: cuota ${paid + 1}/${p.n_installments} — ${fmt(p.installment_amount, p.currency_code)} c/u`;
       });
       return { text: `Cuotas activas:\n${lines.join("\n")}` };
+    }
+
+    case "debts_query": {
+      let q = supabase.from("debts")
+        .select("direction, counterparty, description, total_amount, paid_amount, currency_code, due_date")
+        .eq("user_id", userId).eq("status", "active").in("space_id", scope);
+      if (intent.direction) q = q.eq("direction", intent.direction);
+      const { data: debts } = await q;
+      if (!debts?.length) {
+        return { text: intent.direction === "me_deben" ? "Nadie te debe plata 👌"
+          : intent.direction === "debo" ? "No tenés deudas anotadas 🎉"
+          : "No tenés deudas anotadas 🎉" };
+      }
+      const line = (d: typeof debts[number]) => {
+        const left = Number(d.total_amount) - Number(d.paid_amount);
+        const venc = d.due_date ? ` (vence ${new Date(d.due_date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })})` : "";
+        return `• ${d.counterparty}: ${fmt(left, d.currency_code)}${venc}`;
+      };
+      const debo = debts.filter((d) => d.direction === "debo");
+      const meDeben = debts.filter((d) => d.direction === "me_deben");
+      const bloques: string[] = [];
+      if (debo.length) bloques.push(`Le debés a:\n${debo.map(line).join("\n")}`);
+      if (meDeben.length) bloques.push(`Te deben:\n${meDeben.map(line).join("\n")}`);
+      return { text: bloques.join("\n\n") };
     }
 
     case "edit_budget": {

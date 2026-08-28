@@ -70,7 +70,8 @@ export const INCOME_VERBS = [
   // Me dieron / me regalaron
   "me dieron", "me dio",
   "me regalaron", "me regalo", "me regaló",
-  "me prestaron", "me presto", "me prestó",
+  // "me prestaron" NO va acá: es una deuda (tenés que devolverla), no un
+  // ingreso. Lo agarra el bloque de deudas en intent.ts.
   // Entró
   "entre", "entré", "entro plata", "entró plata", "me entraron",
   // Gané / vendí / facturé

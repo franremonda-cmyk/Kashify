@@ -129,6 +129,7 @@ function seed(): DB {
     savings_goals: [],
     installment_plans: [],
     installment_payments: [],
+    debts: [],
     parser_rules: [],
     neo_conversation_state: [],
   };
@@ -279,6 +280,56 @@ async function main() {
   {
     const r = await runNeo({ supabase: makeStub(seed()), userId: USER, message: "ayuda", channel: "whatsapp" });
     check("'ayuda' devuelve la ayuda completa (menciona Cuotas y Límites)", r.text.includes("Cuotas:") && r.text.includes("Límites:"), `reply: ${r.text.slice(0, 40)}…`);
+  }
+
+  // 15) Deudas: alta en las dos direcciones (sector /deudas, NO cuotas)
+  {
+    const db = seed();
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "debo 10000 a juan", channel: "whatsapp" });
+    const d = db.debts[0];
+    check("'debo 10000 a juan' → deuda direction=debo", db.debts.length === 1 && d?.direction === "debo" && d?.counterparty === "juan" && Number(d?.total_amount) === 10000, JSON.stringify(d));
+    check("'debo 10000 a juan' NO crea una transacción", db.transactions.length === 0);
+  }
+  {
+    const db = seed();
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "mamá me debe 50000", channel: "whatsapp" });
+    check("'mamá me debe 50000' → deuda direction=me_deben", db.debts[0]?.direction === "me_deben" && Number(db.debts[0]?.total_amount) === 50000);
+  }
+  {
+    const db = seed();
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "le presté 3000 a ana", channel: "whatsapp" });
+    check("'le presté 3000 a ana' → me_deben", db.debts[0]?.direction === "me_deben" && db.debts[0]?.counterparty === "ana");
+  }
+  {
+    // "me prestaron" salió de INCOME_VERBS: es una deuda, no un ingreso.
+    const db = seed();
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "me prestaron 5000", channel: "whatsapp" });
+    check("'me prestaron 5000' → deuda (no ingreso)", db.debts.length === 0 && db.transactions.length === 0, "pregunta a quién");
+  }
+
+  // 16) Deudas: alta por slot-filling cuando falta el monto
+  {
+    const db = seed();
+    const stub = makeStub(db);
+    const r1 = await runNeo({ supabase: stub, userId: USER, message: "debo plata a juan", channel: "whatsapp" });
+    check("'debo plata a juan' → pregunta el monto", !!r1.state && db.debts.length === 0, `reply: ${r1.text}`);
+    await runNeo({ supabase: stub, userId: USER, message: "7000", channel: "whatsapp", state: r1.state as NeoState });
+    check("responder '7000' → crea la deuda", db.debts.length === 1 && Number(db.debts[0]?.total_amount) === 7000);
+  }
+
+  // 17) Deudas: consulta separada de cuotas (el bug que abrió el sector)
+  {
+    const db = seed();
+    db.debts.push({ id: "d1", user_id: USER, space_id: SPACE, direction: "debo", counterparty: "Juan", total_amount: 10000, paid_amount: 2000, currency_code: "ARS", status: "active", due_date: null });
+    db.debts.push({ id: "d2", user_id: USER, space_id: SPACE, direction: "me_deben", counterparty: "Ana", total_amount: 5000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "cuánto debo", channel: "whatsapp" });
+    check("'cuánto debo' → deudas, con saldo pendiente (no cuotas)", r.text.includes("Juan") && r.text.includes("8.000") && !r.text.includes("Ana"), `reply: ${r.text}`);
+    const r2 = await runNeo({ supabase: makeStub(db), userId: USER, message: "quién me debe", channel: "whatsapp" });
+    check("'quién me debe' → solo lo que te deben", r2.text.includes("Ana") && !r2.text.includes("Juan"), `reply: ${r2.text}`);
+    const r3 = await runNeo({ supabase: makeStub(db), userId: USER, message: "mis deudas", channel: "whatsapp" });
+    check("'mis deudas' → las dos puntas", r3.text.includes("Juan") && r3.text.includes("Ana"), `reply: ${r3.text}`);
+    const r4 = await runNeo({ supabase: makeStub(db), userId: USER, message: "mis cuotas", channel: "whatsapp" });
+    check("'mis cuotas' sigue respondiendo cuotas", r4.text.includes("cuotas activas"), `reply: ${r4.text}`);
   }
 
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);

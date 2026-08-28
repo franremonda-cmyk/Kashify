@@ -1,4 +1,5 @@
 import { detectPurchaseIntent, categoryForText } from "@/lib/neo-keywords";
+import type { DebtDirection } from "@/types";
 import type { Intent, LearnedKeyword } from "./types";
 
 export function normalize(s: string): string {
@@ -24,6 +25,24 @@ function parseAmount(raw: string): number {
 // bloque de dismiss se comía el ejemplo que la propia ayuda de Neo publicita.
 // (normalize() ya sacó los acentos, por eso "limite"/"categoria" van sin tilde)
 const DISMISS_OBJECT = /\s+(?:la|el|mi|los|las|mis)?\s*(?:cuota|deuda|plan|meta|objetivo|ahorro|limite|presupuesto|gasto|ingreso|movimiento|transaccion|categoria|espacio)/;
+
+// Alta de deuda: los slots que falten los pregunta el flujo (flow.ts).
+function debtFlow(direction: DebtDirection, who?: string, rawAmount?: string): Intent {
+  const amount = rawAmount ? parseAmount(rawAmount) : NaN;
+  const counterparty = who
+    ?.replace(/^(?:a\s+|mi\s+amigo\s+|mi\s+amiga\s+)/, "")
+    .replace(/[.!?]+$/, "")
+    .trim();
+  return {
+    type: "flow",
+    ctx: {
+      flow: "debt",
+      direction,
+      counterparty: counterparty || undefined,
+      amount: !isNaN(amount) && amount > 0 ? amount : undefined,
+    },
+  };
+}
 
 // Detección de intención 100% por reglas (0 tokens). `learnedKeywords` son
 // patrones que el usuario enseñó antes (vía fallback Haiku + confirmación), que
@@ -76,8 +95,40 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   if (/mis metas|ver metas|como van mis metas|mis ahorros|como van mis ahorros|cuanto ahorr[eé]|cuánto ahorré|progreso de mis metas|metas de ahorro|cuanto llevo ahorrado|mis objetivos|ahorros/.test(m))
     return { type: "goals_query" };
 
+  // ── Deudas (sector /deudas: plata entre personas) ─────────────────────────
+  // Va ANTES de installments_query: "cuánto debo" y "mis deudas" respondían
+  // sobre CUOTAS. Y muy por encima de delete_tx (goloso) y del registro pelado,
+  // que anotaban "debo 10000 a juan" como un gasto llamado "debo a juan".
+  {
+    // Consultas
+    if (/cuant[ao]s?\s+(?:plata\s+)?me\s+deben|quien(?:es)?\s+me\s+debe[n]?|me\s+deben\s+plata/.test(m))
+      return { type: "debts_query", direction: "me_deben" };
+    if (/cuant[ao]s?\s+(?:plata\s+)?debo|a\s+quien(?:es)?\s+le[s]?\s+debo/.test(m))
+      return { type: "debts_query", direction: "debo" };
+    if (/mis\s+deudas|ver\s+deudas|deudas\s+activas|deudas\s+pendientes|mis\s+prestamos/.test(m))
+      return { type: "debts_query" };
+
+    // Alta — yo debo
+    const owe = m.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(\d[\d.,]*)\s+a\s+(.+)$/);
+    if (owe) return debtFlow("debo", owe[2], owe[1]);
+    const oweRev = m.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(?:plata\s+)?a\s+(.+?)(?:\s+(\d[\d.,]*))?$/);
+    if (oweRev) return debtFlow("debo", oweRev[1], oweRev[2]);
+    const lentMe = m.match(/^(.+?)\s+me\s+prest(?:o|aron)\s+(\d[\d.,]*)$/);
+    if (lentMe) return debtFlow("debo", lentMe[1], lentMe[2]);
+    const lentMeNoOne = m.match(/^me\s+prest(?:aron|o)\s+(\d[\d.,]*)$/);
+    if (lentMeNoOne) return debtFlow("debo", undefined, lentMeNoOne[1]);
+
+    // Alta — me deben
+    const owed = m.match(/^(.+?)\s+me\s+debe[n]?\s+(\d[\d.,]*)$/);
+    if (owed) return debtFlow("me_deben", owed[1], owed[2]);
+    const owedNoOne = m.match(/^me\s+debe[n]?\s+(\d[\d.,]*)$/);
+    if (owedNoOne) return debtFlow("me_deben", undefined, owedNoOne[1]);
+    const lent = m.match(/^(?:yo\s+)?le\s+prest[eé]\s+(\d[\d.,]*)\s+a\s+(.+)$/);
+    if (lent) return debtFlow("me_deben", lent[2], lent[1]);
+  }
+
   // ── Installments ──────────────────────────────────────────────────────────
-  if (/mis cuotas|ver cuotas|cuanto debo|cuánto debo|mis deudas|cuotas activas|cuotas pendientes|cuantas cuotas|cuántas cuotas|que cuotas tengo|mis pagos en cuotas|mis creditos/.test(m))
+  if (/mis cuotas|ver cuotas|cuotas activas|cuotas pendientes|cuantas cuotas|cuántas cuotas|que cuotas tengo|mis pagos en cuotas|mis creditos/.test(m))
     return { type: "installments_query" };
 
   // ── Edit budget ───────────────────────────────────────────────────────────
@@ -111,7 +162,8 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   if (payInstallMatch) return { type: "pay_installment", name: payInstallMatch[1].trim() };
 
   // ── Cancel installment ────────────────────────────────────────────────────
-  const cancelInstallMatch = m.match(/(?:cancel[ao]r?|salda[r]?|cerr[ao]r?|termina[r]?|cancel[ao])\s+(?:la\s+)?(?:cuota|plan|deuda)\s+(?:de\s+)?["']?(.+?)["']?$/);
+  // Sin "deuda": ahora es un sector aparte (lo maneja el bloque de deudas).
+  const cancelInstallMatch = m.match(/(?:cancel[ao]r?|salda[r]?|cerr[ao]r?|termina[r]?|cancel[ao])\s+(?:la\s+)?(?:cuota|plan)\s+(?:de\s+)?["']?(.+?)["']?$/);
   if (cancelInstallMatch) return { type: "cancel_installment", name: cancelInstallMatch[1].trim() };
 
   // ── Delete budget ─────────────────────────────────────────────────────────

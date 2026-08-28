@@ -37,6 +37,11 @@ export function missingSlot(ctx: FlowContext): string | null {
       if (!ctx.category) return "bcategory";
       if (ctx.amount == null) return "bamount";
       return null;
+    case "debt":
+      if (!ctx.direction) return "ddirection";
+      if (!ctx.counterparty) return "dcounterparty";
+      if (ctx.amount == null) return "damount";
+      return null;
     case "clarify":
       return "clarify";
   }
@@ -71,6 +76,17 @@ export function fillSlot(ctx: FlowContext, message: string): FlowContext {
     case "bamount":
       if (num != null) c.amount = num;
       break;
+    case "ddirection":
+      // "yo debo" / "le debo" vs "me deben" / "me debe".
+      if (/me\s+deb|deben|cobrar/.test(normalize(message))) c.direction = "me_deben";
+      else if (/debo|yo|pagar/.test(normalize(message))) c.direction = "debo";
+      break;
+    case "dcounterparty":
+      c.counterparty = t;
+      break;
+    case "damount":
+      if (num != null) c.amount = num;
+      break;
   }
   return c as FlowContext;
 }
@@ -85,6 +101,9 @@ export function slotQuestion(ctx: FlowContext, slot: string): { text: string; op
     case "gname": return { text: "¿Cómo querés llamar la meta?" };
     case "bcategory": return { text: "¿Para qué categoría es el límite?" };
     case "bamount": return { text: "¿De cuánto es el límite mensual?" };
+    case "ddirection": return { text: "¿Vos debés o te deben?", options: ["Yo debo", "Me deben"] };
+    case "dcounterparty": return { text: (ctx as { direction?: string }).direction === "me_deben" ? "¿Quién te debe?" : "¿A quién le debés?" };
+    case "damount": return { text: "¿De cuánto?" };
     case "clarify": return { text: "No entendí 🤔 ¿Qué querés hacer?", options: ["Registrar gasto", "Registrar ingreso", "Consultar"] };
     default: return { text: "¿Podés repetirlo?" };
   }

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DebtDirection } from "@/types";
 
 // El motor es agnóstico del cliente de Supabase: funciona igual con el client
 // con sesión de usuario (web) o el de service-role (WhatsApp), porque todas las
@@ -23,6 +24,9 @@ export type Intent =
   | { type: "budget_query"; category?: string }
   | { type: "goals_query" }
   | { type: "installments_query" }
+  // Deudas del sector /deudas (plata prestada entre personas), NO las cuotas de
+  // tarjeta. Sin `direction` = mostrar las dos puntas.
+  | { type: "debts_query"; direction?: DebtDirection }
   | { type: "edit_budget"; category: string; amount: number }
   | { type: "delete_budget"; category: string }
   | { type: "delete_tx"; search: string }
@@ -48,6 +52,9 @@ export type FlowContext =
   | { flow: "installment"; name?: string; nInstallments?: number; installmentAmount?: number; space_id?: string }
   | { flow: "goal"; name?: string; target?: number; space_id?: string }
   | { flow: "budget"; category?: string; amount?: number; space_id?: string }
+  // Deuda: no se pregunta el vencimiento (es opcional; una cuarta pregunta mata
+  // el flujo) ni el espacio (va al activo/default, como metas y cuotas).
+  | { flow: "debt"; direction?: DebtDirection; counterparty?: string; amount?: number; space_id?: string }
   | { flow: "clarify" };
 
 export interface DeleteCandidate {
