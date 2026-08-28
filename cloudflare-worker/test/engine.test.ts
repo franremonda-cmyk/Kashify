@@ -516,6 +516,24 @@ async function main() {
     check("'el monto de la meta X' sigue siendo la meta, no el movimiento", Number(db.savings_goals[0].target_amount) === 50000 && Number(db.transactions[0].amount) === 900);
   }
 
+  // 27) Límite acotado a ciertos meses + dólar
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-regalos", user_id: USER, name: "Regalos" });
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "poné un límite de 50000 en Regalos solo en diciembre", channel: "whatsapp" });
+    const b = db.category_budgets[0];
+    check("límite solo en diciembre → period_type specific_months", b?.period_type === "specific_months" && JSON.stringify(b?.applies_months) === "[12]", `reply: ${r.text}`);
+    check("la categoría no se ensucia con 'solo en diciembre'", b?.category_id === "cat-regalos");
+  }
+  {
+    const db = seed();
+    const stub = makeStub(db);
+    await runNeo({ supabase: stub, userId: USER, message: "poné el dólar a 1450", channel: "whatsapp" });
+    check("'poné el dólar a 1450' lo guarda en el perfil", Number(db.profiles[0].usd_rate) === 1450);
+    const r = await runNeo({ supabase: stub, userId: USER, message: "a cuánto está el dólar", channel: "whatsapp" });
+    check("'a cuánto está el dólar' lo informa", r.text.includes("1.450"), `reply: ${r.text}`);
+  }
+
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);
   process.exit(failures === 0 ? 0 : 1);
 }

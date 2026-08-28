@@ -78,6 +78,8 @@ async function primaryCurrency(supabase: NeoSupabase, userId: string): Promise<s
   return profile?.primary_currency ?? "ARS";
 }
 
+const MESES_LARGOS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
 // Cómo el usuario nombra una familia de avisos → la familia real. Primero por
 // nombre exacto/parcial, después por sinónimos de lo que dice la gente.
 const FAMILY_SYNONYMS: Record<string, NotifFamily> = {
@@ -238,11 +240,18 @@ export async function respondFlow(
       if (!match) return { text: `No encontré la categoría "${ctx.category}". Revisá el nombre en Categorías.` };
       const spaceId = await getWriteSpaceId(supabase, userId, ctx.space_id ?? activeSpaceId);
       const currency = await primaryCurrency(supabase, userId);
+      const soloMeses = ctx.months?.length ? ctx.months : null;
       await supabase.from("category_budgets").upsert(
-        { user_id: userId, space_id: spaceId, category_id: match.id, monthly_limit: ctx.amount, currency_code: currency, period_type: "always" },
+        {
+          user_id: userId, space_id: spaceId, category_id: match.id,
+          monthly_limit: ctx.amount, currency_code: currency,
+          period_type: soloMeses ? "specific_months" : "always",
+          applies_months: soloMeses,
+        },
         { onConflict: "user_id,space_id,category_id" }
       );
-      return { text: `✅ Puse un límite de ${fmt(ctx.amount!, currency)} por mes en ${match.name}.`, effects: [{ type: "refresh" }] };
+      const cuando = soloMeses ? ` solo en ${soloMeses.map((n) => MESES_LARGOS[n - 1]).join(" y ")}` : " por mes";
+      return { text: `✅ Puse un límite de ${fmt(ctx.amount!, currency)}${cuando} en ${match.name}.`, effects: [{ type: "refresh" }] };
     }
     case "debt": {
       const spaceId = await getWriteSpaceId(supabase, userId, ctx.space_id ?? activeSpaceId);

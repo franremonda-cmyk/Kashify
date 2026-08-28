@@ -52,6 +52,18 @@ function parseWhen(s: string): string | null {
   return null;
 }
 
+// "solo en diciembre" / "solo en enero y febrero" → [12] / [1, 2].
+// Devuelve también el texto sin esa cola, para que no ensucie la categoría.
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+function splitMonths(s: string): { rest: string; months?: number[] } {
+  const m = s.match(/^(.*?)\s+(?:solo|unicamente|nada mas)\s+(?:en|para|durante)\s+(.+)$/);
+  if (!m) return { rest: s };
+  const found = MESES
+    .map((name, i) => (m[2].includes(name) || m[2].includes(name.slice(0, 4)) ? i + 1 : 0))
+    .filter((n) => n > 0);
+  return found.length ? { rest: m[1].trim(), months: found } : { rest: s };
+}
+
 // Alta de deuda: los slots que falten los pregunta el flujo (flow.ts).
 function debtFlow(direction: DebtDirection, who?: string, rawAmount?: string): Intent {
   const amount = rawAmount ? parseAmount(rawAmount) : NaN;
@@ -376,8 +388,8 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   const budgetAmountFirst = m.match(/(?:pon[eé]r?|crea[r]?|agrega[r]?|fija[r]?|nuevo)\s+(?:un\s+)?(?:l[ií]?mite|presupuesto)\s+(?:de\s+)?(\d[\d.,]*)\s+(?:en|para|a)\s+(.+?)$/);
   if (budgetAmountFirst && !/edit|modific|actualiz|cambi/.test(m)) {
     const amt = parseAmount(budgetAmountFirst[1]);
-    const cat = budgetAmountFirst[2].trim();
-    return { type: "flow", ctx: { flow: "budget", category: cat || undefined, amount: amt > 0 ? amt : undefined } };
+    const { rest, months } = splitMonths(budgetAmountFirst[2].trim());
+    return { type: "flow", ctx: { flow: "budget", category: rest || undefined, amount: amt > 0 ? amt : undefined, months } };
   }
   const budgetCreateMatch = m.match(/(?:pon[eé]r?|crea[r]?|agrega[r]?|fija[r]?|nuevo)\s+(?:un\s+)?(?:l[ií]?mite|presupuesto)\s+(?:(?:de|para|a|en)\s+)?(.+?)(?:\s+(?:de|a|en)\s+(\d[\d.,]*))?$/);
   if (budgetCreateMatch && !/edit|modific|actualiz|cambi/.test(m)) {

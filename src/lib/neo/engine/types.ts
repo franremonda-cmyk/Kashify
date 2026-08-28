@@ -70,7 +70,8 @@ export type FlowContext =
   | { flow: "expense" | "income"; description?: string; amount?: number; category?: string | null; space_id?: string; awaitingSpace?: boolean }
   | { flow: "installment"; name?: string; nInstallments?: number; installmentAmount?: number; space_id?: string }
   | { flow: "goal"; name?: string; target?: number; space_id?: string }
-  | { flow: "budget"; category?: string; amount?: number; space_id?: string }
+  // months: si el límite aplica solo a ciertos meses (1-12). Vacío = todos.
+  | { flow: "budget"; category?: string; amount?: number; months?: number[]; space_id?: string }
   // Deuda: no se pregunta el vencimiento (es opcional; una cuarta pregunta mata
   // el flujo) ni el espacio (va al activo/default, como metas y cuotas).
   | { flow: "debt"; direction?: DebtDirection; counterparty?: string; amount?: number; space_id?: string }
