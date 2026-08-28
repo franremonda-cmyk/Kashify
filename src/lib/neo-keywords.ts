@@ -491,8 +491,10 @@ export function detectPurchaseIntent(normalized: string): PurchaseIntent {
   }
 
   // 2. Number after preposition: "nafta por 8000", "nafta de 5000 pesos"
+  //    El \b es imprescindible: sin él, la "a" final de "naft-a 5000" se tomaba
+  //    como preposición y la descripción quedaba en "naft" (sin categoría).
   if (amount === null) {
-    const amtMatch = rest.match(/(?:por|de|a|x)\s+(\d[\d.,]*)\s*(?:pesos?|ars|usd|eur|uyu)?/i);
+    const amtMatch = rest.match(/\b(?:por|de|a|x)\s+(\d[\d.,]*)\s*(?:pesos?|ars|usd|eur|uyu)?/i);
     if (amtMatch) {
       const parsed = parseFloat(amtMatch[1].replace(/\./g, "").replace(",", "."));
       if (!isNaN(parsed) && parsed > 0) {

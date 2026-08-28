@@ -26,11 +26,35 @@ function parseAmount(raw: string): number {
 // (normalize() ya sacó los acentos, por eso "limite"/"categoria" van sin tilde)
 const DISMISS_OBJECT = /\s+(?:la|el|mi|los|las|mis)?\s*(?:cuota|deuda|plan|meta|objetivo|ahorro|limite|presupuesto|gasto|ingreso|movimiento|transaccion|categoria|espacio)/;
 
-// detectIntent trabaja sobre el texto normalizado (minúsculas), así que los
-// nombres propios que se van a MOSTRAR salen en minúscula. Se capitaliza para
-// que un espacio no quede como "freelance" ni una deuda a nombre de "juan".
+// detectIntent trabaja sobre el texto normalizado (minúsculas y sin tildes),
+// así que un nombre capturado ahí se guardaría como "diversion" o "freelance".
+// Esto recupera el fragmento TAL CUAL lo escribió el usuario, alineando por
+// palabras (normalize() no parte palabras salvo en montos con símbolo).
+// Si no lo encuentra, devuelve el fragmento normalizado: peor formato, nunca
+// un dato equivocado.
+const TRAIL_PUNCT = /[.,!?;:]+$/;
+function denormalize(original: string, fragment: string): string {
+  const want = fragment.trim().replace(TRAIL_PUNCT, "");
+  if (!want) return fragment.trim();
+  const origWords = original.trim().split(/\s+/);
+  const wantLen = want.split(/\s+/).length;
+  for (let i = 0; i + wantLen <= origWords.length; i++) {
+    const slice = origWords.slice(i, i + wantLen).join(" ");
+    if (normalize(slice).replace(TRAIL_PUNCT, "") === want) return slice.replace(TRAIL_PUNCT, "");
+  }
+  return want;
+}
+
+// Para nombres propios que se muestran como título (espacios, categorías,
+// metas, contrapartes de deuda). Después de denormalize: si lo escribiste con
+// mayúscula ya viene bien, y si no, al menos no queda todo en minúscula.
 function titleCase(s: string): string {
   return s.replace(/^\p{Ll}/u, (c) => c.toUpperCase());
+}
+
+// denormalize + titleCase, que es lo que quieren casi todos los nombres.
+function properName(original: string, fragment: string): string {
+  return titleCase(denormalize(original, fragment));
 }
 
 // Fechas habladas → ISO. Solo lo que la gente dice de verdad al corregir algo
@@ -65,18 +89,15 @@ function splitMonths(s: string): { rest: string; months?: number[] } {
 }
 
 // Alta de deuda: los slots que falten los pregunta el flujo (flow.ts).
-function debtFlow(direction: DebtDirection, who?: string, rawAmount?: string): Intent {
+function debtFlow(msg: string, direction: DebtDirection, who?: string, rawAmount?: string): Intent {
   const amount = rawAmount ? parseAmount(rawAmount) : NaN;
-  const counterparty = who
-    ?.replace(/^(?:a\s+|mi\s+amigo\s+|mi\s+amiga\s+)/, "")
-    .replace(/[.!?]+$/, "")
-    .trim();
+  const cleaned = who?.replace(/^(?:a\s+|mi\s+amigo\s+|mi\s+amiga\s+)/, "").replace(/[.!?]+$/, "").trim();
   return {
     type: "flow",
     ctx: {
       flow: "debt",
       direction,
-      counterparty: counterparty ? titleCase(counterparty) : undefined,
+      counterparty: cleaned ? properName(msg, cleaned) : undefined,
       amount: !isNaN(amount) && amount > 0 ? amount : undefined,
     },
   };
@@ -164,21 +185,21 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
 
     // Alta — yo debo
     const owe = m.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(\d[\d.,]*)\s+a\s+(.+)$/);
-    if (owe) return debtFlow("debo", owe[2], owe[1]);
+    if (owe) return debtFlow(msg, "debo", owe[2], owe[1]);
     const oweRev = m.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(?:plata\s+)?a\s+(.+?)(?:\s+(\d[\d.,]*))?$/);
-    if (oweRev) return debtFlow("debo", oweRev[1], oweRev[2]);
+    if (oweRev) return debtFlow(msg, "debo", oweRev[1], oweRev[2]);
     const lentMe = m.match(/^(.+?)\s+me\s+prest(?:o|aron)\s+(\d[\d.,]*)$/);
-    if (lentMe) return debtFlow("debo", lentMe[1], lentMe[2]);
+    if (lentMe) return debtFlow(msg, "debo", lentMe[1], lentMe[2]);
     const lentMeNoOne = m.match(/^me\s+prest(?:aron|o)\s+(\d[\d.,]*)$/);
-    if (lentMeNoOne) return debtFlow("debo", undefined, lentMeNoOne[1]);
+    if (lentMeNoOne) return debtFlow(msg, "debo", undefined, lentMeNoOne[1]);
 
     // Alta — me deben
     const owed = m.match(/^(.+?)\s+me\s+debe[n]?\s+(\d[\d.,]*)$/);
-    if (owed) return debtFlow("me_deben", owed[1], owed[2]);
+    if (owed) return debtFlow(msg, "me_deben", owed[1], owed[2]);
     const owedNoOne = m.match(/^me\s+debe[n]?\s+(\d[\d.,]*)$/);
-    if (owedNoOne) return debtFlow("me_deben", undefined, owedNoOne[1]);
+    if (owedNoOne) return debtFlow(msg, "me_deben", undefined, owedNoOne[1]);
     const lent = m.match(/^(?:yo\s+)?le\s+prest[eé]\s+(\d[\d.,]*)\s+a\s+(.+)$/);
-    if (lent) return debtFlow("me_deben", lent[2], lent[1]);
+    if (lent) return debtFlow(msg, "me_deben", lent[2], lent[1]);
 
     // Saldar (va antes que pagar: "ya le pagué todo a juan" salda, no paga parcial)
     const settle = m.match(/^(?:ya\s+)?(?:le\s+)?(?:sald[eé]|salda|cancel[aeé]|cerr[eé]|termin[eé])\s+(?:la\s+)?deuda\s+(?:de|con|a)\s+["']?(.+?)["']?$/)
@@ -211,10 +232,10 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
       return { type: "spaces_query" };
 
     const ren = m.match(/^(?:renombr|cambi)\w*\s+(?:el\s+)?(?:nombre\s+(?:de[l]?\s+)?)?espacio\s+["']?(.+?)["']?\s+(?:a|por)\s+["']?(.+?)["']?$/);
-    if (ren) return { type: "rename_space", oldName: ren[1].trim(), newName: titleCase(ren[2].trim()) };
+    if (ren) return { type: "rename_space", oldName: ren[1].trim(), newName: properName(msg, ren[2].trim()) };
 
     const crea = m.match(/^(?:crea|agrega|añad|anad|sum)\w*\s+(?:un\s+|el\s+)?(?:nuevo\s+)?espacio\s+(?:llamado\s+|nuevo\s+)?["']?(.+?)["']?$/);
-    if (crea) return { type: "create_space", name: titleCase(crea[1].trim()) };
+    if (crea) return { type: "create_space", name: properName(msg, crea[1].trim()) };
 
     const delSp = m.match(/^(?:borr|elimin|sac|quit)\w*\s+(?:el\s+)?espacio\s+["']?(.+?)["']?$/);
     if (delSp) return { type: "delete_space", name: delSp[1].trim() };
@@ -246,10 +267,10 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
       return { type: "categories_query" };
 
     const renCat = m.match(/^renombr\w*\s+(?:la\s+)?categoria\s+["']?(.+?)["']?\s+(?:a|por)\s+["']?(.+?)["']?$/);
-    if (renCat) return { type: "rename_category", oldName: renCat[1].trim(), newName: titleCase(renCat[2].trim()) };
+    if (renCat) return { type: "rename_category", oldName: renCat[1].trim(), newName: properName(msg, renCat[2].trim()) };
 
     const creaCat = m.match(/^(?:crea|agrega|añad|anad|sum)\w*\s+(?:una\s+|la\s+)?(?:nueva\s+)?categoria\s+(?:llamada\s+)?["']?(.+?)["']?$/);
-    if (creaCat) return { type: "create_category", name: titleCase(creaCat[1].trim()) };
+    if (creaCat) return { type: "create_category", name: properName(msg, creaCat[1].trim()) };
 
     const delCat = m.match(/^(?:borr|elimin|sac|quit)\w*\s+(?:la\s+)?categoria\s+["']?(.+?)["']?$/);
     if (delCat) return { type: "delete_category", name: delCat[1].trim() };
@@ -290,7 +311,7 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
 
     // "cambiá la descripción del último a X"
     const desc = m.match(/^(?:corregi|cambi|edit|actualiz|modific)\w*\s+(?:la\s+)?(?:descripcion|nombre|detalle)\s+(?:de[l]?\s+)?(.+?)\s+(?:a|por)\s+["']?(.+?)["']?$/);
-    if (desc) return { type: "edit_tx", search: isLast(desc[1]) ? undefined : desc[1].trim(), description: titleCase(desc[2].trim()) };
+    if (desc) return { type: "edit_tx", search: isLast(desc[1]) ? undefined : desc[1].trim(), description: denormalize(msg, desc[2].trim()) };
 
     // "cambiá la fecha del último a ayer" (relativas y dd/mm)
     const fec = m.match(/^(?:corregi|cambi|edit|actualiz|modific)\w*\s+(?:la\s+)?fecha\s+(?:de[l]?\s+)?(.+?)\s+(?:a|por|al)\s+(.+)$/);
@@ -306,7 +327,7 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
 
   // ── Rename goal ───────────────────────────────────────────────────────────
   const renameGoalMatch = m.match(/(?:renombr[ao]r?|cambi[ao]r?\s+(?:el\s+)?nombre\s+(?:de\s+)?(?:la\s+)?(?:meta\s+)?)\s*["']?(.+?)["']?\s+a\s+["']?(.+?)["']?$/);
-  if (renameGoalMatch) return { type: "rename_goal", oldName: renameGoalMatch[1].trim(), newName: renameGoalMatch[2].trim() };
+  if (renameGoalMatch) return { type: "rename_goal", oldName: renameGoalMatch[1].trim(), newName: properName(msg, renameGoalMatch[2].trim()) };
 
   // ── Set goal target amount ────────────────────────────────────────────────
   const setGoalTargetMatch = m.match(/(?:cambi[ao]r?|edit[ao]r?|modific[ao]r?|actualiz[ao]r?|pon[eé]|fij[ao]r?)\s+(?:el\s+)?(?:objetivo|monto|target|meta)\s+(?:de\s+)?(?:la\s+)?(?:meta\s+)?["']?(.+?)["']?\s+a\s+(\d[\d.,]*)/);
@@ -367,7 +388,7 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   // ── Create goal ───────────────────────────────────────────────────────────
   const goalCreateMatch = m.match(/(?:agrega[r]?|crea[r]?|nueva|nuevo)\s+(?:una?\s+)?(?:nueva?\s+)?(?:meta|objetivo|ahorro)\s+(?:(?:llamad[ao]|con\s+nombre)\s+)?["']?(.+?)["']?\s*(?:(?:de|con\s+objetivo)\s+(\d[\d.,]*))?$/);
   if (goalCreateMatch) {
-    const name = goalCreateMatch[1].trim();
+    const name = properName(msg, goalCreateMatch[1].trim());
     const amount = goalCreateMatch[2] ? parseAmount(goalCreateMatch[2]) : undefined;
     if (name.length > 0) return { type: "create_goal", name, amount };
   }
@@ -425,7 +446,7 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
       type: "flow",
       ctx: {
         flow: purchase.txType,
-        description: purchase.item || undefined,
+        description: purchase.item ? denormalize(msg, purchase.item) : undefined,
         amount: purchase.amount ?? undefined,
         category: purchase.suggestedCategory,
       },
@@ -444,7 +465,7 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
           type: "flow",
           ctx: {
             flow: hit.type,
-            description: desc || hit.keyword,
+            description: desc ? denormalize(msg, desc) : hit.keyword,
             amount: amount > 0 ? amount : undefined,
             category: hit.category ?? categoryForText(desc),
           },
@@ -476,7 +497,7 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
       .trim();
     if (!isNaN(amount) && amount > 0 && desc.length >= 2) {
       const txType: "income" | "expense" = /ingres|sueldo|cobr[eé]?|me\s+pagaron|me\s+depositaron/.test(m) ? "income" : "expense";
-      return { type: "flow", ctx: { flow: txType, description: desc, amount, category: categoryForText(desc) } };
+      return { type: "flow", ctx: { flow: txType, description: denormalize(msg, desc), amount, category: categoryForText(desc) } };
     }
   }
 

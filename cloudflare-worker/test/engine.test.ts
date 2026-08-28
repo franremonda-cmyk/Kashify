@@ -534,6 +534,30 @@ async function main() {
     check("'a cuánto está el dólar' lo informa", r.text.includes("1.450"), `reply: ${r.text}`);
   }
 
+  // 28) Regresión: la descripción no pierde letras ni la categoría
+  {
+    const intentOf = (msg: string) => detectIntent(msg) as { ctx?: { description?: string; category?: string | null; amount?: number } };
+    // La "a" final de "naft-a 5000" se tomaba como preposición: quedaba "naft".
+    const nafta = intentOf("compré nafta 5000").ctx!;
+    check("'compré nafta 5000' guarda 'nafta' entera", nafta.description === "nafta", JSON.stringify(nafta));
+    check("'compré nafta 5000' la categoriza como Transporte", nafta.category === "Transporte");
+    check("'compré nafta por 8000' sigue andando", intentOf("compré nafta por 8000").ctx?.amount === 8000);
+    check("'compré nafta de 5000 pesos' sigue andando", intentOf("compré nafta de 5000 pesos").ctx?.amount === 5000);
+  }
+
+  // 29) Regresión: los nombres conservan tildes y mayúsculas
+  {
+    const nameOf = (msg: string) => JSON.stringify(detectIntent(msg));
+    check("categoría con tilde: 'Diversión' no queda 'Diversion'", nameOf("renombrá la categoría Ocio a Diversión").includes("Diversión"));
+    check("espacio con mayúscula: 'Freelance'", nameOf("creá el espacio Freelance").includes("\"Freelance\""));
+    check("meta con mayúsculas: 'Vacaciones en Bariloche'", nameOf("creá una meta Vacaciones en Bariloche").includes("Vacaciones en Bariloche"));
+    check("contraparte con tilde: 'Mamá'", nameOf("mamá me debe 50000").includes("Mamá"));
+    check("contraparte de dos palabras: 'Ana María'", nameOf("le presté 3000 a Ana María").includes("Ana María"));
+    check("descripción respeta como la escribiste", nameOf("compré Café con Leche 800").includes("Café con Leche"));
+    // Si lo escribís en minúscula, se sigue guardando en minúscula (no inventamos).
+    check("descripción en minúscula queda en minúscula", nameOf("compré pizza 3000").includes("\"pizza\""));
+  }
+
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);
   process.exit(failures === 0 ? 0 : 1);
 }
