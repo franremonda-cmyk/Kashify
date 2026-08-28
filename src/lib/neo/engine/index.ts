@@ -40,6 +40,10 @@ const WELCOME_TEXT =
   "• _¿cuánto gasté este mes?_\n" +
   "• _¿cuál es mi saldo?_\n" +
   "• _¿cómo van mis metas?_\n\n" +
+  "También llevo la cuenta de lo que debés y lo que te deben:\n" +
+  "• _debo 10000 a Juan_\n" +
+  "• _¿cuánto debo?_\n\n" +
+  "Escribí *ayuda* para ver todo lo que sé hacer.\n" +
   "Probá mandándome tu primer gasto 💚";
 
 // Punto de entrada único del motor de Neo. Agnóstico del canal.
@@ -306,7 +310,7 @@ async function continueFlow(
     const switched = interpretClarify(message);
     if (switched) return respondFlow(supabase, userId, switched, channel, activeSpaceId);
     if (/consult|ver|saldo|cuanto|cuánto/.test(normalize(message)) && detectIntent(message).type === "unknown") {
-      return { text: 'Decime qué querés consultar:\n• "mi saldo"\n• "cuánto gasté este mes"\n• "mis metas" / "mis cuotas" / "mis límites"' };
+      return { text: 'Decime qué querés consultar:\n• "mi saldo"\n• "cuánto gasté este mes"\n• "mis metas" / "mis cuotas" / "mis límites"\n• "cuánto debo" / "quién me debe"' };
     }
     // No es una elección de clarify → procesar como mensaje nuevo.
     return runNeo({ supabase, userId, message, channel, state: null, activeSpaceId });

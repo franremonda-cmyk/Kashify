@@ -288,7 +288,7 @@ export async function executeIntent(
       return { text: "Dale, cancelado.", state: null, effects: [{ type: "cancel_pending" }] };
 
     case "help":
-      return { text: `Soy Neo, tu asistente de finanzas. Esto es lo que puedo hacer por vos:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n\nMetas:\n• Ver: "mis metas"\n• Crear: "agrega una meta viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Cambiar objetivo: "cambiá el objetivo de viaje a 50000"\n• Depositar: "depositá 5000 en viaje"\n• Eliminar: "eliminá la meta viaje"\n\nCuotas:\n• Ver: "mis cuotas"\n• Crear: "agrega cuota Netflix por 6 meses de 5000"\n• Pagar: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"\n\nLímites:\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"` };
+      return { text: `Soy Neo, tu asistente de finanzas. Esto es lo que puedo hacer por vos:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n\nMetas:\n• Ver: "mis metas"\n• Crear: "agrega una meta viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Cambiar objetivo: "cambiá el objetivo de viaje a 50000"\n• Depositar: "depositá 5000 en viaje"\n• Eliminar: "eliminá la meta viaje"\n\nCuotas (compras financiadas con tarjeta):\n• Ver: "mis cuotas"\n• Crear: "agrega cuota Netflix por 6 meses de 5000"\n• Pagar: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"\n\nDeudas (plata entre personas):\n• Anotar: "debo 10000 a Juan" · "Ana me debe 5000"\n• Ver: "cuánto debo" · "quién me debe"\n• Pagar: "le pagué 3000 a Juan"\n• Saldar: "saldé la deuda de Juan"\n\nLímites:\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"` };
 
     case "balance_query": {
       const { data: balances } = await supabase.from("transactions")
@@ -653,7 +653,9 @@ export async function executeIntent(
 export function domainHint(message: string): string | null {
   const mn = normalize(message);
   if (/meta|ahorro|objetivo/.test(mn)) return `Para metas puedo:\n• Crear: "agrega una meta viaje"\n• Ver: "mis metas"\n• Depositar: "depositá 5000 en viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Eliminar: "eliminá la meta viaje"`;
-  if (/cuota|deuda|mensualidad/.test(mn)) return `Para cuotas puedo:\n• Crear: "comprá la tele en 12 cuotas de 30000"\n• Ver: "mis cuotas"\n• Registrar pago: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"`;
+  // Deudas antes que cuotas: "deuda" salió de la línea de cuotas, son sectores distintos.
+  if (/deuda|debo|me deben|prest/.test(mn)) return `Para deudas puedo:\n• Anotar: "debo 10000 a Juan" o "Ana me debe 5000"\n• Ver: "cuánto debo" · "quién me debe"\n• Registrar pago: "le pagué 3000 a Juan"\n• Saldar: "saldé la deuda de Juan"`;
+  if (/cuota|mensualidad/.test(mn)) return `Para cuotas puedo:\n• Crear: "comprá la tele en 12 cuotas de 30000"\n• Ver: "mis cuotas"\n• Registrar pago: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"`;
   if (/l[ií]mite|presupuesto/.test(mn)) return `Para límites puedo:\n• Poner: "poné un límite de 30000 en Comida"\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 40000"\n• Eliminar: "eliminá el límite de Comida"`;
   if (/borr|elimin|sac[aá]|quit/.test(mn)) return `Para eliminar, decime qué:\n• Gasto: "borrá el gasto de Netflix"\n• Meta: "eliminá la meta viaje"\n• Cuota: "cancelá la cuota de iPhone"\n• Límite: "eliminá el límite de Comida"`;
   return null;

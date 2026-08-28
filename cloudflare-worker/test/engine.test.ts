@@ -280,7 +280,7 @@ async function main() {
   // 14) "ayuda" end-to-end: debe llegar el texto largo, no el WELCOME.
   {
     const r = await runNeo({ supabase: makeStub(seed()), userId: USER, message: "ayuda", channel: "whatsapp" });
-    check("'ayuda' devuelve la ayuda completa (menciona Cuotas y Límites)", r.text.includes("Cuotas:") && r.text.includes("Límites:"), `reply: ${r.text.slice(0, 40)}…`);
+    check("'ayuda' devuelve la ayuda completa (Cuotas, Deudas y Límites)", r.text.includes("Cuotas") && r.text.includes("Deudas") && r.text.includes("Límites"), `reply: ${r.text.slice(0, 40)}…`);
   }
 
   // 15) Deudas: alta en las dos direcciones (sector /deudas, NO cuotas)
