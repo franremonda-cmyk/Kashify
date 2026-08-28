@@ -472,6 +472,34 @@ export async function executeIntent(
       return { text: bloques.join("\n\n") };
     }
 
+    case "edit_tx": {
+      // Sin `search` = el último movimiento. Con `search`, el más reciente que coincida.
+      const { data: txs } = await supabase.from("transactions")
+        .select("id, description, amount, currency_code, date").eq("user_id", userId).is("deleted_at", null)
+        .in("space_id", scope).order("date", { ascending: false }).limit(50);
+      const list = ((txs ?? []) as DeleteCandidate[]);
+      if (!list.length) return { text: "No encontré movimientos para editar." };
+      const target = intent.search
+        ? list.find((t) => normalize(t.description).includes(normalize(intent.search!)))
+        : list[0];
+      if (!target) return { text: `No encontré ningún movimiento que coincida con "${intent.search}".` };
+
+      // Los valores previos se leen ANTES del update: después, la fila que
+      // tenemos en mano ya no sirve para contar qué cambió.
+      const antes = fmt(Number(target.amount), target.currency_code);
+      const descAntes = target.description;
+
+      const patch: Record<string, unknown> = {};
+      if (intent.amount != null) patch.amount = intent.amount;
+      if (intent.description) patch.description = intent.description;
+      if (intent.date) patch.date = intent.date;
+      const { error } = await supabase.from("transactions").update(patch).eq("id", target.id).eq("user_id", userId);
+      if (error) return { text: "No pude actualizarlo." };
+      if (intent.amount != null) return { text: `✅ Corregido: ${descAntes} pasó de ${antes} a ${fmt(intent.amount, target.currency_code)}.`, effects: [{ type: "refresh" }] };
+      if (intent.description) return { text: `✅ Ahora "${descAntes}" se llama "${intent.description}".`, effects: [{ type: "refresh" }] };
+      return { text: `✅ Cambié la fecha de ${descAntes} al ${intent.date!.slice(8, 10)}/${intent.date!.slice(5, 7)}.`, effects: [{ type: "refresh" }] };
+    }
+
     case "categories_query": {
       const { data: cats } = await supabase.from("categories").select("name, icon").eq("user_id", userId).order("name");
       const list = (cats as { name: string; icon: string }[] | null) ?? [];

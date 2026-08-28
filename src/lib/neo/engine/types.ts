@@ -39,6 +39,8 @@ export type Intent =
   | { type: "deposit_goal"; amount: number; goalName: string }
   | { type: "pay_installment"; name: string }
   | { type: "cancel_installment"; name: string }
+  // Editar un movimiento ya registrado. `search` ausente = el último.
+  | { type: "edit_tx"; search?: string; amount?: number; description?: string; date?: string }
   | { type: "categories_query" }
   | { type: "create_category"; name: string }
   | { type: "rename_category"; oldName: string; newName: string }

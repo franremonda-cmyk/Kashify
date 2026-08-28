@@ -33,6 +33,25 @@ function titleCase(s: string): string {
   return s.replace(/^\p{Ll}/u, (c) => c.toUpperCase());
 }
 
+// Fechas habladas → ISO. Solo lo que la gente dice de verdad al corregir algo
+// recién anotado: nada de "el tercer martes de marzo".
+function parseWhen(s: string): string | null {
+  const t = s.trim();
+  const iso = (d: Date) => d.toISOString().split("T")[0];
+  const shift = (days: number) => iso(new Date(Date.now() - days * 86_400_000));
+  if (/^hoy$/.test(t)) return shift(0);
+  if (/^ayer$/.test(t)) return shift(1);
+  if (/^(?:anteayer|antes de ayer)$/.test(t)) return shift(2);
+  const dm = t.match(/^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?$/);
+  if (dm) {
+    const day = Number(dm[1]), month = Number(dm[2]);
+    if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+    const year = dm[3] ? Number(dm[3].length === 2 ? `20${dm[3]}` : dm[3]) : new Date().getFullYear();
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  return null;
+}
+
 // Alta de deuda: los slots que falten los pregunta el flujo (flow.ts).
 function debtFlow(direction: DebtDirection, who?: string, rawAmount?: string): Intent {
   const amount = rawAmount ? parseAmount(rawAmount) : NaN;
@@ -216,6 +235,40 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   if (editMatch) {
     const amount = parseAmount(editMatch[2]);
     if (!isNaN(amount)) return { type: "edit_budget", category: editMatch[1].trim(), amount };
+  }
+
+  // ── Editar un movimiento ya registrado ────────────────────────────────────
+  // Va ANTES de correct_tx_category y de delete_tx. Exige una señal explícita
+  // (monto/fecha/descripción, o un número) para no comerse otros comandos.
+  {
+    const isLast = (s: string) => /^(?:el\s+|la\s+)?(?:ultimo|ultima|reciente|ese|esa|eso)(?:\s+(?:gasto|movimiento|registro|ingreso|compra))?$/.test(s.trim());
+
+    // "cambiá el monto de netflix a 3000" · "corregí el monto del último a 3000"
+    const amt = m.match(/^(?:corregi|cambi|edit|actualiz|modific)\w*\s+(?:el\s+)?(?:monto|importe|precio|valor)\s+(?:de[l]?\s+)?(.+?)\s+(?:a|por|en)\s+(\d[\d.,]*)$/);
+    // "cambiá el monto de la meta viaje a 50000" es otra cosa: se le deja a
+    // set_goal_target, que también usa la palabra "monto".
+    if (amt && !/^(?:la\s+|el\s+|mi\s+)?(?:meta|objetivo|ahorro)\b/.test(amt[1])) {
+      const n = parseAmount(amt[2]);
+      if (n > 0) return { type: "edit_tx", search: isLast(amt[1]) ? undefined : amt[1].trim(), amount: n };
+    }
+
+    // "el último gasto eran 5000" · "el gasto de netflix eran 3000"
+    const were = m.match(/^(?:el\s+|la\s+)?(?:gasto|movimiento|ingreso|registro|compra)?\s*(?:de\s+)?(.+?)\s+(?:eran?|fueron?|era|es|son)\s+(\d[\d.,]*)$/);
+    if (were) {
+      const n = parseAmount(were[2]);
+      if (n > 0) return { type: "edit_tx", search: isLast(were[1]) ? undefined : were[1].trim(), amount: n };
+    }
+
+    // "cambiá la descripción del último a X"
+    const desc = m.match(/^(?:corregi|cambi|edit|actualiz|modific)\w*\s+(?:la\s+)?(?:descripcion|nombre|detalle)\s+(?:de[l]?\s+)?(.+?)\s+(?:a|por)\s+["']?(.+?)["']?$/);
+    if (desc) return { type: "edit_tx", search: isLast(desc[1]) ? undefined : desc[1].trim(), description: titleCase(desc[2].trim()) };
+
+    // "cambiá la fecha del último a ayer" (relativas y dd/mm)
+    const fec = m.match(/^(?:corregi|cambi|edit|actualiz|modific)\w*\s+(?:la\s+)?fecha\s+(?:de[l]?\s+)?(.+?)\s+(?:a|por|al)\s+(.+)$/);
+    if (fec) {
+      const when = parseWhen(fec[2].trim());
+      if (when) return { type: "edit_tx", search: isLast(fec[1]) ? undefined : fec[1].trim(), date: when };
+    }
   }
 
   // ── Delete goal ───────────────────────────────────────────────────────────

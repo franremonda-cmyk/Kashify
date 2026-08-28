@@ -479,6 +479,36 @@ async function main() {
     check("'cambiá la categoría de X a Y' corrige el movimiento, no renombra", db.categories.length === 1 && db.transactions[0].category_id === "cat-comida");
   }
 
+  // 26) Editar un movimiento ya registrado
+  {
+    const db = seed();
+    const stub = makeStub(db);
+    await runNeo({ supabase: stub, userId: USER, message: "compré nafta 500", channel: "whatsapp" });
+    const r = await runNeo({ supabase: stub, userId: USER, message: "el último gasto eran 5000", channel: "whatsapp" });
+    check("'el último gasto eran 5000' corrige el monto", Number(db.transactions[0].amount) === 5000, `reply: ${r.text}`);
+    check("el mensaje informa el monto ANTERIOR, no el nuevo dos veces", r.text.includes("500") && r.text.includes("5.000") && !/de ARS 5\.000 a ARS 5\.000/.test(r.text), `reply: ${r.text}`);
+    check("corregir no duplica el movimiento", db.transactions.length === 1);
+  }
+  {
+    const db = seed();
+    db.transactions.push({ id: "t1", user_id: USER, space_id: SPACE, type: "expense", amount: 900, currency_code: "ARS", description: "netflix", date: "2026-08-10", deleted_at: null, category_id: null });
+    const stub = makeStub(db);
+    await runNeo({ supabase: stub, userId: USER, message: "cambiá el monto de netflix a 3000", channel: "whatsapp" });
+    check("'cambiá el monto de netflix a 3000' edita el movimiento", Number(db.transactions[0].amount) === 3000);
+    await runNeo({ supabase: stub, userId: USER, message: "cambiá la fecha de netflix a 5/8", channel: "whatsapp" });
+    check("cambia la fecha", db.transactions[0].date === "2026-08-05");
+    await runNeo({ supabase: stub, userId: USER, message: "cambiá la descripción de netflix a Spotify", channel: "whatsapp" });
+    check("cambia la descripción", db.transactions[0].description === "Spotify");
+  }
+  {
+    // "monto" también lo usa set_goal_target: la meta gana cuando se la nombra.
+    const db = seed();
+    db.savings_goals.push({ id: "g1", user_id: USER, space_id: SPACE, name: "viaje", target_amount: 10000, current_amount: 0, currency_code: "ARS", status: "active" });
+    db.transactions.push({ id: "t1", user_id: USER, space_id: SPACE, type: "expense", amount: 900, currency_code: "ARS", description: "viaje", date: "2026-08-10", deleted_at: null, category_id: null });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "cambiá el monto de la meta viaje a 50000", channel: "whatsapp" });
+    check("'el monto de la meta X' sigue siendo la meta, no el movimiento", Number(db.savings_goals[0].target_amount) === 50000 && Number(db.transactions[0].amount) === 900);
+  }
+
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);
   process.exit(failures === 0 ? 0 : 1);
 }
