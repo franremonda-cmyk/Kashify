@@ -125,6 +125,28 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     if (owedNoOne) return debtFlow("me_deben", undefined, owedNoOne[1]);
     const lent = m.match(/^(?:yo\s+)?le\s+prest[eé]\s+(\d[\d.,]*)\s+a\s+(.+)$/);
     if (lent) return debtFlow("me_deben", lent[2], lent[1]);
+
+    // Saldar (va antes que pagar: "ya le pagué todo a juan" salda, no paga parcial)
+    const settle = m.match(/^(?:ya\s+)?(?:le\s+)?(?:sald[eé]|salda|cancel[aeé]|cerr[eé]|termin[eé])\s+(?:la\s+)?deuda\s+(?:de|con|a)\s+["']?(.+?)["']?$/)
+      ?? m.match(/^ya\s+le\s+pag(?:u[eé]|o)\s+todo\s+a\s+["']?(.+?)["']?$/);
+    if (settle) return { type: "settle_debt", counterparty: settle[1].trim() };
+
+    // Borrar (antes de delete_tx, que es muy goloso y se lo comería)
+    const del = m.match(/^(?:borra|elimina|saca|quita)\w*\s+(?:la\s+)?deuda\s+(?:de|con|a)\s+["']?(.+?)["']?$/);
+    if (del) return { type: "delete_debt", counterparty: del[1].trim() };
+
+    // Pagar parcial. La preposición "a" es el discriminante: "pagué 5000 de
+    // nafta" es un gasto, "le pagué 5000 a juan" es un pago de deuda.
+    const pay = m.match(/^(?:le\s+)?(?:pag(?:u[eé]|o)|di)\s+(\d[\d.,]*)\s+a\s+["']?(.+?)["']?$/);
+    if (pay) {
+      const amount = parseAmount(pay[1]);
+      if (amount > 0) return { type: "pay_debt", counterparty: pay[2].trim(), amount };
+    }
+    const gotPaid = m.match(/^["']?(.+?)["']?\s+me\s+pag(?:o|aron)\s+(\d[\d.,]*)$/);
+    if (gotPaid) {
+      const amount = parseAmount(gotPaid[2]);
+      if (amount > 0) return { type: "pay_debt", counterparty: gotPaid[1].trim(), amount };
+    }
   }
 
   // ── Installments ──────────────────────────────────────────────────────────

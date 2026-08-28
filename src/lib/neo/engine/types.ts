@@ -39,6 +39,9 @@ export type Intent =
   | { type: "deposit_goal"; amount: number; goalName: string }
   | { type: "pay_installment"; name: string }
   | { type: "cancel_installment"; name: string }
+  | { type: "pay_debt"; counterparty: string; amount: number }
+  | { type: "settle_debt"; counterparty: string }
+  | { type: "delete_debt"; counterparty: string }
   | { type: "flow"; ctx: FlowContext }
   | { type: "unknown" };
 
@@ -73,7 +76,8 @@ export interface DeleteCandidate {
 export type PendingConfirm =
   | { kind: "confirm_delete_tx"; candidates: DeleteCandidate[] }
   | { kind: "confirm_delete_goal"; goalId: string; goalName: string }
-  | { kind: "confirm_cancel_installment"; planId: string; planName: string };
+  | { kind: "confirm_cancel_installment"; planId: string; planName: string }
+  | { kind: "confirm_delete_debt"; debtId: string; debtLabel: string };
 
 // Estado que viaja entre turnos. Puede ser un flujo de slot-filling o una
 // confirmación pendiente.
@@ -114,7 +118,8 @@ export type NeoEffect =
   | { type: "installment_form"; prefill: { name?: string; nInstallments?: number; installmentAmount?: number } }
   | { type: "confirm_delete"; candidates: DeleteCandidate[] }
   | { type: "confirm_delete_goal"; goalId: string; goalName: string }
-  | { type: "confirm_cancel_installment"; planId: string; planName: string };
+  | { type: "confirm_cancel_installment"; planId: string; planName: string }
+  | { type: "confirm_delete_debt"; debtId: string; debtLabel: string };
 
 // ─── Resultado canónico del motor ────────────────────────────────────────────
 

@@ -42,6 +42,7 @@ class QB {
   order(col: string, o?: { ascending?: boolean }) { this.orderCol = col; this.orderAsc = o?.ascending ?? true; return this; }
   limit(n: number) { this.limitN = n; return this; }
   single() { this.wantSingle = true; return this.exec(); }
+  maybeSingle() { this.wantSingle = true; return this.exec(); }
   then(resolve: (v: { data: unknown; error: unknown; count?: number }) => void) { resolve(this.exec()); }
 
   private rows(): Row[] { return (this.db[this.table] ??= []); }
@@ -330,6 +331,51 @@ async function main() {
     check("'mis deudas' → las dos puntas", r3.text.includes("Juan") && r3.text.includes("Ana"), `reply: ${r3.text}`);
     const r4 = await runNeo({ supabase: makeStub(db), userId: USER, message: "mis cuotas", channel: "whatsapp" });
     check("'mis cuotas' sigue respondiendo cuotas", r4.text.includes("cuotas activas"), `reply: ${r4.text}`);
+  }
+
+  // 18) Deudas: pagar parcial y saldar
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    db.debts.push({ id: "d1", user_id: USER, space_id: SPACE, direction: "debo", counterparty: "Juan", total_amount: 10000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "le pagué 4000 a juan", channel: "whatsapp" });
+    check("'le pagué 4000 a juan' → baja el saldo de la deuda", Number(db.debts[0].paid_amount) === 4000 && db.debts[0].status === "active", `reply: ${r.text}`);
+    check("el pago informa el saldo restante (sin NaN)", r.text.includes("6.000") && !r.text.includes("NaN"), `reply: ${r.text}`);
+    check("el pago crea un egreso en la categoría Deudas", db.transactions.length === 1 && db.transactions[0].type === "expense" && db.transactions[0].category_id === "cat-deudas");
+    const r2 = await runNeo({ supabase: makeStub(db), userId: USER, message: "le pagué 6000 a juan", channel: "whatsapp" });
+    check("pagar el resto → queda saldada", db.debts[0].status === "paid", `reply: ${r2.text}`);
+    check("al saldar avisa que quedó saldada", r2.text.toLowerCase().includes("saldaste") && !r2.text.includes("NaN"), `reply: ${r2.text}`);
+  }
+  {
+    // Cobro de lo que te deben → ingreso, no egreso.
+    const db = seed();
+    db.debts.push({ id: "d2", user_id: USER, space_id: SPACE, direction: "me_deben", counterparty: "Ana", total_amount: 5000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "ana me pagó 5000", channel: "whatsapp" });
+    check("'ana me pagó 5000' → ingreso y deuda saldada", db.transactions[0]?.type === "income" && db.debts[0].status === "paid");
+  }
+
+  // 19) VÁLVULA DE SEGURIDAD: pagarle a alguien sin deuda = gasto normal
+  {
+    const db = seed();
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "le pagué 5000 a la panadería", channel: "whatsapp" });
+    check("pagar sin deuda previa → gasto normal (no error)", db.transactions.length === 1 && Number(db.transactions[0].amount) === 5000 && db.debts.length === 0, `reply: ${r.text}`);
+  }
+
+  // 20) Deudas: saldar y borrar
+  {
+    const db = seed();
+    db.debts.push({ id: "d3", user_id: USER, space_id: SPACE, direction: "debo", counterparty: "Juan", total_amount: 10000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "saldé la deuda de juan", channel: "whatsapp" });
+    check("'saldé la deuda de juan' → status paid", db.debts[0].status === "paid" && Number(db.debts[0].paid_amount) === 10000);
+  }
+  {
+    const db = seed();
+    db.debts.push({ id: "d4", user_id: USER, space_id: SPACE, direction: "debo", counterparty: "Juan", total_amount: 10000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    const stub = makeStub(db);
+    const r1 = await runNeo({ supabase: stub, userId: USER, message: "borrá la deuda de juan", channel: "whatsapp" });
+    check("'borrá la deuda de juan' → pide confirmación", !!r1.state && db.debts.length === 1, `reply: ${r1.text}`);
+    await runNeo({ supabase: stub, userId: USER, message: "sí", channel: "whatsapp", state: r1.state as NeoState });
+    check("confirmar → borra la deuda", db.debts.length === 0);
   }
 
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);

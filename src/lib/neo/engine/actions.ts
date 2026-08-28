@@ -1,6 +1,7 @@
 import { generatePaymentDates } from "@/lib/installments/calculator";
 import { categoryForText, CATEGORY_FALLBACK } from "@/lib/neo-keywords";
 import { learnFromCorrection } from "@/lib/neo/learning";
+import { payDebt } from "@/lib/debts/pay";
 import { scopeForSpace } from "@/lib/space-scope";
 import { normalize } from "./intent";
 import { missingSlot, slotQuestion } from "./flow";
@@ -73,6 +74,16 @@ async function findCategory(supabase: NeoSupabase, userId: string, name: string)
 async function primaryCurrency(supabase: NeoSupabase, userId: string): Promise<string> {
   const { data: profile } = await supabase.from("profiles").select("primary_currency").eq("user_id", userId).single();
   return profile?.primary_currency ?? "ARS";
+}
+
+// Deuda activa por contraparte (match laxo: "juan" encuentra "Juan Pérez").
+async function findDebt(supabase: NeoSupabase, userId: string, counterparty: string, scope: string[]) {
+  const { data } = await supabase.from("debts")
+    .select("id, counterparty, direction, total_amount, paid_amount, currency_code")
+    .eq("user_id", userId).eq("status", "active").in("space_id", scope);
+  const norm = normalize(counterparty);
+  return (data as { id: string; counterparty: string; direction: string; total_amount: number; paid_amount: number; currency_code: string }[] | null)
+    ?.find((d) => normalize(d.counterparty).includes(norm) || norm.includes(normalize(d.counterparty))) ?? null;
 }
 
 // ─── Espacios ────────────────────────────────────────────────────────────────
@@ -241,6 +252,11 @@ export async function executeConfirm(supabase: NeoSupabase, userId: string, conf
       await supabase.from("installment_payments").delete().eq("plan_id", confirm.planId).eq("user_id", userId).eq("status", "pending");
       await supabase.from("installment_plans").update({ status: "paid" }).eq("id", confirm.planId).eq("user_id", userId);
       return { text: `Saldé el plan "${confirm.planName}".`, effects: [{ type: "refresh" }] };
+    }
+    case "confirm_delete_debt": {
+      const { error } = await supabase.from("debts").delete().eq("id", confirm.debtId).eq("user_id", userId);
+      if (error) return { text: "No pude borrar la deuda." };
+      return { text: `Borré la deuda de ${confirm.debtLabel}.`, effects: [{ type: "refresh" }] };
     }
   }
 }
@@ -424,6 +440,45 @@ export async function executeIntent(
       if (debo.length) bloques.push(`Le debés a:\n${debo.map(line).join("\n")}`);
       if (meDeben.length) bloques.push(`Te deben:\n${meDeben.map(line).join("\n")}`);
       return { text: bloques.join("\n\n") };
+    }
+
+    case "pay_debt": {
+      const debt = await findDebt(supabase, userId, intent.counterparty, scope);
+      // VÁLVULA DE SEGURIDAD: si no hay deuda con esa contraparte, no es un
+      // error — "le pagué 5000 a la panadería" es un gasto común y corriente.
+      if (!debt) {
+        return respondFlow(supabase, userId,
+          { flow: "expense", description: intent.counterparty, amount: intent.amount, category: categoryForText(intent.counterparty) },
+          channel, activeSpaceId);
+      }
+      const pending = Number(debt.total_amount) - Number(debt.paid_amount);
+      const res = await payDebt(supabase, userId, debt.id, intent.amount);
+      if (!res.ok) return { text: res.error === "Monto inválido" ? `Esa deuda tiene un saldo de ${fmt(pending, debt.currency_code)}. ¿Cuánto pagaste?` : "No pude registrar el pago." };
+      // Se calcula con lo que ya teníamos, no con la fila que devuelve el update.
+      const left = pending - intent.amount;
+      const txt = left <= 0.005
+        ? `✅ Registrado. Saldaste la deuda con ${debt.counterparty} 🎉`
+        : `✅ Registrado. Queda ${fmt(left, debt.currency_code)} con ${debt.counterparty}.`;
+      return { text: txt, effects: [{ type: "refresh" }] };
+    }
+
+    case "settle_debt": {
+      const debt = await findDebt(supabase, userId, intent.counterparty, scope);
+      if (!debt) return { text: `No encontré una deuda activa con "${intent.counterparty}".` };
+      await supabase.from("debts")
+        .update({ paid_amount: debt.total_amount, status: "paid" })
+        .eq("id", debt.id).eq("user_id", userId);
+      return { text: `✅ Saldada la deuda con ${debt.counterparty}.`, effects: [{ type: "refresh" }] };
+    }
+
+    case "delete_debt": {
+      const debt = await findDebt(supabase, userId, intent.counterparty, scope);
+      if (!debt) return { text: `No encontré una deuda activa con "${intent.counterparty}".` };
+      const label = `${debt.counterparty} — ${fmt(Number(debt.total_amount), debt.currency_code)}`;
+      if (channel === "web") {
+        return { text: `¿Borro la deuda de ${label}?`, effects: [{ type: "confirm_delete_debt", debtId: debt.id, debtLabel: label }] };
+      }
+      return { text: `¿Borro la deuda de ${label}? (sí/no)`, state: { kind: "confirm_delete_debt", debtId: debt.id, debtLabel: label } };
     }
 
     case "edit_budget": {
