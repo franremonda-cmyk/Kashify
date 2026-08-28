@@ -19,6 +19,12 @@ function parseAmount(raw: string): number {
   return parseFloat(raw.replace(/\./g, "").replace(",", "."));
 }
 
+// "cancelá" / "dejá" / "no" sueltos = descartar lo pendiente. Pero "cancelá la
+// cuota de iPhone" es un comando sobre un objeto, no un descarte: sin esto el
+// bloque de dismiss se comía el ejemplo que la propia ayuda de Neo publicita.
+// (normalize() ya sacó los acentos, por eso "limite"/"categoria" van sin tilde)
+const DISMISS_OBJECT = /\s+(?:la|el|mi|los|las|mis)?\s*(?:cuota|deuda|plan|meta|objetivo|ahorro|limite|presupuesto|gasto|ingreso|movimiento|transaccion|categoria|espacio)/;
+
 // Detección de intención 100% por reglas (0 tokens). `learnedKeywords` son
 // patrones que el usuario enseñó antes (vía fallback Haiku + confirmación), que
 // permiten resolver sin volver a gastar tokens.
@@ -30,11 +36,11 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     return { type: "greeting" };
 
   // ── Cancel / dismiss ──────────────────────────────────────────────────────
-  if (/^(no|nada|olvida(lo)?|cancela(lo)?|deja(lo)?|no importa|igual|salir|stop|listo gracias|no gracias|dejame)\b/.test(m))
+  if (/^(no|nada|olvida(lo)?|cancela(lo)?|deja(lo)?|no importa|igual|salir|stop|listo gracias|no gracias|dejame)\b/.test(m) && !DISMISS_OBJECT.test(m))
     return { type: "cancel_pending" };
 
   // ── Help ──────────────────────────────────────────────────────────────────
-  if (/ayuda|help|que pod[eé]s hacer|que puedes hacer|como te uso|como funciona[s]?|comandos|que hac[eé]s|que se puede|instrucciones|para que sirv[eé]s/.test(m))
+  if (/ayuda|help|men[uú]|info|que pod[eé]s hacer|que puedes hacer|como te uso|como funciona[s]?|comandos|que hac[eé]s|que se puede|instrucciones|para que sirv[eé]s|que sos/.test(m))
     return { type: "help" };
 
   // ── Balance ───────────────────────────────────────────────────────────────
@@ -97,7 +103,11 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   }
 
   // ── Pay installment ───────────────────────────────────────────────────────
-  const payInstallMatch = m.match(/(?:pag[ueé]|pagué|registr[ao]r?\s+(?:el\s+)?pago\s+de|pago\s+la\s+cuota\s+de|pagué\s+(?:la\s+)?cuota\s+de|pago\s+cuota\s+de)\s+["']?(.+?)["']?$/);
+  // Exige la palabra cuota/plan/mensualidad. Antes `pag[ueé]` no podía matchear
+  // "pague" (matcheaba "pagu" y después pedía un espacio), así que "pagué la
+  // cuota de Netflix" caía en el flujo de CREAR cuota. Y sin exigir el sustantivo,
+  // "pagué 5000 de nafta" buscaría un plan llamado "5000 de nafta".
+  const payInstallMatch = m.match(/(?:pag(?:u[eé]|o|ar|amos)|registr[ao]r?\s+(?:el\s+)?pago)\s+(?:de\s+)?(?:la\s+|el\s+)?(?:cuota|plan|mensualidad)\s+(?:de\s+)?["']?(.+?)["']?$/);
   if (payInstallMatch) return { type: "pay_installment", name: payInstallMatch[1].trim() };
 
   // ── Cancel installment ────────────────────────────────────────────────────

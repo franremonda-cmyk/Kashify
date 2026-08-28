@@ -23,9 +23,11 @@ function isAffirmative(s: string): boolean {
   return /^(si|sí|s|dale|ok|oka|okey|obvio|confirmo|confirmar|eliminalo|borralo|saldalo|hacelo|claro|sip)\b/.test(normalize(s));
 }
 
-// Saludo / pedido de ayuda → bienvenida con el "cómo usarlo".
+// Saludo → bienvenida con el "cómo usarlo". OJO: acá NO van "ayuda"/"menú"/"qué
+// podés hacer" — los agarra el intent `help`, que lista todo lo que Neo sabe
+// hacer. Mientras estuvieron acá, ese texto de ayuda era inalcanzable.
 function isGreeting(norm: string): boolean {
-  return /^(hola|holis|holaa|buenas|buen[oa]s? ?(dias|d[ií]as|tardes|noches)?|hey|hello|hi|empez[ao]r?|empecemos|ayuda|help|menu|men[uú]|info|que pod[eé]s hacer|qu[eé] pod[eé]s hacer|como funciona|c[oó]mo funciona|que sos|qu[eé] sos)\b/.test(norm.trim());
+  return /^(hola|holis|holaa|buenas|buen[oa]s? ?(dias|d[ií]as|tardes|noches)?|hey|hello|hi|empez[ao]r?|empecemos)\b/.test(norm.trim());
 }
 
 const WELCOME_TEXT =

@@ -3,6 +3,7 @@
 //
 // NOTA: importa desde src/ vía alias relativo; tsx resuelve TS directamente.
 import { runNeo } from "../../src/lib/neo/engine/index.ts";
+import { detectIntent } from "../../src/lib/neo/engine/intent.ts";
 import type { NeoState } from "../../src/lib/neo/engine/types.ts";
 
 // ─── Stub de Supabase ────────────────────────────────────────────────────────
@@ -255,6 +256,29 @@ async function main() {
     db.spaces.push({ id: "space-freelance", user_id: USER, name: "Freelance", is_default: false, include_in_total: true, primary_currency: "USD", sort_order: 1, created_at: "2026-02-01" });
     const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "compré café 800", channel: "web", activeSpaceId: "space-freelance" });
     check("web activeSpace: crea directo en el espacio activo", db.transactions.length === 1 && db.transactions[0].space_id === "space-freelance", `reply: ${r.text}`);
+  }
+
+  // 13) Regresión: los ejemplos que la propia ayuda de Neo publicita.
+  //     "pagué la cuota de X" creaba un plan nuevo (`pag[ueé]` no podía matchear
+  //     "pague") y "cancelá la cuota de X" lo comía el regex de descarte.
+  {
+    const intentOf = (msg: string) => detectIntent(msg).type;
+    check("'pagué la cuota de Netflix' → pay_installment (no crea plan)", intentOf("pagué la cuota de Netflix") === "pay_installment");
+    check("'pago la cuota de Netflix' → pay_installment", intentOf("pago la cuota de Netflix") === "pay_installment");
+    check("'cancelá la cuota de iPhone' → cancel_installment (no descarte)", intentOf("cancelá la cuota de iPhone") === "cancel_installment");
+    check("'ayuda' → help (no el welcome corto)", intentOf("ayuda") === "help");
+    check("'menu' → help", intentOf("menu") === "help");
+    // Y lo que NO se debe romper al exigir el sustantivo / al acotar el descarte:
+    check("'pagué 5000 de nafta' sigue siendo gasto", intentOf("pagué 5000 de nafta") === "flow");
+    check("'no' sigue descartando", intentOf("no") === "cancel_pending");
+    check("'cancelalo' sigue descartando", intentOf("cancelalo") === "cancel_pending");
+    check("'comprá la tele en 12 cuotas de 30000' sigue creando plan", intentOf("comprá la tele en 12 cuotas de 30000") === "flow");
+  }
+
+  // 14) "ayuda" end-to-end: debe llegar el texto largo, no el WELCOME.
+  {
+    const r = await runNeo({ supabase: makeStub(seed()), userId: USER, message: "ayuda", channel: "whatsapp" });
+    check("'ayuda' devuelve la ayuda completa (menciona Cuotas y Límites)", r.text.includes("Cuotas:") && r.text.includes("Límites:"), `reply: ${r.text.slice(0, 40)}…`);
   }
 
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);
