@@ -376,6 +376,13 @@ async function main() {
     check("'borrá la deuda de juan' → pide confirmación", !!r1.state && db.debts.length === 1, `reply: ${r1.text}`);
     await runNeo({ supabase: stub, userId: USER, message: "sí", channel: "whatsapp", state: r1.state as NeoState });
     check("confirmar → borra la deuda", db.debts.length === 0);
+    // En web la confirmación también debe viajar como estado: el cliente no
+    // sabe dibujar un efecto confirm_delete_debt, así que un effect sin state
+    // dejaba el borrado sin botón y sin salida.
+    const db2 = seed();
+    db2.debts.push({ id: "d5", user_id: USER, space_id: SPACE, direction: "debo", counterparty: "Juan", total_amount: 1000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    const rWeb = await runNeo({ supabase: makeStub(db2), userId: USER, message: "borrá la deuda de juan", channel: "web" });
+    check("web: el borrado de deuda deja estado y opciones", !!rWeb.state && !!rWeb.options?.length, `reply: ${rWeb.text}`);
   }
 
   // 21) Deuda interpretada por Haiku: SIEMPRE se confirma antes de anotarla.

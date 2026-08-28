@@ -99,6 +99,11 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   if (/ayuda|help|men[uú]|info|que pod[eé]s hacer|que puedes hacer|como te uso|como funciona[s]?|comandos|que hac[eé]s|que se puede|instrucciones|para que sirv[eé]s|que sos/.test(m))
     return { type: "help" };
 
+  // ── Exportar ──────────────────────────────────────────────────────────────
+  // Antes de spending_query: "pasame mis gastos en csv" contiene "mis gastos".
+  if (/export|descargar\s+(?:mis\s+)?(?:datos|gastos|movimientos)|pasame\s+(?:mis\s+)?(?:datos|gastos|movimientos)\s+en\s+(?:csv|excel)|backup|csv|excel/.test(m))
+    return { type: "export_query" };
+
   // ── Balance ───────────────────────────────────────────────────────────────
   if (/saldo|cuanto tengo|mis cuentas|mis balances|cuanta plata|cuanto hay|mi balance|ver balance|como estoy financieramente|como ando|como voy de plata|situacion financiera|plata que tengo|cuanto dinero|cuanto efectivo|cuanto me queda en total/.test(m))
     return { type: "balance_query" };
@@ -207,6 +212,18 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
 
     const mov = m.match(/^(?:pas|mov|mand|cambi)\w*\s+(?:est[ae]|el\s+ultimo|es[ae])\s*(?:gasto|movimiento|ingreso|registro|compra)?\s*(?:a|al|para)\s+(?:el\s+espacio\s+)?["']?(.+?)["']?$/);
     if (mov) return { type: "move_tx_space", name: mov[1].trim() };
+  }
+
+  // ── Dólar y exportar ──────────────────────────────────────────────────────
+  {
+    const setUsd = m.match(/^(?:pon|fij|actualiz|cambi|marc)\w*\s+(?:el\s+)?(?:dolar|usd|tipo de cambio|cotizacion)\s+(?:a|en)\s+(\d[\d.,]*)$/);
+    if (setUsd) {
+      const n = parseAmount(setUsd[1]);
+      if (n > 0) return { type: "set_usd_rate", rate: n };
+    }
+    if (/a\s+cuanto\s+esta\s+el\s+dolar|cotizacion\s+del\s+dolar|(?:que|cual)\s+(?:es\s+)?(?:el\s+)?(?:valor|precio)\s+del\s+dolar|mi\s+dolar/.test(m))
+      return { type: "usd_rate_query" };
+
   }
 
   // ── Categorías ────────────────────────────────────────────────────────────

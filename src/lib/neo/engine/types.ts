@@ -41,6 +41,9 @@ export type Intent =
   | { type: "cancel_installment"; name: string }
   // Editar un movimiento ya registrado. `search` ausente = el último.
   | { type: "edit_tx"; search?: string; amount?: number; description?: string; date?: string }
+  | { type: "usd_rate_query" }
+  | { type: "set_usd_rate"; rate: number }
+  | { type: "export_query" }
   | { type: "categories_query" }
   | { type: "create_category"; name: string }
   | { type: "rename_category"; oldName: string; newName: string }
@@ -140,8 +143,7 @@ export type NeoEffect =
   | { type: "installment_form"; prefill: { name?: string; nInstallments?: number; installmentAmount?: number } }
   | { type: "confirm_delete"; candidates: DeleteCandidate[] }
   | { type: "confirm_delete_goal"; goalId: string; goalName: string }
-  | { type: "confirm_cancel_installment"; planId: string; planName: string }
-  | { type: "confirm_delete_debt"; debtId: string; debtLabel: string };
+  | { type: "confirm_cancel_installment"; planId: string; planName: string };
 
 // ─── Resultado canónico del motor ────────────────────────────────────────────
 

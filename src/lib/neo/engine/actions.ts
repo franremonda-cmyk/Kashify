@@ -318,7 +318,7 @@ export async function executeIntent(
       return { text: "Dale, cancelado.", state: null, effects: [{ type: "cancel_pending" }] };
 
     case "help":
-      return { text: `Soy Neo, tu asistente de finanzas. Esto es lo que puedo hacer por vos:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n\nMetas:\n• Ver: "mis metas"\n• Crear: "agrega una meta viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Cambiar objetivo: "cambiá el objetivo de viaje a 50000"\n• Depositar: "depositá 5000 en viaje"\n• Eliminar: "eliminá la meta viaje"\n\nCuotas (compras financiadas con tarjeta):\n• Ver: "mis cuotas"\n• Crear: "agrega cuota Netflix por 6 meses de 5000"\n• Pagar: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"\n\nDeudas (plata entre personas):\n• Anotar: "debo 10000 a Juan" · "Ana me debe 5000"\n• Ver: "cuánto debo" · "quién me debe"\n• Pagar: "le pagué 3000 a Juan"\n• Saldar: "saldé la deuda de Juan"\n\nLímites:\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"` };
+      return { text: `Soy Neo, tu asistente de finanzas. Esto es lo que puedo hacer por vos:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n\nMetas:\n• Ver: "mis metas"\n• Crear: "agrega una meta viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Cambiar objetivo: "cambiá el objetivo de viaje a 50000"\n• Depositar: "depositá 5000 en viaje"\n• Eliminar: "eliminá la meta viaje"\n\nCuotas (compras financiadas con tarjeta):\n• Ver: "mis cuotas"\n• Crear: "agrega cuota Netflix por 6 meses de 5000"\n• Pagar: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"\n\nDeudas (plata entre personas):\n• Anotar: "debo 10000 a Juan" · "Ana me debe 5000"\n• Ver: "cuánto debo" · "quién me debe"\n• Pagar: "le pagué 3000 a Juan"\n• Saldar: "saldé la deuda de Juan"\n\nLímites:\n• Ver: "mis límites"\n• Poner: "poné un límite de 30000 en Comida"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"\n\nCorregir lo ya anotado:\n• Monto: "el último gasto eran 5000"\n• Categoría: "cambiá la categoría de netflix a Ocio"\n• Fecha: "cambiá la fecha del último a ayer"\n• Borrar: "borrá el gasto de netflix"\n\nEspacios y categorías:\n• Ver: "mis espacios" · "mis categorías"\n• Crear: "creá el espacio Freelance"\n• Mover: "pasá este gasto a Casa"\n\nOtros:\n• Dólar: "poné el dólar a 1450"\n• Avisos: "no me avises más de límites"\n• Exportar: "pasame mis datos en csv"` };
 
     case "balance_query": {
       const { data: balances } = await supabase.from("transactions")
@@ -471,6 +471,23 @@ export async function executeIntent(
       if (meDeben.length) bloques.push(`Te deben:\n${meDeben.map(line).join("\n")}`);
       return { text: bloques.join("\n\n") };
     }
+
+    case "set_usd_rate": {
+      await supabase.from("profiles").update({ usd_rate: intent.rate }).eq("user_id", userId);
+      return { text: `✅ Anoté el dólar a ${intent.rate.toLocaleString("es-AR")}. Lo uso para mostrarte los totales convertidos.`, effects: [{ type: "refresh" }] };
+    }
+
+    case "usd_rate_query": {
+      const { data: p } = await supabase.from("profiles").select("usd_rate").eq("user_id", userId).single();
+      const rate = (p as { usd_rate?: number | null } | null)?.usd_rate;
+      if (!rate) return { text: 'Todavía no me dijiste a cuánto está el dólar. Decime "poné el dólar a 1450".' };
+      return { text: `Tenés el dólar en ${Number(rate).toLocaleString("es-AR")}.` };
+    }
+
+    case "export_query":
+      // Neo no puede adjuntar archivos (ni en web ni en WhatsApp): lo honesto es
+      // decir dónde está, no simular que lo manda.
+      return { text: "Podés bajar todos tus movimientos en CSV o Excel desde Perfil → Exportar datos 📄" };
 
     case "edit_tx": {
       // Sin `search` = el último movimiento. Con `search`, el más reciente que coincida.
@@ -655,10 +672,13 @@ export async function executeIntent(
       const debt = await findDebt(supabase, userId, intent.counterparty, scope);
       if (!debt) return { text: `No encontré una deuda activa con "${intent.counterparty}".` };
       const label = `${debt.counterparty} — ${fmt(Number(debt.total_amount), debt.currency_code)}`;
-      if (channel === "web") {
-        return { text: `¿Borro la deuda de ${label}?`, effects: [{ type: "confirm_delete_debt", debtId: debt.id, debtLabel: label }] };
-      }
-      return { text: `¿Borro la deuda de ${label}? (sí/no)`, state: { kind: "confirm_delete_debt", debtId: debt.id, debtLabel: label } };
+      // Confirmación por estado en los dos canales: la web la round-trippea
+      // como pendingContext y muestra las options como botones.
+      return {
+        text: `¿Borro la deuda de ${label}?`,
+        options: ["Sí", "No"],
+        state: { kind: "confirm_delete_debt", debtId: debt.id, debtLabel: label },
+      };
     }
 
     case "edit_budget": {
@@ -837,6 +857,8 @@ export function domainHint(message: string): string | null {
   if (/deuda|debo|me deben|prest/.test(mn)) return `Para deudas puedo:\n• Anotar: "debo 10000 a Juan" o "Ana me debe 5000"\n• Ver: "cuánto debo" · "quién me debe"\n• Registrar pago: "le pagué 3000 a Juan"\n• Saldar: "saldé la deuda de Juan"`;
   if (/cuota|mensualidad/.test(mn)) return `Para cuotas puedo:\n• Crear: "comprá la tele en 12 cuotas de 30000"\n• Ver: "mis cuotas"\n• Registrar pago: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"`;
   if (/l[ií]mite|presupuesto/.test(mn)) return `Para límites puedo:\n• Poner: "poné un límite de 30000 en Comida"\n• Ver: "mis límites"\n• Editar: "editá el límite de Comida a 40000"\n• Eliminar: "eliminá el límite de Comida"`;
-  if (/borr|elimin|sac[aá]|quit/.test(mn)) return `Para eliminar, decime qué:\n• Gasto: "borrá el gasto de Netflix"\n• Meta: "eliminá la meta viaje"\n• Cuota: "cancelá la cuota de iPhone"\n• Límite: "eliminá el límite de Comida"`;
+  if (/espacio/.test(mn)) return `Para espacios puedo:\n• Ver: "mis espacios"\n• Crear: "creá el espacio Freelance"\n• Renombrar: "renombrá el espacio Casa a Hogar"\n• Principal: "poné Freelance como principal"\n• Mover un gasto: "pasá este gasto a Casa"`;
+  if (/categoria/.test(mn)) return `Para categorías puedo:\n• Ver: "mis categorías"\n• Crear: "creá la categoría Mascotas"\n• Renombrar: "renombrá la categoría Ocio a Diversión"\n• Corregir un movimiento: "cambiá la categoría de netflix a Ocio"`;
+  if (/borr|elimin|sac[aá]|quit/.test(mn)) return `Para eliminar, decime qué:\n• Gasto: "borrá el gasto de Netflix"\n• Meta: "eliminá la meta viaje"\n• Cuota: "cancelá la cuota de iPhone"\n• Deuda: "borrá la deuda de Juan"\n• Límite: "eliminá el límite de Comida"`;
   return null;
 }
