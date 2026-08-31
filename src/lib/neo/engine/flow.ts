@@ -102,8 +102,11 @@ export function slotQuestion(ctx: FlowContext, slot: string): { text: string; op
     case "bcategory": return { text: "¿Para qué categoría es el límite?" };
     case "bamount": return { text: "¿De cuánto es el límite mensual?" };
     case "ddirection": return { text: "¿Vos debés o te deben?", options: ["Yo debo", "Me deben"] };
-    case "dcounterparty": return { text: (ctx as { direction?: string }).direction === "me_deben" ? "¿Quién te debe?" : "¿A quién le debés?" };
-    case "damount": return { text: "¿De cuánto?" };
+    case "dcounterparty": {
+      const d = ctx as { direction?: string; originExpense?: boolean };
+      return { text: d.originExpense ? "¿A quién le prestaste?" : d.direction === "me_deben" ? "¿Quién te debe?" : "¿A quién le debés?" };
+    }
+    case "damount": return { text: (ctx as { originExpense?: boolean }).originExpense ? "¿Cuánto le prestaste?" : "¿De cuánto?" };
     case "clarify": return { text: "No entendí 🤔 ¿Qué querés hacer?", options: ["Registrar gasto", "Registrar ingreso", "Consultar"] };
     default: return { text: "¿Podés repetirlo?" };
   }

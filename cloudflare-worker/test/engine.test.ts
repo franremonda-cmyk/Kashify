@@ -308,6 +308,51 @@ async function main() {
     check("'me prestaron 5000' → deuda (no ingreso)", db.debts.length === 0 && db.transactions.length === 0, "pregunta a quién");
   }
 
+  // 15b) Prestar baja el neto: deuda me_deben + egreso en "Deudas"
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "presté 10000 a juan", channel: "whatsapp" });
+    check("'presté 10000 a juan' (sin 'le') → deuda me_deben", db.debts.length === 1 && db.debts[0].direction === "me_deben" && db.debts[0].counterparty === "Juan" && Number(db.debts[0].total_amount) === 10000, `reply: ${r.text}`);
+    check("'presté 10000 a juan' → egreso de 10000 en Deudas (baja el neto)", db.transactions.length === 1 && db.transactions[0].type === "expense" && Number(db.transactions[0].amount) === 10000 && db.transactions[0].category_id === "cat-deudas", JSON.stringify(db.transactions[0]));
+    check("'presté ...' avisa que se descontó del neto", r.text.toLowerCase().includes("neto"), `reply: ${r.text}`);
+  }
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "le presté 5000 a ana para la nafta", channel: "whatsapp" });
+    check("'le presté 5000 a ana para la nafta' → motivo como descripción del egreso", db.transactions[0]?.description === "la nafta" && db.debts[0]?.counterparty === "Ana", JSON.stringify(db.transactions[0]));
+  }
+  {
+    // "juan me devolvió 5000": verbo natural de repago, hoy creaba basura.
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    db.debts.push({ id: "dd", user_id: USER, space_id: SPACE, direction: "me_deben", counterparty: "Juan", total_amount: 10000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "juan me devolvió 5000", channel: "whatsapp" });
+    check("'juan me devolvió 5000' → baja la deuda + 1 ingreso (sin gasto basura)", Number(db.debts[0].paid_amount) === 5000 && db.debts[0].status === "active" && db.transactions.length === 1 && db.transactions[0].type === "income");
+  }
+  {
+    // Sin deuda registrada: "me devolvió" es ingreso, no egreso.
+    const db = seed();
+    await runNeo({ supabase: makeStub(db), userId: USER, message: " pedro me devolvió 3000".trim(), channel: "whatsapp" });
+    check("'pedro me devolvió 3000' sin deuda → ingreso (no egreso)", db.transactions.length === 1 && db.transactions[0].type === "income" && Number(db.transactions[0].amount) === 3000, JSON.stringify(db.transactions[0]));
+  }
+  {
+    // findDebt filtra por dirección: Juan me debe Y yo le debo a Juan.
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    db.debts.push({ id: "dme", user_id: USER, space_id: SPACE, direction: "me_deben", counterparty: "Juan", total_amount: 5000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    db.debts.push({ id: "ddebo", user_id: USER, space_id: SPACE, direction: "debo", counterparty: "Juan", total_amount: 2000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "le pagué 2000 a juan", channel: "whatsapp" });
+    check("'le pagué 2000 a juan' toca SOLO la fila 'debo'", db.debts.find((d) => d.id === "ddebo")!.status === "paid" && db.debts.find((d) => d.id === "dme")!.paid_amount === 0);
+    const db2 = seed();
+    db2.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    db2.debts.push({ id: "dme", user_id: USER, space_id: SPACE, direction: "me_deben", counterparty: "Juan", total_amount: 5000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    db2.debts.push({ id: "ddebo", user_id: USER, space_id: SPACE, direction: "debo", counterparty: "Juan", total_amount: 2000, paid_amount: 0, currency_code: "ARS", status: "active", due_date: null });
+    await runNeo({ supabase: makeStub(db2), userId: USER, message: "juan me pagó 5000", channel: "whatsapp" });
+    check("'juan me pagó 5000' toca SOLO la fila 'me_deben'", db2.debts.find((d) => d.id === "dme")!.status === "paid" && db2.debts.find((d) => d.id === "ddebo")!.paid_amount === 0);
+  }
+
   // 16) Deudas: alta por slot-filling cuando falta el monto
   {
     const db = seed();

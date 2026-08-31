@@ -16,6 +16,7 @@ import type {
   NeoSupabase,
   PendingConfirm,
 } from "./types";
+import type { DebtDirection } from "@/types";
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 
@@ -109,10 +110,12 @@ function resolveNotifFamily(term: string): { family: NotifFamily; label: string 
 }
 
 // Deuda activa por contraparte (match laxo: "juan" encuentra "Juan Pérez").
-async function findDebt(supabase: NeoSupabase, userId: string, counterparty: string, scope: string[]) {
-  const { data } = await supabase.from("debts")
+async function findDebt(supabase: NeoSupabase, userId: string, counterparty: string, scope: string[], direction?: DebtDirection) {
+  let q = supabase.from("debts")
     .select("id, counterparty, direction, total_amount, paid_amount, currency_code")
     .eq("user_id", userId).eq("status", "active").in("space_id", scope);
+  if (direction) q = q.eq("direction", direction);
+  const { data } = await q;
   const norm = normalize(counterparty);
   return (data as { id: string; counterparty: string; direction: string; total_amount: number; paid_amount: number; currency_code: string }[] | null)
     ?.find((d) => normalize(d.counterparty).includes(norm) || norm.includes(normalize(d.counterparty))) ?? null;
@@ -264,6 +267,18 @@ export async function respondFlow(
         currency_code: currency, status: "active",
       });
       if (error) return { text: "No pude anotar la deuda. Probá desde la sección Deudas." };
+      // "presté/fié" → la plata ya salió: además de la fila en `debts`, un egreso.
+      // (El path de Haiku `confirm_debt` no setea originExpense: no distingue
+      // "presté" de "me debe", así que el egreso solo lo prende la regla.)
+      if (ctx.originExpense) {
+        const cat = await resolveCategory(supabase, userId, "Deudas");
+        await supabase.from("transactions").insert({
+          user_id: userId, space_id: spaceId, type: "expense", amount: ctx.amount,
+          currency_code: currency, description: ctx.description || `Préstamo a ${ctx.counterparty}`,
+          date: new Date().toISOString().split("T")[0], category_id: cat?.id ?? null,
+        });
+        return { text: `✅ Anoté que ${ctx.counterparty} te debe ${fmt(ctx.amount!, currency)} y lo descontué de tu neto.`, effects: [{ type: "refresh" }] };
+      }
       const txt = ctx.direction === "debo"
         ? `✅ Anoté que le debés ${fmt(ctx.amount!, currency)} a ${ctx.counterparty}.`
         : `✅ Anoté que ${ctx.counterparty} te debe ${fmt(ctx.amount!, currency)}.`;
@@ -329,7 +344,7 @@ export async function executeIntent(
       return { text: "Dale, cancelado.", state: null, effects: [{ type: "cancel_pending" }] };
 
     case "help":
-      return { text: `Soy Neo, tu asistente de finanzas. Esto es lo que puedo hacer por vos:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n\nMetas:\n• Ver: "mis metas"\n• Crear: "agrega una meta viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Cambiar objetivo: "cambiá el objetivo de viaje a 50000"\n• Depositar: "depositá 5000 en viaje"\n• Eliminar: "eliminá la meta viaje"\n\nCuotas (compras financiadas con tarjeta):\n• Ver: "mis cuotas"\n• Crear: "agrega cuota Netflix por 6 meses de 5000"\n• Pagar: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"\n\nDeudas (plata entre personas):\n• Anotar: "debo 10000 a Juan" · "Ana me debe 5000"\n• Ver: "cuánto debo" · "quién me debe"\n• Pagar: "le pagué 3000 a Juan"\n• Saldar: "saldé la deuda de Juan"\n\nLímites:\n• Ver: "mis límites"\n• Poner: "poné un límite de 30000 en Comida"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"\n\nCorregir lo ya anotado:\n• Monto: "el último gasto eran 5000"\n• Categoría: "cambiá la categoría de netflix a Ocio"\n• Fecha: "cambiá la fecha del último a ayer"\n• Borrar: "borrá el gasto de netflix"\n\nEspacios y categorías:\n• Ver: "mis espacios" · "mis categorías"\n• Crear: "creá el espacio Freelance"\n• Mover: "pasá este gasto a Casa"\n\nOtros:\n• Dólar: "poné el dólar a 1450"\n• Avisos: "no me avises más de límites"\n• Exportar: "pasame mis datos en csv"` };
+      return { text: `Soy Neo, tu asistente de finanzas. Esto es lo que puedo hacer por vos:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n\nMetas:\n• Ver: "mis metas"\n• Crear: "agrega una meta viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Cambiar objetivo: "cambiá el objetivo de viaje a 50000"\n• Depositar: "depositá 5000 en viaje"\n• Eliminar: "eliminá la meta viaje"\n\nCuotas (compras financiadas con tarjeta):\n• Ver: "mis cuotas"\n• Crear: "agrega cuota Netflix por 6 meses de 5000"\n• Pagar: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"\n\nDeudas (plata entre personas):\n• Prestar (te baja el neto): "presté 10000 a Juan"\n• Anotar: "debo 10000 a Juan" · "Ana me debe 5000"\n• Ver: "cuánto debo" · "quién me debe"\n• Cobrar: "Juan me devolvió 3000" · Pagar: "le pagué 3000 a Juan"\n• Saldar: "saldé la deuda de Juan"\n\nLímites:\n• Ver: "mis límites"\n• Poner: "poné un límite de 30000 en Comida"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"\n\nCorregir lo ya anotado:\n• Monto: "el último gasto eran 5000"\n• Categoría: "cambiá la categoría de netflix a Ocio"\n• Fecha: "cambiá la fecha del último a ayer"\n• Borrar: "borrá el gasto de netflix"\n\nEspacios y categorías:\n• Ver: "mis espacios" · "mis categorías"\n• Crear: "creá el espacio Freelance"\n• Mover: "pasá este gasto a Casa"\n\nOtros:\n• Dólar: "poné el dólar a 1450"\n• Avisos: "no me avises más de límites"\n• Exportar: "pasame mis datos en csv"` };
 
     case "balance_query": {
       const { data: balances } = await supabase.from("transactions")
@@ -651,12 +666,15 @@ export async function executeIntent(
     }
 
     case "pay_debt": {
-      const debt = await findDebt(supabase, userId, intent.counterparty, scope);
-      // VÁLVULA DE SEGURIDAD: si no hay deuda con esa contraparte, no es un
-      // error — "le pagué 5000 a la panadería" es un gasto común y corriente.
+      const debt = await findDebt(supabase, userId, intent.counterparty, scope, intent.direction);
+      // VÁLVULA DE SEGURIDAD: si no hay deuda con esa contraparte, no es un error.
+      // "le pagué 5000 a la panadería" = gasto normal; "juan me devolvió 5000"
+      // sin deuda registrada = ingreso (no un gasto).
       if (!debt) {
         return respondFlow(supabase, userId,
-          { flow: "expense", description: intent.counterparty, amount: intent.amount, category: categoryForText(intent.counterparty) },
+          intent.direction === "me_deben"
+            ? { flow: "income", description: intent.counterparty, amount: intent.amount }
+            : { flow: "expense", description: intent.counterparty, amount: intent.amount, category: categoryForText(intent.counterparty) },
           channel, activeSpaceId);
       }
       const pending = Number(debt.total_amount) - Number(debt.paid_amount);

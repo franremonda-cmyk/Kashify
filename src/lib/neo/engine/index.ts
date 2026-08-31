@@ -41,6 +41,7 @@ const WELCOME_TEXT =
   "• _¿cuál es mi saldo?_\n" +
   "• _¿cómo van mis metas?_\n\n" +
   "También llevo la cuenta de lo que debés y lo que te deben:\n" +
+  "• _presté 10000 a Juan_\n" +
   "• _debo 10000 a Juan_\n" +
   "• _¿cuánto debo?_\n\n" +
   "Escribí *ayuda* para ver todo lo que sé hacer.\n" +

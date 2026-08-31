@@ -40,6 +40,29 @@ ok(g4.type === "flow" && amt(g4) === 500, "‘u$s500’ → monto 500 (moneda an
 const g5 = detectIntent("ingreso $45000");
 ok(g5.type === "flow" && (g5 as { ctx?: { flow?: string } }).ctx?.flow === "income" && amt(g5) === 45000, "‘ingreso $45000’ → ingreso 45000");
 
+// ── préstamos: "presté/fié" → deuda me_deben que además baja el neto (originExpense) ──
+type DebtCtx = { ctx?: { flow?: string; direction?: string; originExpense?: boolean; description?: string } };
+const p1 = detectIntent("presté 10000 a Juan");
+ok(p1.type === "flow" && (p1 as DebtCtx).ctx?.flow === "debt" && (p1 as DebtCtx).ctx?.direction === "me_deben" && (p1 as DebtCtx).ctx?.originExpense === true, "‘presté 10000 a Juan’ → deuda me_deben con originExpense");
+const p2 = detectIntent("le presté 5000 a Ana para la nafta");
+ok(p2.type === "flow" && (p2 as DebtCtx).ctx?.description === "la nafta", "‘...para la nafta’ → motivo como descripción");
+const p3 = detectIntent("fié 2000 a la vecina");
+ok(p3.type === "flow" && (p3 as DebtCtx).ctx?.originExpense === true, "‘fié 2000 a la vecina’ → también baja el neto");
+const p4 = detectIntent("le presté a Juan");
+ok(p4.type === "flow" && (p4 as DebtCtx).ctx?.flow === "debt" && amt(p4) === undefined, "‘le presté a Juan’ sin monto → flujo pregunta cuánto");
+
+// ── repago: dirección explícita según el verbo ──
+type PayIntent = { type: string; direction?: string };
+const pd1 = detectIntent("juan me devolvió 3000") as PayIntent;
+ok(pd1.type === "pay_debt" && pd1.direction === "me_deben", "‘juan me devolvió 3000’ → pay_debt me_deben");
+const pd2 = detectIntent("le pagué 3000 a juan") as PayIntent;
+ok(pd2.type === "pay_debt" && pd2.direction === "debo", "‘le pagué 3000 a juan’ → pay_debt debo");
+const pd3 = detectIntent("le devolví 3000 a juan") as PayIntent;
+ok(pd3.type === "pay_debt" && pd3.direction === "debo", "‘le devolví 3000 a juan’ → pay_debt debo");
+// regresión: "debo" sigue sin originExpense
+const rd = detectIntent("debo 10000 a juan");
+ok(rd.type === "flow" && !(rd as DebtCtx).ctx?.originExpense, "‘debo 10000 a juan’ NO prende originExpense");
+
 // ── diccionario global argentino + fallback de categorías ──
 ok(categoryForText("quilmes") === "Comida", "quilmes → Comida");
 ok(categoryForText("fravega") === "Hogar", "fravega → Hogar");

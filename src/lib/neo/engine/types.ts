@@ -55,7 +55,7 @@ export type Intent =
   | { type: "delete_space"; name: string }
   | { type: "set_default_space"; name: string }
   | { type: "move_tx_space"; name: string }
-  | { type: "pay_debt"; counterparty: string; amount: number }
+  | { type: "pay_debt"; counterparty: string; amount: number; direction?: DebtDirection }
   | { type: "settle_debt"; counterparty: string }
   | { type: "delete_debt"; counterparty: string }
   | { type: "flow"; ctx: FlowContext }
@@ -74,7 +74,10 @@ export type FlowContext =
   | { flow: "budget"; category?: string; amount?: number; months?: number[]; space_id?: string }
   // Deuda: no se pregunta el vencimiento (es opcional; una cuarta pregunta mata
   // el flujo) ni el espacio (va al activo/default, como metas y cuotas).
-  | { flow: "debt"; direction?: DebtDirection; counterparty?: string; amount?: number; space_id?: string }
+  // originExpense: la deuda nació de un "presté/fié" → además de la fila en
+  // `debts` se registra un egreso (la plata ya salió). description: el motivo
+  // ("para la nafta"), que va como descripción de ese egreso.
+  | { flow: "debt"; direction?: DebtDirection; counterparty?: string; amount?: number; space_id?: string; originExpense?: true; description?: string }
   | { flow: "clarify" };
 
 export interface DeleteCandidate {

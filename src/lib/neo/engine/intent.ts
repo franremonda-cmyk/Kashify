@@ -89,9 +89,18 @@ function splitMonths(s: string): { rest: string; months?: number[] } {
 }
 
 // Alta de deuda: los slots que falten los pregunta el flujo (flow.ts).
-function debtFlow(msg: string, direction: DebtDirection, who?: string, rawAmount?: string): Intent {
+// opts.originExpense: nació de un "presté/fié" → el flujo registra también el
+// egreso. opts.rawMotivo: el "para <motivo>", que va como descripción del egreso.
+function debtFlow(
+  msg: string,
+  direction: DebtDirection,
+  who?: string,
+  rawAmount?: string,
+  opts?: { originExpense?: boolean; rawMotivo?: string },
+): Intent {
   const amount = rawAmount ? parseAmount(rawAmount) : NaN;
   const cleaned = who?.replace(/^(?:a\s+|mi\s+amigo\s+|mi\s+amiga\s+)/, "").replace(/[.!?]+$/, "").trim();
+  const motivo = opts?.rawMotivo?.replace(/[.!?]+$/, "").trim();
   return {
     type: "flow",
     ctx: {
@@ -99,6 +108,8 @@ function debtFlow(msg: string, direction: DebtDirection, who?: string, rawAmount
       direction,
       counterparty: cleaned ? properName(msg, cleaned) : undefined,
       amount: !isNaN(amount) && amount > 0 ? amount : undefined,
+      ...(opts?.originExpense ? { originExpense: true as const } : {}),
+      ...(motivo ? { description: denormalize(msg, motivo) } : {}),
     },
   };
 }
@@ -198,8 +209,13 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     if (owed) return debtFlow(msg, "me_deben", owed[1], owed[2]);
     const owedNoOne = m.match(/^me\s+debe[n]?\s+(\d[\d.,]*)$/);
     if (owedNoOne) return debtFlow(msg, "me_deben", undefined, owedNoOne[1]);
-    const lent = m.match(/^(?:yo\s+)?le\s+prest[eé]\s+(\d[\d.,]*)\s+a\s+(.+)$/);
-    if (lent) return debtFlow(msg, "me_deben", lent[2], lent[1]);
+    // "presté 3000 a ana" · "le presté 3000 a ana para la nafta" · "fié 3000 a ana".
+    // Prestar/fiar = la plata YA salió → el flujo registra también un egreso (originExpense).
+    const lent = m.match(/^(?:yo\s+)?(?:le\s+)?(?:prest[eé]|fi[eé])\s+(\d[\d.,]*)\s+a\s+(.+?)(?:\s+para\s+(.+))?$/);
+    if (lent) return debtFlow(msg, "me_deben", lent[2], lent[1], { originExpense: true, rawMotivo: lent[3] });
+    // Sin monto: "le presté a juan" → el flujo pregunta cuánto.
+    const lentNoAmt = m.match(/^(?:yo\s+)?(?:le\s+)?(?:prest[eé]|fi[eé])\s+(?:plata\s+)?a\s+(.+?)(?:\s+para\s+(.+))?$/);
+    if (lentNoAmt) return debtFlow(msg, "me_deben", lentNoAmt[1], undefined, { originExpense: true, rawMotivo: lentNoAmt[2] });
 
     // Saldar (va antes que pagar: "ya le pagué todo a juan" salda, no paga parcial)
     const settle = m.match(/^(?:ya\s+)?(?:le\s+)?(?:sald[eé]|salda|cancel[aeé]|cerr[eé]|termin[eé])\s+(?:la\s+)?deuda\s+(?:de|con|a)\s+["']?(.+?)["']?$/)
@@ -212,15 +228,17 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
 
     // Pagar parcial. La preposición "a" es el discriminante: "pagué 5000 de
     // nafta" es un gasto, "le pagué 5000 a juan" es un pago de deuda.
-    const pay = m.match(/^(?:le\s+)?(?:pag(?:u[eé]|o)|di)\s+(\d[\d.,]*)\s+a\s+["']?(.+?)["']?$/);
+    // "le devolví X a Y" = pago de lo que YO debía (dirección debo).
+    const pay = m.match(/^(?:le\s+)?(?:pag(?:u[eé]|o)|di|devolv[ií])\s+(\d[\d.,]*)\s+a\s+["']?(.+?)["']?$/);
     if (pay) {
       const amount = parseAmount(pay[1]);
-      if (amount > 0) return { type: "pay_debt", counterparty: pay[2].trim(), amount };
+      if (amount > 0) return { type: "pay_debt", counterparty: pay[2].trim(), amount, direction: "debo" };
     }
-    const gotPaid = m.match(/^["']?(.+?)["']?\s+me\s+pag(?:o|aron)\s+(\d[\d.,]*)$/);
+    // "juan me pagó 5000" · "juan me devolvió 5000" = cobro de lo que ME deben.
+    const gotPaid = m.match(/^["']?(.+?)["']?\s+me\s+(?:pag(?:o|aron)|devolvi(?:o|eron))\s+(\d[\d.,]*)$/);
     if (gotPaid) {
       const amount = parseAmount(gotPaid[2]);
-      if (amount > 0) return { type: "pay_debt", counterparty: gotPaid[1].trim(), amount };
+      if (amount > 0) return { type: "pay_debt", counterparty: gotPaid[1].trim(), amount, direction: "me_deben" };
     }
   }
 
