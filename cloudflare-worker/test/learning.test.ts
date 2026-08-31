@@ -64,6 +64,10 @@ for (const k of Object.keys(KEYWORD_TO_CATEGORY)) {
 }
 ok(categoryForText("compre pañales") === "Salud", "pañales (con ñ del usuario) → Salud");
 ok(categoryForText("gaste en la cabaña") === "Viajes", "cabaña (con ñ del usuario) → Viajes");
+// Plural que no está cargado a mano cae al singular del diccionario.
+ok(categoryForText("pastas la carmencita") === "Comida", "‘pastas’ (plural) → Comida vía singular");
+ok(categoryForText("merienda") === "Comida", "merienda → Comida");
+ok(categoryForText("gas") === "Hogar", "‘gas’ no se recorta a ‘ga’ (match exacto gana)");
 
 // ── monto típico (Fase 3): keyword conocida sin monto → ask_amount ──
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

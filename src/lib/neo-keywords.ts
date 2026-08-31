@@ -121,6 +121,7 @@ export const KEYWORD_TO_CATEGORY: Record<string, string> = {
   empanada:"Comida", empanadas:"Comida",
   taco:"Comida", tacos:"Comida",
   medialunas:"Comida", kiosco:"Comida", kiosko:"Comida",
+  merienda:"Comida", vianda:"Comida", picoteo:"Comida",
   sandwich:"Comida", ensalada:"Comida",
   milanesa:"Comida", milanesas:"Comida",
   asado:"Comida", parrilla:"Comida", bodegon:"Comida",
@@ -432,11 +433,23 @@ function norm(s: string) {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 }
 
+// Busca una palabra en el diccionario probando también el singular, para no
+// depender de que cada plural esté cargado a mano ("pastas"→"pasta",
+// "facturas"→"factura"). El match exacto siempre gana ("gas" no se toca).
+// ponytail: heurística -es/-s; si algún plural raro cae mal, cargá esa palabra al dict.
+export function lookupCategory(word: string): string | null {
+  const w = norm(word);
+  return KEYWORD_TO_CATEGORY[w]
+    ?? (w.length > 4 && w.endsWith("es") ? KEYWORD_TO_CATEGORY[w.slice(0, -2)] ?? null : null)
+    ?? (w.length > 3 && w.endsWith("s") ? KEYWORD_TO_CATEGORY[w.slice(0, -1)] ?? null : null);
+}
+
 // Infer a category from free text (no verb required). Scans words + bigrams.
 export function categoryForText(text: string): string | null {
   const words = norm(text).split(/\s+/).filter(Boolean);
   for (const word of words) {
-    if (KEYWORD_TO_CATEGORY[word]) return KEYWORD_TO_CATEGORY[word];
+    const c = lookupCategory(word);
+    if (c) return c;
   }
   for (let i = 0; i < words.length - 1; i++) {
     const bigram = words[i] + " " + words[i + 1];
@@ -526,9 +539,9 @@ export function detectPurchaseIntent(normalized: string): PurchaseIntent {
   let suggestedCategory: string | null = null;
   const words = item.split(/\s+/);
   for (const word of words) {
-    const w = norm(word);
-    if (KEYWORD_TO_CATEGORY[w]) {
-      suggestedCategory = KEYWORD_TO_CATEGORY[w];
+    const c = lookupCategory(word);
+    if (c) {
+      suggestedCategory = c;
       break;
     }
   }

@@ -190,7 +190,9 @@ export async function respondFlow(
       }
       const currency = await primaryCurrency(supabase, userId);
       const catName = ctx.category ?? (ctx.description ? categoryForText(ctx.description) : null);
-      const cat = catName ? await resolveCategory(supabase, userId, catName) : null;
+      // Si no se pudo inferir, cae en "Otros" — nunca queda sin categoría
+      // (el usuario ve "· Otros" y puede corregir; Neo lo aprende).
+      const cat = await resolveCategory(supabase, userId, catName ?? "Otros");
       const desc = ctx.description || (ctx.flow === "income" ? "Ingreso" : "Gasto");
       const { error } = await supabase.from("transactions").insert({
         user_id: userId, space_id: spaceId, type: ctx.flow, amount: ctx.amount,
