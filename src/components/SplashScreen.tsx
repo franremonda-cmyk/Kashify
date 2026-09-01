@@ -31,7 +31,7 @@ export default function SplashScreen() {
       {/* Neo saludando */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/neo/neo-celebrating.png" alt="Neo" className="relative" style={{
-        width: 140, height: 140, objectFit: "contain",
+        width: 220, height: 220, objectFit: "contain",
         transform: phase === "in" ? "scale(0.6)" : phase === "hold" ? "scale(1)" : "scale(1.06)",
         opacity: phase === "in" ? 0 : 1,
         filter: phase === "hold" ? "drop-shadow(0 0 24px rgba(16,217,138,0.35))" : "drop-shadow(0 0 0 rgba(16,217,138,0))",
@@ -44,7 +44,7 @@ export default function SplashScreen() {
 
       {/* Saludo */}
       <div className="absolute" style={{
-        top: "calc(50% + 96px)",
+        top: "calc(50% + 136px)",
         opacity: phase === "hold" ? 1 : 0,
         transform: phase === "hold" ? "translateY(0)" : "translateY(8px)",
         transition: "opacity 300ms ease-out, transform 300ms ease-out",
