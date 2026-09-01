@@ -268,9 +268,8 @@ export async function respondFlow(
         currency_code: currency, status: "active",
       });
       if (error) return { text: "No pude anotar la deuda. Probá desde la sección Deudas." };
-      // "presté/fié" → la plata ya salió: además de la fila en `debts`, un egreso.
-      // (El path de Haiku `confirm_debt` no setea originExpense: no distingue
-      // "presté" de "me debe", así que el egreso solo lo prende la regla.)
+      // me_deben ("presté" o "me debe", da igual) → esa plata ya salió del
+      // bolsillo: además de la fila en `debts`, un egreso.
       if (ctx.originExpense) {
         const cat = await resolveCategory(supabase, userId, "Deudas");
         await supabase.from("transactions").insert({

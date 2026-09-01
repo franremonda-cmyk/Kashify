@@ -293,8 +293,10 @@ async function main() {
   }
   {
     const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
     await runNeo({ supabase: makeStub(db), userId: USER, message: "mamá me debe 50000", channel: "whatsapp" });
     check("'mamá me debe 50000' → deuda direction=me_deben", db.debts[0]?.direction === "me_deben" && Number(db.debts[0]?.total_amount) === 50000);
+    check("'mamá me debe 50000' → también egreso (esa plata ya salió)", db.transactions.length === 1 && db.transactions[0].type === "expense" && Number(db.transactions[0].amount) === 50000);
   }
   {
     const db = seed();
@@ -357,7 +359,7 @@ async function main() {
   {
     const db = seed();
     const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "nico me debe 1800 usd", channel: "whatsapp" });
-    check("'nico me debe 1800 usd' → deuda me_deben en USD (no ARS, no gasto basura)", db.debts.length === 1 && db.debts[0].direction === "me_deben" && db.debts[0].counterparty === "Nico" && Number(db.debts[0].total_amount) === 1800 && db.debts[0].currency_code === "USD" && db.transactions.length === 0, JSON.stringify(db.debts[0]) + ` | reply: ${r.text}`);
+    check("'nico me debe 1800 usd' → deuda me_deben en USD (no ARS) + egreso en USD", db.debts.length === 1 && db.debts[0].direction === "me_deben" && db.debts[0].counterparty === "Nico" && Number(db.debts[0].total_amount) === 1800 && db.debts[0].currency_code === "USD" && db.transactions.length === 1 && db.transactions[0].currency_code === "USD" && Number(db.transactions[0].amount) === 1800, JSON.stringify(db.debts[0]) + ` | reply: ${r.text}`);
   }
   {
     const db = seed();

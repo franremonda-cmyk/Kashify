@@ -32,6 +32,7 @@ export async function llmFallback(text: string, userCategories?: string[]): Prom
           direction: parsed.debt_direction,
           counterparty: parsed.counterparty || undefined,
           amount: parsed.amount,
+          ...(parsed.debt_direction === "me_deben" ? { originExpense: true as const } : {}),
         },
       };
     }

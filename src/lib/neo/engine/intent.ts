@@ -224,13 +224,15 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     const lentMeNoOne = md.match(/^me\s+prest(?:aron|o)\s+(\d[\d.,]*)$/);
     if (lentMeNoOne) return debtFlow(msg, "debo", undefined, lentMeNoOne[1], { currency: dc });
 
-    // Alta — me deben. "me debe[n] N" sin nombre va primero, para que la variante
-    // laxa de abajo ("X [me] debe N") no capture "me" como contraparte.
+    // Alta — me deben. Si alguien te debe es porque esa plata ya salió de tu
+    // bolsillo (prestada o adelantada) → mismo egreso que "presté" (originExpense).
+    // "me debe[n] N" sin nombre va primero, para que la variante laxa de abajo
+    // ("X [me] debe N") no capture "me" como contraparte.
     const owedNoOne = md.match(/^me\s+debe[n]?\s+(\d[\d.,]*)$/);
-    if (owedNoOne) return debtFlow(msg, "me_deben", undefined, owedNoOne[1], { currency: dc });
+    if (owedNoOne) return debtFlow(msg, "me_deben", undefined, owedNoOne[1], { originExpense: true, currency: dc });
     // "nico me debe 1800" y también "nico debe 1800" (el "me" es opcional).
     const owed = md.match(/^(.+?)\s+(?:me\s+)?debe[n]?\s+(\d[\d.,]*)$/);
-    if (owed) return debtFlow(msg, "me_deben", owed[1], owed[2], { currency: dc });
+    if (owed) return debtFlow(msg, "me_deben", owed[1], owed[2], { originExpense: true, currency: dc });
     // "presté 3000 a ana" · "le presté 3000 a ana para la nafta" · "fié 3000 a ana".
     // Prestar/fiar = la plata YA salió → el flujo registra también un egreso (originExpense).
     const lent = md.match(/^(?:yo\s+)?(?:le\s+)?(?:prest[eé]|fi[eé])\s+(\d[\d.,]*)\s+a\s+(.+?)(?:\s+para\s+(.+))?$/);
