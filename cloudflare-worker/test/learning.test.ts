@@ -63,6 +63,22 @@ ok(pd3.type === "pay_debt" && pd3.direction === "debo", "‘le devolví 3000 a j
 const rd = detectIntent("debo 10000 a juan");
 ok(rd.type === "flow" && !(rd as DebtCtx).ctx?.originExpense, "‘debo 10000 a juan’ NO prende originExpense");
 
+// ── deudas en moneda extranjera ──
+type CurCtx = { ctx?: { currency?: string; direction?: string; flow?: string } };
+const c1 = detectIntent("nico me debe 1800 usd") as CurCtx & { type: string };
+ok(c1.type === "flow" && c1.ctx?.flow === "debt" && c1.ctx?.direction === "me_deben" && c1.ctx?.currency === "USD", "‘nico me debe 1800 usd’ → deuda me_deben en USD");
+const c2 = detectIntent("presté 100 eur a ana") as CurCtx;
+ok(c2.ctx?.currency === "EUR" && (c2 as DebtCtx).ctx?.originExpense === true, "‘presté 100 eur a ana’ → EUR + originExpense");
+const c3 = detectIntent("debo 500 usd a juan") as CurCtx;
+ok(c3.ctx?.currency === "USD" && c3.ctx?.direction === "debo", "‘debo 500 usd a juan’ → debo en USD");
+const c4 = detectIntent("nico debe 1800") as CurCtx & { type: string };
+ok(c4.type === "flow" && c4.ctx?.flow === "debt" && c4.ctx?.direction === "me_deben", "‘nico debe 1800’ (sin ‘me’) → deuda me_deben");
+const c5 = detectIntent("juan me devolvió 50 usd") as { type: string; direction?: string; currency?: string };
+ok(c5.type === "pay_debt" && c5.direction === "me_deben" && c5.currency === "USD", "‘juan me devolvió 50 usd’ → pay_debt me_deben USD");
+// regresión: sin mención de moneda → ctx.currency undefined (usa la principal)
+const c6 = detectIntent("nico me debe 1800") as CurCtx;
+ok(c6.ctx?.currency === undefined, "sin moneda explícita → ctx.currency undefined");
+
 // ── diccionario global argentino + fallback de categorías ──
 ok(categoryForText("quilmes") === "Comida", "quilmes → Comida");
 ok(categoryForText("fravega") === "Hogar", "fravega → Hogar");

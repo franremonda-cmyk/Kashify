@@ -88,15 +88,28 @@ function splitMonths(s: string): { rest: string; months?: number[] } {
   return found.length ? { rest: m[1].trim(), months: found } : { rest: s };
 }
 
+// Moneda mencionada explícitamente en un texto de deuda (ya normalizado, sin
+// tildes). undefined = sin mención → el flujo usa la moneda principal del user.
+// Se limita a códigos + palabras inequívocas: "franco"/"real" chocan con nombres.
+function debtCurrency(m: string): string | undefined {
+  if (/\b(usd|dolares?|dolar)\b/.test(m)) return "USD";
+  if (/\b(eur|euros?)\b/.test(m)) return "EUR";
+  if (/\bchf\b/.test(m)) return "CHF";
+  if (/\bbrl\b/.test(m)) return "BRL";
+  return undefined;
+}
+const DEBT_CURRENCY_WORDS = /\b(usd|dolares?|dolar|eur|euros?|chf|brl)\b/g;
+
 // Alta de deuda: los slots que falten los pregunta el flujo (flow.ts).
 // opts.originExpense: nació de un "presté/fié" → el flujo registra también el
 // egreso. opts.rawMotivo: el "para <motivo>", que va como descripción del egreso.
+// opts.currency: moneda explícita ("100 usd") → viaja al flujo.
 function debtFlow(
   msg: string,
   direction: DebtDirection,
   who?: string,
   rawAmount?: string,
-  opts?: { originExpense?: boolean; rawMotivo?: string },
+  opts?: { originExpense?: boolean; rawMotivo?: string; currency?: string },
 ): Intent {
   const amount = rawAmount ? parseAmount(rawAmount) : NaN;
   const cleaned = who?.replace(/^(?:a\s+|mi\s+amigo\s+|mi\s+amiga\s+)/, "").replace(/[.!?]+$/, "").trim();
@@ -106,6 +119,7 @@ function debtFlow(
     ctx: {
       flow: "debt",
       direction,
+      ...(opts?.currency ? { currency: opts.currency } : {}),
       counterparty: cleaned ? properName(msg, cleaned) : undefined,
       amount: !isNaN(amount) && amount > 0 ? amount : undefined,
       ...(opts?.originExpense ? { originExpense: true as const } : {}),
@@ -194,51 +208,59 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     if (/mis\s+deudas|ver\s+deudas|deudas\s+activas|deudas\s+pendientes|mis\s+prestamos/.test(m))
       return { type: "debts_query" };
 
-    // Alta — yo debo
-    const owe = m.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(\d[\d.,]*)\s+a\s+(.+)$/);
-    if (owe) return debtFlow(msg, "debo", owe[2], owe[1]);
-    const oweRev = m.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(?:plata\s+)?a\s+(.+?)(?:\s+(\d[\d.,]*))?$/);
-    if (oweRev) return debtFlow(msg, "debo", oweRev[1], oweRev[2]);
-    const lentMe = m.match(/^(.+?)\s+me\s+prest(?:o|aron)\s+(\d[\d.,]*)$/);
-    if (lentMe) return debtFlow(msg, "debo", lentMe[1], lentMe[2]);
-    const lentMeNoOne = m.match(/^me\s+prest(?:aron|o)\s+(\d[\d.,]*)$/);
-    if (lentMeNoOne) return debtFlow(msg, "debo", undefined, lentMeNoOne[1]);
+    // Moneda explícita ("nico me debe 100 usd", "presté 50 eur a ana"): se saca
+    // del string de trabajo `md` para que los regex de monto no choquen ($ y u$s
+    // ya los limpió normalize), y se guarda aparte para que viaje al flujo.
+    const dc = debtCurrency(m);
+    const md = dc ? m.replace(DEBT_CURRENCY_WORDS, "").replace(/\s+/g, " ").trim() : m;
 
-    // Alta — me deben
-    const owed = m.match(/^(.+?)\s+me\s+debe[n]?\s+(\d[\d.,]*)$/);
-    if (owed) return debtFlow(msg, "me_deben", owed[1], owed[2]);
-    const owedNoOne = m.match(/^me\s+debe[n]?\s+(\d[\d.,]*)$/);
-    if (owedNoOne) return debtFlow(msg, "me_deben", undefined, owedNoOne[1]);
+    // Alta — yo debo
+    const owe = md.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(\d[\d.,]*)\s+a\s+(.+)$/);
+    if (owe) return debtFlow(msg, "debo", owe[2], owe[1], { currency: dc });
+    const oweRev = md.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(?:plata\s+)?a\s+(.+?)(?:\s+(\d[\d.,]*))?$/);
+    if (oweRev) return debtFlow(msg, "debo", oweRev[1], oweRev[2], { currency: dc });
+    const lentMe = md.match(/^(.+?)\s+me\s+prest(?:o|aron)\s+(\d[\d.,]*)$/);
+    if (lentMe) return debtFlow(msg, "debo", lentMe[1], lentMe[2], { currency: dc });
+    const lentMeNoOne = md.match(/^me\s+prest(?:aron|o)\s+(\d[\d.,]*)$/);
+    if (lentMeNoOne) return debtFlow(msg, "debo", undefined, lentMeNoOne[1], { currency: dc });
+
+    // Alta — me deben. "me debe[n] N" sin nombre va primero, para que la variante
+    // laxa de abajo ("X [me] debe N") no capture "me" como contraparte.
+    const owedNoOne = md.match(/^me\s+debe[n]?\s+(\d[\d.,]*)$/);
+    if (owedNoOne) return debtFlow(msg, "me_deben", undefined, owedNoOne[1], { currency: dc });
+    // "nico me debe 1800" y también "nico debe 1800" (el "me" es opcional).
+    const owed = md.match(/^(.+?)\s+(?:me\s+)?debe[n]?\s+(\d[\d.,]*)$/);
+    if (owed) return debtFlow(msg, "me_deben", owed[1], owed[2], { currency: dc });
     // "presté 3000 a ana" · "le presté 3000 a ana para la nafta" · "fié 3000 a ana".
     // Prestar/fiar = la plata YA salió → el flujo registra también un egreso (originExpense).
-    const lent = m.match(/^(?:yo\s+)?(?:le\s+)?(?:prest[eé]|fi[eé])\s+(\d[\d.,]*)\s+a\s+(.+?)(?:\s+para\s+(.+))?$/);
-    if (lent) return debtFlow(msg, "me_deben", lent[2], lent[1], { originExpense: true, rawMotivo: lent[3] });
+    const lent = md.match(/^(?:yo\s+)?(?:le\s+)?(?:prest[eé]|fi[eé])\s+(\d[\d.,]*)\s+a\s+(.+?)(?:\s+para\s+(.+))?$/);
+    if (lent) return debtFlow(msg, "me_deben", lent[2], lent[1], { originExpense: true, rawMotivo: lent[3], currency: dc });
     // Sin monto: "le presté a juan" → el flujo pregunta cuánto.
-    const lentNoAmt = m.match(/^(?:yo\s+)?(?:le\s+)?(?:prest[eé]|fi[eé])\s+(?:plata\s+)?a\s+(.+?)(?:\s+para\s+(.+))?$/);
-    if (lentNoAmt) return debtFlow(msg, "me_deben", lentNoAmt[1], undefined, { originExpense: true, rawMotivo: lentNoAmt[2] });
+    const lentNoAmt = md.match(/^(?:yo\s+)?(?:le\s+)?(?:prest[eé]|fi[eé])\s+(?:plata\s+)?a\s+(.+?)(?:\s+para\s+(.+))?$/);
+    if (lentNoAmt) return debtFlow(msg, "me_deben", lentNoAmt[1], undefined, { originExpense: true, rawMotivo: lentNoAmt[2], currency: dc });
 
     // Saldar (va antes que pagar: "ya le pagué todo a juan" salda, no paga parcial)
-    const settle = m.match(/^(?:ya\s+)?(?:le\s+)?(?:sald[eé]|salda|cancel[aeé]|cerr[eé]|termin[eé])\s+(?:la\s+)?deuda\s+(?:de|con|a)\s+["']?(.+?)["']?$/)
-      ?? m.match(/^ya\s+le\s+pag(?:u[eé]|o)\s+todo\s+a\s+["']?(.+?)["']?$/);
+    const settle = md.match(/^(?:ya\s+)?(?:le\s+)?(?:sald[eé]|salda|cancel[aeé]|cerr[eé]|termin[eé])\s+(?:la\s+)?deuda\s+(?:de|con|a)\s+["']?(.+?)["']?$/)
+      ?? md.match(/^ya\s+le\s+pag(?:u[eé]|o)\s+todo\s+a\s+["']?(.+?)["']?$/);
     if (settle) return { type: "settle_debt", counterparty: settle[1].trim() };
 
     // Borrar (antes de delete_tx, que es muy goloso y se lo comería)
-    const del = m.match(/^(?:borra|elimina|saca|quita)\w*\s+(?:la\s+)?deuda\s+(?:de|con|a)\s+["']?(.+?)["']?$/);
+    const del = md.match(/^(?:borra|elimina|saca|quita)\w*\s+(?:la\s+)?deuda\s+(?:de|con|a)\s+["']?(.+?)["']?$/);
     if (del) return { type: "delete_debt", counterparty: del[1].trim() };
 
     // Pagar parcial. La preposición "a" es el discriminante: "pagué 5000 de
     // nafta" es un gasto, "le pagué 5000 a juan" es un pago de deuda.
     // "le devolví X a Y" = pago de lo que YO debía (dirección debo).
-    const pay = m.match(/^(?:le\s+)?(?:pag(?:u[eé]|o)|di|devolv[ií])\s+(\d[\d.,]*)\s+a\s+["']?(.+?)["']?$/);
+    const pay = md.match(/^(?:le\s+)?(?:pag(?:u[eé]|o)|di|devolv[ií])\s+(\d[\d.,]*)\s+a\s+["']?(.+?)["']?$/);
     if (pay) {
       const amount = parseAmount(pay[1]);
-      if (amount > 0) return { type: "pay_debt", counterparty: pay[2].trim(), amount, direction: "debo" };
+      if (amount > 0) return { type: "pay_debt", counterparty: pay[2].trim(), amount, direction: "debo", currency: dc };
     }
     // "juan me pagó 5000" · "juan me devolvió 5000" = cobro de lo que ME deben.
-    const gotPaid = m.match(/^["']?(.+?)["']?\s+me\s+(?:pag(?:o|aron)|devolvi(?:o|eron))\s+(\d[\d.,]*)$/);
+    const gotPaid = md.match(/^["']?(.+?)["']?\s+me\s+(?:pag(?:o|aron)|devolvi(?:o|eron))\s+(\d[\d.,]*)$/);
     if (gotPaid) {
       const amount = parseAmount(gotPaid[2]);
-      if (amount > 0) return { type: "pay_debt", counterparty: gotPaid[1].trim(), amount, direction: "me_deben" };
+      if (amount > 0) return { type: "pay_debt", counterparty: gotPaid[1].trim(), amount, direction: "me_deben", currency: dc };
     }
   }
 

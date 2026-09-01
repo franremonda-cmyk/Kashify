@@ -55,7 +55,7 @@ export type Intent =
   | { type: "delete_space"; name: string }
   | { type: "set_default_space"; name: string }
   | { type: "move_tx_space"; name: string }
-  | { type: "pay_debt"; counterparty: string; amount: number; direction?: DebtDirection }
+  | { type: "pay_debt"; counterparty: string; amount: number; direction?: DebtDirection; currency?: string }
   | { type: "settle_debt"; counterparty: string }
   | { type: "delete_debt"; counterparty: string }
   | { type: "flow"; ctx: FlowContext }
@@ -67,7 +67,7 @@ export type Intent =
 // space_id: espacio destino ya resuelto. awaitingSpace: Neo preguntó a qué
 // espacio y espera la respuesta (solo gastos/ingresos preguntan).
 export type FlowContext =
-  | { flow: "expense" | "income"; description?: string; amount?: number; category?: string | null; space_id?: string; awaitingSpace?: boolean }
+  | { flow: "expense" | "income"; description?: string; amount?: number; category?: string | null; space_id?: string; awaitingSpace?: boolean; currency?: string }
   | { flow: "installment"; name?: string; nInstallments?: number; installmentAmount?: number; space_id?: string }
   | { flow: "goal"; name?: string; target?: number; space_id?: string }
   // months: si el límite aplica solo a ciertos meses (1-12). Vacío = todos.
@@ -76,8 +76,9 @@ export type FlowContext =
   // el flujo) ni el espacio (va al activo/default, como metas y cuotas).
   // originExpense: la deuda nació de un "presté/fié" → además de la fila en
   // `debts` se registra un egreso (la plata ya salió). description: el motivo
-  // ("para la nafta"), que va como descripción de ese egreso.
-  | { flow: "debt"; direction?: DebtDirection; counterparty?: string; amount?: number; space_id?: string; originExpense?: true; description?: string }
+  // ("para la nafta"), que va como descripción de ese egreso. currency: moneda
+  // explícita ("100 usd") — si falta, el flujo usa la principal del usuario.
+  | { flow: "debt"; direction?: DebtDirection; counterparty?: string; amount?: number; space_id?: string; originExpense?: true; description?: string; currency?: string }
   | { flow: "clarify" };
 
 export interface DeleteCandidate {

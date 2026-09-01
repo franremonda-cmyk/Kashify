@@ -353,6 +353,36 @@ async function main() {
     check("'juan me pagó 5000' toca SOLO la fila 'me_deben'", db2.debts.find((d) => d.id === "dme")!.status === "paid" && db2.debts.find((d) => d.id === "ddebo")!.paid_amount === 0);
   }
 
+  // 15c) Deudas en moneda extranjera (usd/eur): la moneda va a la fila, no ARS
+  {
+    const db = seed();
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "nico me debe 1800 usd", channel: "whatsapp" });
+    check("'nico me debe 1800 usd' → deuda me_deben en USD (no ARS, no gasto basura)", db.debts.length === 1 && db.debts[0].direction === "me_deben" && db.debts[0].counterparty === "Nico" && Number(db.debts[0].total_amount) === 1800 && db.debts[0].currency_code === "USD" && db.transactions.length === 0, JSON.stringify(db.debts[0]) + ` | reply: ${r.text}`);
+  }
+  {
+    const db = seed();
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "nico debe 1800", channel: "whatsapp" });
+    check("'nico debe 1800' (sin 'me') → deuda me_deben", db.debts.length === 1 && db.debts[0].direction === "me_deben" && db.debts[0].counterparty === "Nico");
+  }
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "presté 100 eur a juan", channel: "whatsapp" });
+    check("'presté 100 eur a juan' → deuda EUR + egreso EUR (baja el neto en EUR)", db.debts[0]?.currency_code === "EUR" && db.transactions.length === 1 && db.transactions[0].currency_code === "EUR" && Number(db.transactions[0].amount) === 100, JSON.stringify(db.transactions[0]));
+  }
+  {
+    const db = seed();
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "debo 500 usd a ana", channel: "whatsapp" });
+    check("'debo 500 usd a ana' → deuda debo en USD", db.debts[0]?.direction === "debo" && db.debts[0]?.currency_code === "USD" && Number(db.debts[0]?.total_amount) === 500);
+  }
+  {
+    // cobro en la moneda de la deuda: matchea la fila USD, no crea ingreso suelto
+    const db = seed();
+    db.debts.push({ id: "du", user_id: USER, space_id: SPACE, direction: "me_deben", counterparty: "Nico", total_amount: 1800, paid_amount: 0, currency_code: "USD", status: "active", due_date: null });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "nico me devolvió 800 usd", channel: "whatsapp" });
+    check("'nico me devolvió 800 usd' → baja la deuda USD (no ingreso suelto)", Number(db.debts[0].paid_amount) === 800 && db.transactions.length === 1 && db.transactions[0].type === "income" && db.transactions[0].currency_code === "USD");
+  }
+
   // 16) Deudas: alta por slot-filling cuando falta el monto
   {
     const db = seed();

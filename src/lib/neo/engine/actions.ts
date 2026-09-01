@@ -110,11 +110,12 @@ function resolveNotifFamily(term: string): { family: NotifFamily; label: string 
 }
 
 // Deuda activa por contraparte (match laxo: "juan" encuentra "Juan Pérez").
-async function findDebt(supabase: NeoSupabase, userId: string, counterparty: string, scope: string[], direction?: DebtDirection) {
+async function findDebt(supabase: NeoSupabase, userId: string, counterparty: string, scope: string[], direction?: DebtDirection, currency?: string) {
   let q = supabase.from("debts")
     .select("id, counterparty, direction, total_amount, paid_amount, currency_code")
     .eq("user_id", userId).eq("status", "active").in("space_id", scope);
   if (direction) q = q.eq("direction", direction);
+  if (currency) q = q.eq("currency_code", currency);
   const { data } = await q;
   const norm = normalize(counterparty);
   return (data as { id: string; counterparty: string; direction: string; total_amount: number; paid_amount: number; currency_code: string }[] | null)
@@ -191,7 +192,7 @@ export async function respondFlow(
           return { text: q.text, options: q.options, state: { kind: "flow", ctx: { ...ctx, awaitingSpace: true } } };
         }
       }
-      const currency = await primaryCurrency(supabase, userId);
+      const currency = ctx.currency ?? await primaryCurrency(supabase, userId);
       const catName = ctx.category ?? (ctx.description ? categoryForText(ctx.description) : null);
       // Si no se pudo inferir, cae en "Otros" — nunca queda sin categoría
       // (el usuario ve "· Otros" y puede corregir; Neo lo aprende).
@@ -260,7 +261,7 @@ export async function respondFlow(
     }
     case "debt": {
       const spaceId = await getWriteSpaceId(supabase, userId, ctx.space_id ?? activeSpaceId);
-      const currency = await primaryCurrency(supabase, userId);
+      const currency = ctx.currency ?? await primaryCurrency(supabase, userId);
       const { error } = await supabase.from("debts").insert({
         user_id: userId, space_id: spaceId, direction: ctx.direction,
         counterparty: ctx.counterparty, total_amount: ctx.amount, paid_amount: 0,
@@ -666,15 +667,15 @@ export async function executeIntent(
     }
 
     case "pay_debt": {
-      const debt = await findDebt(supabase, userId, intent.counterparty, scope, intent.direction);
+      const debt = await findDebt(supabase, userId, intent.counterparty, scope, intent.direction, intent.currency);
       // VÁLVULA DE SEGURIDAD: si no hay deuda con esa contraparte, no es un error.
       // "le pagué 5000 a la panadería" = gasto normal; "juan me devolvió 5000"
       // sin deuda registrada = ingreso (no un gasto).
       if (!debt) {
         return respondFlow(supabase, userId,
           intent.direction === "me_deben"
-            ? { flow: "income", description: intent.counterparty, amount: intent.amount }
-            : { flow: "expense", description: intent.counterparty, amount: intent.amount, category: categoryForText(intent.counterparty) },
+            ? { flow: "income", description: intent.counterparty, amount: intent.amount, currency: intent.currency }
+            : { flow: "expense", description: intent.counterparty, amount: intent.amount, category: categoryForText(intent.counterparty), currency: intent.currency },
           channel, activeSpaceId);
       }
       const pending = Number(debt.total_amount) - Number(debt.paid_amount);
