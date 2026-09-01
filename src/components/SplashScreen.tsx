@@ -28,31 +28,23 @@ export default function SplashScreen() {
         transition: "opacity 500ms ease-out",
       }} />
 
-      {/* K mark */}
-      <div className="relative flex items-center justify-center" style={{
-        width: 80, height: 80, borderRadius: 24,
-        background: "var(--accent)",
+      {/* Neo saludando */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/neo/neo-celebrating.png" alt="Neo" className="relative" style={{
+        width: 140, height: 140, objectFit: "contain",
         transform: phase === "in" ? "scale(0.6)" : phase === "hold" ? "scale(1)" : "scale(1.06)",
         opacity: phase === "in" ? 0 : 1,
+        filter: phase === "hold" ? "drop-shadow(0 0 24px rgba(16,217,138,0.35))" : "drop-shadow(0 0 0 rgba(16,217,138,0))",
         transition: phase === "in"
           ? "transform 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease-out"
           : phase === "out"
           ? "transform 300ms ease-in, opacity 200ms ease-in"
-          : "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)",
-        boxShadow: phase === "hold"
-          ? "0 0 0 16px rgba(16,217,138,0.07), 0 0 60px 20px rgba(16,217,138,0.20)"
-          : "0 0 0 0 rgba(16,217,138,0)",
-      }}>
-        <span style={{
-          fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
-          fontSize: 40, fontWeight: 700, color: "#FFFFFF",
-          letterSpacing: "-0.02em", userSelect: "none",
-        }}>K</span>
-      </div>
+          : "transform 300ms cubic-bezier(0.22, 1, 0.36, 1), filter 300ms ease-out",
+      }} />
 
-      {/* App name */}
+      {/* Saludo */}
       <div className="absolute" style={{
-        top: "calc(50% + 56px)",
+        top: "calc(50% + 96px)",
         opacity: phase === "hold" ? 1 : 0,
         transform: phase === "hold" ? "translateY(0)" : "translateY(8px)",
         transition: "opacity 300ms ease-out, transform 300ms ease-out",
@@ -61,8 +53,8 @@ export default function SplashScreen() {
           fontFamily: "var(--font-display, 'Space Grotesk'), sans-serif",
           fontSize: "var(--text-base)", fontWeight: 500,
           color: "var(--ink-dim)",
-          letterSpacing: "0.08em", userSelect: "none",
-        }}>KASHIFY</span>
+          letterSpacing: "0.02em", userSelect: "none",
+        }}>¡Bienvenido!</span>
       </div>
     </div>
   );
