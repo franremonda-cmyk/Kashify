@@ -58,7 +58,7 @@ export default function EspaciosPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--ink)" }}>
                 {s.name}
-                {s.is_default && <span style={{ marginLeft: 8, fontSize: "var(--text-2xs)", color: "var(--accent)" }}>default</span>}
+                {s.is_default && <span style={{ marginLeft: 8, fontSize: "var(--text-2xs)", color: "var(--accent)" }}>principal</span>}
               </p>
               <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>
                 {s.primary_currency} · {s.include_in_total ? "suma al total" : "aislado"}

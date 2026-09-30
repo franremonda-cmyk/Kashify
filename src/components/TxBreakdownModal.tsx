@@ -6,6 +6,7 @@ import TransactionSheet from "@/components/TransactionSheet";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import RowsSkeleton from "@/components/RowsSkeleton";
 import type { Transaction } from "@/types";
+import { useEscape } from "@/lib/useEscape";
 
 interface Tx {
   id: string;
@@ -33,6 +34,7 @@ function fmt(n: number, currency: string) {
 }
 
 export default function TxBreakdownModal({ type, currency, onClose }: Props) {
+  useEscape(onClose);
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
   const [txs, setTxs] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);

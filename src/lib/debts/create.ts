@@ -59,3 +59,25 @@ export async function insertDebtTx(
   const retry = await supabase.from("transactions").insert(legacy).select("id").single();
   return (retry.data as { id: string } | null) ?? null;
 }
+
+// Borrado compartido web/Neo. Los movimientos enlazados se van por cascada
+// (migración 015). `orphans` = hay movimientos esperables que NO estaban
+// enlazados (deuda anterior a la migración, o migración sin correr): quedan en
+// Actividad y hay que avisarlo, nunca decir que se borraron.
+export async function deleteDebt(
+  supabase: SupabaseClient,
+  userId: string,
+  debtId: string,
+): Promise<{ ok: boolean; orphans: boolean }> {
+  const { data: debt } = await supabase.from("debts").select("direction, paid_amount")
+    .eq("id", debtId).eq("user_id", userId).maybeSingle();
+  if (!debt) return { ok: false, orphans: false };
+  const d = debt as { direction: DebtDirection; paid_amount: number };
+  const expected = (d.direction === "me_deben" ? 1 : 0) + (Number(d.paid_amount) > 0 ? 1 : 0);
+  const { count, error: countError } = await supabase.from("transactions")
+    .select("id", { count: "exact", head: true }).eq("debt_id", debtId).eq("user_id", userId);
+  const linked = countError ? 0 : (count ?? 0);
+  const { error } = await supabase.from("debts").delete().eq("id", debtId).eq("user_id", userId);
+  if (error) return { ok: false, orphans: false };
+  return { ok: true, orphans: linked < expected };
+}

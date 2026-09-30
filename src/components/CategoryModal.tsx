@@ -7,6 +7,7 @@ import CategoryIcon from "@/components/CategoryIcon";
 import { suggestColor, CATEGORY_COLORS } from "@/lib/iconList";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import type { IconStyle } from "@/context/IconStyleContext";
+import { useEscape } from "@/lib/useEscape";
 
 export interface CategoryData {
   id?: string;
@@ -36,6 +37,7 @@ const inp: React.CSSProperties = {
 };
 
 export default function CategoryModal({ cat, existingColors, currentStyle, onSave, onDelete, onClose }: Props) {
+  useEscape(onClose);
   const isNew = !cat?.id;
   const [name, setName]             = useState(cat?.name ?? "");
   const [icon, setIcon]             = useState(cat?.icon ?? "");
@@ -78,6 +80,7 @@ export default function CategoryModal({ cat, existingColors, currentStyle, onSav
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
+          role="dialog" aria-modal="true" aria-label={cat ? "Editar categoría" : "Nueva categoría"}
           className="glass-strong scale-up"
           style={{
             width: "100%", maxWidth: 400,

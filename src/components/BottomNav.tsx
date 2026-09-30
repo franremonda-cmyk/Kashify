@@ -1,5 +1,6 @@
 "use client";
 import { isoDay } from "@/lib/dates";
+import { usePrimaryCurrency } from "@/lib/usePrimaryCurrency";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -10,6 +11,7 @@ import CategoryModal from "@/components/CategoryModal";
 import NeoOrb from "@/components/NeoOrb";
 import { useIconStyle } from "@/context/IconStyleContext";
 import { useSpaces } from "@/context/SpaceContext";
+import { useEscape } from "@/lib/useEscape";
 
 const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "PYG", "BOB", "COP", "PEN", "GBP"];
 
@@ -252,13 +254,15 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     type: initialType as "expense" | "income",
     description: "",
     amount: "",
-    currency_code: "ARS",
+    currency_code: "", // "" = todavía no la eligió → moneda principal del perfil
     category_id: "",
     space_id: activeId && activeId !== "total" ? activeId : defaultSpaceId,
     date: isoDay(), // día del celular, no UTC
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const primaryCurrency = usePrimaryCurrency();
+  const currency = form.currency_code || primaryCurrency || "ARS";
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Última categoría puesta por Neo: si la vigente es de Neo, una nueva descripción
   // puede reemplazarla; si la eligió el usuario a mano, no se toca.
@@ -268,12 +272,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     fetch("/api/categories").then((r) => r.json()).then(setCategories).catch(() => {});
   }, []);
 
-  // Cerrar con Esc
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose); // cierra solo la ventana de arriba
 
   // Auto-categorize on description change
   function handleDescriptionChange(val: string) {
@@ -311,6 +310,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          currency_code: currency,
           amount: parseFloat(form.amount),
           category_id: form.category_id || null,  // never send empty string
         }),
@@ -462,10 +462,10 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
             <select
               style={{ ...inp, width: "40%" }}
               aria-label="Moneda"
-              value={form.currency_code}
+              value={currency}
               onChange={(e) => setForm((f) => ({ ...f, currency_code: e.target.value }))}
             >
-              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {(CURRENCIES.includes(currency) ? CURRENCIES : [currency, ...CURRENCIES]).map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           </div>

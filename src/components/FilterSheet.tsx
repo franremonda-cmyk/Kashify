@@ -1,10 +1,11 @@
 "use client";
 // Filtro/orden de transacciones compartido entre Actividad e Inicio.
 // Client-side puro: recibe filtros, devuelve filtros; el caller aplica.
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
+import { useEscape } from "@/lib/useEscape";
 
 export interface FilterCategory { id: string; name: string; icon?: string; color?: string; }
 export interface Filters { categories: string[]; types: string[]; sort: string; }
@@ -51,11 +52,7 @@ export default function FilterSheet({ categories, filters, onApply, onClose }: {
   const [local, setLocal] = useState<Filters>({ ...filters });
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose);
 
   if (!mounted) return null;
 

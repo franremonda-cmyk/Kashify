@@ -7,6 +7,7 @@ import {
 } from "@/lib/matrixImport";
 import type { MatrixDetectionResult } from "@/lib/matrixImport";
 import { useSpaces } from "@/context/SpaceContext";
+import { useEscape } from "@/lib/useEscape";
 
 const KASHIFY_FIELDS: { key: keyof ColumnMapping; label: string; required?: boolean; desc: string }[] = [
   { key: "date",        label: "Fecha",        required: true,  desc: "Cuándo ocurrió" },
@@ -554,6 +555,8 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
   const [newSpaceName, setNewSpaceName] = useState("");
   const [creatingSpace, setCreatingSpace] = useState(false);
   const [step, setStep]               = useState<Step>("upload");
+  // Escape = tocar afuera: cancela, salvo en medio de la importación.
+  useEscape(() => onCancel?.(), !inline && !!onCancel && step !== "importing");
   const [headers, setHeaders]         = useState<string[]>([]);
   const [rawRows, setRawRows]         = useState<RawRow[]>([]);
   const [mapping, setMapping]         = useState<Partial<ColumnMapping>>({});
@@ -725,6 +728,7 @@ export default function ImportFlow({ defaultCurrency = "ARS", onDone, onCancel, 
       onClick={e => { if (e.target === e.currentTarget && step !== "importing") onCancel?.(); }}
     >
       <div
+        role="dialog" aria-modal="true" aria-label="Importar movimientos"
         className="w-full max-w-sm flex flex-col scale-up"
         style={{
           borderRadius: "24px 24px 0 0",

@@ -6,7 +6,7 @@ import { runNeo } from "../../src/lib/neo/engine/index.ts";
 import { detectIntent } from "../../src/lib/neo/engine/intent.ts";
 import type { NeoState } from "../../src/lib/neo/engine/types.ts";
 import { DEFAULT_TZ, isoDay, localIso, wallToday } from "../../src/lib/dates.ts";
-import { createDebt, insertDebtTx } from "../../src/lib/debts/create.ts";
+import { createDebt, deleteDebt, insertDebtTx } from "../../src/lib/debts/create.ts";
 import { payDebt } from "../../src/lib/debts/pay.ts";
 
 // ─── Stub de Supabase ────────────────────────────────────────────────────────
@@ -524,6 +524,31 @@ async function main() {
     } }) }) }) } as never;
     const tx = await insertDebtTx(legacy, { user_id: USER, amount: 1, debt_id: "d1" });
     check("insertDebtTx sin migración → reintenta sin debt_id y no pierde el movimiento", tx?.id === "tx-legacy" && rows.length === 1 && !("debt_id" in rows[0]));
+  }
+
+  // 15i) Borrar una deuda nunca dice que se llevó movimientos que no estaban enlazados.
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    const { debt } = await createDebt(makeStub(db), USER, { spaceId: SPACE, direction: "me_deben", counterparty: "Ana", amount: 3000, currency: "ARS" });
+    await payDebt(makeStub(db), USER, debt!.id, 1000);
+    const r = await deleteDebt(makeStub(db), USER, debt!.id);
+    check("deleteDebt con egreso + cobro enlazados → sin huérfanos", r.ok && !r.orphans && db.debts.length === 0, JSON.stringify(r));
+
+    // Deuda vieja: egreso y cobro existen pero sin debt_id.
+    const db2 = seed();
+    db2.debts.push({ id: "vieja", user_id: USER, space_id: SPACE, direction: "me_deben", counterparty: "Nico", total_amount: 1800, paid_amount: 500, currency_code: "USD", status: "active" });
+    db2.transactions.push({ id: "t-orig", user_id: USER, type: "expense", amount: 1800, currency_code: "USD", description: "Préstamo a Nico" });
+    const r2 = await deleteDebt(makeStub(db2), USER, "vieja");
+    check("deleteDebt de deuda vieja sin enlaces → avisa huérfanos", r2.ok && r2.orphans, JSON.stringify(r2));
+
+    const db3 = seed();
+    db3.debts.push({ id: "debo-sin-pagos", user_id: USER, space_id: SPACE, direction: "debo", counterparty: "Juan", total_amount: 500, paid_amount: 0, currency_code: "ARS", status: "active" });
+    const r3 = await deleteDebt(makeStub(db3), USER, "debo-sin-pagos");
+    check("deleteDebt 'debo' sin pagos → nada que avisar", r3.ok && !r3.orphans, JSON.stringify(r3));
+
+    const r4 = await deleteDebt(makeStub(seed()), USER, "no-existe");
+    check("deleteDebt de otra/inexistente → ok:false", !r4.ok);
   }
   {
     // cobro en la moneda de la deuda: matchea la fila USD, no crea ingreso suelto

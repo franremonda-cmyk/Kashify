@@ -2,7 +2,7 @@ import { generatePaymentDates } from "@/lib/installments/calculator";
 import { categoryForText, CATEGORY_FALLBACK } from "@/lib/neo-keywords";
 import { learnFromCorrection } from "@/lib/neo/learning";
 import { payDebt } from "@/lib/debts/pay";
-import { createDebt } from "@/lib/debts/create";
+import { createDebt, deleteDebt } from "@/lib/debts/create";
 import { localIso, userTimezone, wallToday } from "@/lib/dates";
 import { scopeForSpace } from "@/lib/space-scope";
 import { deleteSpaceGuarded } from "@/lib/spaces";
@@ -313,9 +313,10 @@ export async function executeConfirm(supabase: NeoSupabase, userId: string, conf
       return { text: `Saldé el plan "${confirm.planName}".`, effects: [{ type: "refresh" }] };
     }
     case "confirm_delete_debt": {
-      const { error } = await supabase.from("debts").delete().eq("id", confirm.debtId).eq("user_id", userId);
-      if (error) return { text: "No pude borrar la deuda." };
-      return { text: `Borré la deuda de ${confirm.debtLabel}.`, effects: [{ type: "refresh" }] };
+      const { ok, orphans } = await deleteDebt(supabase, userId, confirm.debtId);
+      if (!ok) return { text: "No pude borrar la deuda." };
+      const note = orphans ? "\nSus movimientos anteriores quedaron en tu historial: si hace falta, borralos desde la app." : "";
+      return { text: `Borré la deuda de ${confirm.debtLabel}.${note}`, effects: [{ type: "refresh" }] };
     }
   }
 }

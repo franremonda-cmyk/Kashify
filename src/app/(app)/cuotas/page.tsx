@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import InstallmentForm from "@/components/InstallmentForm";
+import LoadError from "@/components/LoadError";
+import RowsSkeleton from "@/components/RowsSkeleton";
 import type { InstallmentFormData } from "@/components/InstallmentForm";
 import { BackButton } from "@/components/ui/BackButton";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -19,8 +21,13 @@ export default function CuotasPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+  // r.ok + Array.isArray: antes un 500 guardaba {error} como lista y la pantalla se rompía.
   const load = useCallback(() => {
-    fetch(`/api/installments?space=${activeId}`).then((r) => r.json()).then(setPlans).catch(() => {});
+    fetch(`/api/installments?space=${activeId}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => { if (!Array.isArray(d)) throw new Error(); setPlans(d); setStatus("ok"); })
+      .catch(() => setStatus("error"));
   }, [activeId]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -148,7 +155,10 @@ export default function CuotasPage() {
         </section>
       )}
 
-      {plans.length === 0 && !showForm && (
+      {status === "loading" && plans.length === 0 && <RowsSkeleton rows={3} />}
+      {status === "error" && <LoadError what="tus cuotas" onRetry={() => { setStatus("loading"); load(); }} />}
+
+      {status === "ok" && plans.length === 0 && !showForm && (
         <div className="card-glass p-8 text-center enter-up">
           <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", fontWeight: 500 }}>Sin compras en cuotas</p>
           <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 4 }}>Registrá una compra financiada para seguir tus pagos.</p>

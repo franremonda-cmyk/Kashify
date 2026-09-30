@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ICON_GROUPS, CATEGORY_COLORS, type IconDef } from "@/lib/iconList";
 import type { IconStyle } from "@/context/IconStyleContext";
+import { useEscape } from "@/lib/useEscape";
 
 const STYLE_TABS: { id: IconStyle; label: string; desc: string }[] = [
   { id: "line",    label: "Línea",   desc: "Trazo fino" },
@@ -30,6 +31,7 @@ function PreviewIcon({ def, style, color, size = 22 }: { def: IconDef; style: Ic
 }
 
 export default function IconPicker({ selectedIcon, selectedColor, selectedStyle = "line", existingColors = [], zIndex = 9200, onSelect, onClose }: Props) {
+  useEscape(onClose);
   const [style, setStyle]       = useState<IconStyle>(selectedStyle);
   const [search, setSearch]     = useState("");
   const [pickedIcon, setPickedIcon] = useState(selectedIcon ?? "");

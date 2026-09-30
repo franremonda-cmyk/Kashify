@@ -208,7 +208,7 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-/* Drifting aurora behind everything (subtle global motion) */
+/* Aurora detrás de todo — quieta: el movimiento que no comunica estado es ruido (y batería). */
 body::before {
   content: "";
   position: fixed;
@@ -217,11 +217,6 @@ body::before {
   pointer-events: none;
   background: radial-gradient(ellipse 46% 60% at 32% 0%, var(--accent-soft) 0%, transparent 62%);
   opacity: 0.9;
-  animation: aurora-drift 20s ease-in-out infinite alternate;
-}
-@keyframes aurora-drift {
-  0%   { transform: translateX(-5%) translateY(0)    scale(1);    opacity: 0.7; }
-  100% { transform: translateX(9%)  translateY(3%)   scale(1.08); opacity: 1;   }
 }
 
 /* Hero balance panel — liquid frosted glass (dark) / emerald (light) */

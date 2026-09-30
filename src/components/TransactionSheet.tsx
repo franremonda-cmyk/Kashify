@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -7,6 +7,7 @@ import CategoryModal from "@/components/CategoryModal";
 import { useIconStyle } from "@/context/IconStyleContext";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import type { Transaction } from "@/types";
+import { useEscape } from "@/lib/useEscape";
 
 interface Category { id: string; name: string; icon?: string; color?: string; }
 
@@ -41,11 +42,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   const [showCatModal, setShowCatModal] = useState(false);
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose);
 
   const [desc, setDesc]           = useState(tx.description);
   const [amount, setAmount]       = useState(String(tx.amount));

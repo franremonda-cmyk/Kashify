@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { CATEGORY_COLORS } from "@/lib/iconList";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import type { Space } from "@/types";
+import { useEscape } from "@/lib/useEscape";
 
 // Paleta de emojis para el espacio: elegir tocando (más confiable que un input
 // de texto con maxLength, que rompe con emojis de >1 unidad UTF-16).
@@ -46,6 +47,7 @@ const inp: React.CSSProperties = {
 const label: React.CSSProperties = { fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 6 };
 
 export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) {
+  useEscape(onClose);
   const isNew = !space?.id;
   const [name, setName] = useState(space?.name ?? "");
   const [currency, setCurrency] = useState(space?.primary_currency ?? "ARS");
@@ -81,7 +83,7 @@ export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) 
       style={{ position: "fixed", inset: 0, zIndex: 9100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.72)", padding: "20px 16px", touchAction: "none" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="glass-strong scale-up" style={{ width: "100%", maxWidth: 400, borderRadius: 20, maxHeight: "100%", display: "flex", flexDirection: "column" }}>
+      <div role="dialog" aria-modal="true" aria-label={isNew ? "Nuevo espacio" : "Editar espacio"} className="glass-strong scale-up" style={{ width: "100%", maxWidth: 400, borderRadius: 20, maxHeight: "100%", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 0", flexShrink: 0 }}>
           <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)" }}>{isNew ? "Nuevo espacio" : "Editar espacio"}</p>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)", fontSize: "var(--text-2xs)" }}>✕</button>

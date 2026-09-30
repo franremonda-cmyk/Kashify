@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import DebtForm from "@/components/DebtForm";
+import LoadError from "@/components/LoadError";
+import RowsSkeleton from "@/components/RowsSkeleton";
 import type { DebtFormData } from "@/components/DebtForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { useSpaces } from "@/context/SpaceContext";
@@ -12,9 +14,16 @@ export default function DeudasPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+  const [showPaid, setShowPaid] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
+  // r.ok + Array.isArray: antes un 500 guardaba {error} como lista y la pantalla se rompía.
   const load = useCallback(() => {
-    fetch(`/api/debts?space=${activeId}`).then((r) => r.json()).then(setDebts).catch(() => {});
+    fetch(`/api/debts?space=${activeId}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => { if (!Array.isArray(d)) throw new Error(); setDebts(d); setStatus("ok"); })
+      .catch(() => setStatus("error"));
   }, [activeId]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -41,8 +50,8 @@ export default function DeudasPage() {
     }
   }
 
-  async function handleEdit(id: string, data: DebtFormData) {
-    await fetch(`/api/debts/${id}`, {
+  async function handleEdit(id: string, data: DebtFormData): Promise<boolean> {
+    const res = await fetch(`/api/debts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -52,9 +61,11 @@ export default function DeudasPage() {
         currency_code: data.currency_code,
         due_date: data.due_date || null,
       }),
-    });
+    }).catch(() => null);
+    if (!res?.ok) return false; // el form queda abierto con lo escrito
     setEditingId(null);
     load();
+    return true;
   }
 
   async function handlePay(id: string, amount: number) {
@@ -71,8 +82,13 @@ export default function DeudasPage() {
   }
 
   async function handleDelete(id: string) {
-    await fetch(`/api/debts/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/debts/${id}`, { method: "DELETE" }).catch(() => null);
+    const body = res?.ok ? await res.json().catch(() => ({})) : null;
+    setNotice(!res?.ok ? "No se pudo borrar la deuda. Probá de nuevo."
+      : body?.orphans ? "Borré la deuda. Algunos movimientos anteriores quedaron en Actividad: si hace falta, borralos desde ahí."
+      : null);
     if (editingId === id) setEditingId(null);
+    window.dispatchEvent(new Event("transaction-added")); // el neto pudo cambiar
     load();
   }
 
@@ -98,6 +114,12 @@ export default function DeudasPage() {
           + Nueva
         </button>
       </div>
+
+      {notice && (
+        <p role="status" style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", padding: "10px 14px", borderRadius: 10, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
+          {notice}
+        </p>
+      )}
 
       {showForm && (
         <>
@@ -134,8 +156,15 @@ export default function DeudasPage() {
             ))}
             {paid.length > 0 && (
               <>
-                <h3 style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-dim)", paddingLeft: 4, marginTop: 8 }}>Saldadas</h3>
-                {paid.map((debt) => (
+                {/* Saldadas plegadas: no se borran para ordenar (sus movimientos son plata que se movió de verdad) */}
+                <button
+                  onClick={() => setShowPaid((v) => !v)}
+                  aria-expanded={showPaid}
+                  style={{ alignSelf: "flex-start", minHeight: 44, fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)", paddingLeft: 4, marginTop: 4 }}
+                >
+                  Saldadas ({paid.length}) {showPaid ? "▴" : "▾"}
+                </button>
+                {showPaid && paid.map((debt) => (
                   <DebtCard
                     key={debt.id}
                     debt={debt}
@@ -152,10 +181,14 @@ export default function DeudasPage() {
         );
       })}
 
-      {debts.length === 0 && !showForm && (
+      {status === "loading" && debts.length === 0 && <RowsSkeleton rows={3} />}
+      {status === "error" && <LoadError what="tus deudas" onRetry={() => { setStatus("loading"); load(); }} />}
+
+      {status === "ok" && debts.length === 0 && !showForm && (
         <div className="card-glass p-8 text-center enter-up">
           <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", fontWeight: 500 }}>Sin deudas registradas</p>
           <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 4 }}>Registrá lo que debés o lo que te deben para hacerle seguimiento.</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 8 }}>O escribile a Neo por WhatsApp: <em>presté 10000 a Juan</em></p>
         </div>
       )}
     </div>
@@ -168,19 +201,20 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
   onDelete: (id: string) => void;
   isEditing: boolean;
   onEditToggle: () => void;
-  onSubmitEdit: (data: DebtFormData) => void;
+  onSubmitEdit: (data: DebtFormData) => Promise<boolean>;
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [payAmount, setPayAmount] = useState("");
   const [payError, setPayError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const [editError, setEditError] = useState(false);
   // "Me deben" → lo que entra es un cobro, no un pago.
   const payWord = debt.direction === "me_deben" ? "cobro" : "pago";
 
   useEffect(() => {
     if (!confirmingDelete) return;
-    const t = setTimeout(() => setConfirmingDelete(false), 3500);
+    const t = setTimeout(() => setConfirmingDelete(false), 6000); // tiempo para leer el aviso
     return () => clearTimeout(t);
   }, [confirmingDelete]);
 
@@ -242,6 +276,9 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
         )}
       </div>
 
+      {isEditing && editError && (
+        <p role="alert" style={{ fontSize: "var(--text-2xs)", color: "var(--negative)" }}>No se pudieron guardar los cambios. Revisá la conexión y probá de nuevo.</p>
+      )}
       {isEditing ? (
         <DebtForm
           editMode
@@ -253,8 +290,8 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
             currency_code: debt.currency_code,
             due_date: debt.due_date ?? "",
           }}
-          onSubmit={onSubmitEdit}
-          onCancel={onEditToggle}
+          onSubmit={async (data) => { setEditError(false); if (!(await onSubmitEdit(data))) setEditError(true); }}
+          onCancel={() => { setEditError(false); onEditToggle(); }}
         />
       ) : payOpen ? (
         <div className="flex flex-col gap-2">
@@ -303,6 +340,11 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
             {confirmingDelete ? "¿Eliminar? Tocá de nuevo" : "Eliminar"}
           </button>
         </div>
+      )}
+      {confirmingDelete && !isEditing && !payOpen && (
+        <p role="alert" style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)" }}>
+          Se borran también el préstamo y los {payWord}s que registraste con esta deuda: tu neto queda como si no hubiera existido.
+        </p>
       )}
     </div>
   );

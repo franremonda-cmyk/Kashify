@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import RowsSkeleton from "@/components/RowsSkeleton";
+import { useEscape } from "@/lib/useEscape";
 
 interface BudgetEntry {
   id: string;
@@ -39,6 +40,7 @@ function fmt(n: number, currency: string) {
 }
 
 export default function BudgetDetailModal({ budget, onClose, onUpdated }: Props) {
+  useEscape(onClose);
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
   const [txs, setTxs] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);

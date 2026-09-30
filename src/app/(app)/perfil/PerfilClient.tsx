@@ -9,6 +9,7 @@ import { toWhatsappFrom } from "@/lib/phone";
 import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
 import RowsSkeleton from "@/components/RowsSkeleton";
+import LoadError from "@/components/LoadError";
 import { NOTIF_FAMILIES } from "@/lib/neo/insights";
 import type { Profile } from "@/types";
 
@@ -187,12 +188,20 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
   useEffect(() => { fetchCategories(); fetchBudgets(); }, [fetchCategories, fetchBudgets]);
 
-  useEffect(() => {
-    fetch("/api/goals").then(r => r.ok ? r.json() : []).then(d => setGoals(Array.isArray(d) ? d : [])).catch(() => {});
-    fetch("/api/installments").then(r => r.ok ? r.json() : []).then(d => setPlans(Array.isArray(d) ? d : [])).catch(() => {});
-    fetch("/api/debts").then(r => r.ok ? r.json() : []).then(d => setDebts(Array.isArray(d) ? d : [])).catch(() => {});
-    fetch("/api/neo/notif-prefs").then(r => r.ok ? r.json() : { muted: [] }).then(d => setMutedFamilies(Array.isArray(d.muted) ? d.muted : [])).catch(() => {});
+  // Metas / cuotas / deudas: si una falla, su sección lo dice (antes se veía vacía, como si no hubiera nada).
+  const [trackErr, setTrackErr] = useState<{ goals?: boolean; plans?: boolean; debts?: boolean }>({});
+  const loadTracker = useCallback((key: "goals" | "plans" | "debts") => {
+    const url = { goals: "/api/goals", plans: "/api/installments", debts: "/api/debts" }[key];
+    const set = { goals: setGoals, plans: setPlans, debts: setDebts }[key] as (d: never[]) => void;
+    fetch(url).then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(d => { if (!Array.isArray(d)) throw new Error(); set(d as never[]); setTrackErr((e) => ({ ...e, [key]: false })); })
+      .catch(() => setTrackErr((e) => ({ ...e, [key]: true })));
   }, []);
+
+  useEffect(() => {
+    loadTracker("goals"); loadTracker("plans"); loadTracker("debts");
+    fetch("/api/neo/notif-prefs").then(r => r.ok ? r.json() : { muted: [] }).then(d => setMutedFamilies(Array.isArray(d.muted) ? d.muted : [])).catch(() => {});
+  }, [loadTracker]);
 
   async function toggleFamily(family: string, silence: boolean) {
     setTogglingFamily(family);
@@ -684,6 +693,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       {/* ④ Metas de ahorro */}
       <Accordion label="Metas de ahorro" {...sec("metas")}>
         <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>Seguí el progreso de tus objetivos de ahorro.</p>
+        {trackErr.goals && <LoadError compact what="tus metas" onRetry={() => loadTracker("goals")} />}
         {goals.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {goals.map((g) => {
@@ -718,6 +728,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
       {/* ⑤ Cuotas */}
       <Accordion label="Cuotas" {...sec("cuotas")}>
         <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>Administrá tus compras en cuotas.</p>
+        {trackErr.plans && <LoadError compact what="tus cuotas" onRetry={() => loadTracker("plans")} />}
         {plans.filter(p => p.status === "active").length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {plans.filter(p => p.status === "active").map((plan) => {
@@ -747,6 +758,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
       <Accordion label="Deudas" {...sec("deudas")}>
         <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)" }}>Lo que debés y lo que te deben.</p>
+        {trackErr.debts && <LoadError compact what="tus deudas" onRetry={() => loadTracker("debts")} />}
         {debts.filter(d => d.status === "active").length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {debts.filter(d => d.status === "active").map((debt) => {

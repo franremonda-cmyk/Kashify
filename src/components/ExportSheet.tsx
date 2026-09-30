@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSpaces } from "@/context/SpaceContext";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
+import { useEscape } from "@/lib/useEscape";
 
 // fontSize 16 en inputs → evita el auto-zoom de iOS Safari.
 const field: React.CSSProperties = {
@@ -28,11 +29,7 @@ export default function ExportSheet({ onClose }: { onClose: () => void }) {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose);
 
   function doExport() {
     const p = new URLSearchParams({ format });

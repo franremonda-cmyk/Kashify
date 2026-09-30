@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { DebtDirection } from "@/types";
+import { usePrimaryCurrency } from "@/lib/usePrimaryCurrency";
 
 export interface DebtFormData {
   direction: DebtDirection;
@@ -60,10 +61,12 @@ export default function DebtForm({ onSubmit, onCancel, initialData, editMode = f
     counterparty: initialData?.counterparty ?? "",
     description: initialData?.description ?? "",
     total_amount: initialData?.total_amount ?? 0,
-    currency_code: initialData?.currency_code ?? "ARS",
+    currency_code: initialData?.currency_code ?? "", // "" → moneda principal del perfil
     due_date: initialData?.due_date ?? "",
   });
   const [attempted, setAttempted] = useState(false);
+  const primaryCurrency = usePrimaryCurrency();
+  const currency = form.currency_code || primaryCurrency || "ARS";
 
   function setStr(key: keyof DebtFormData) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -79,7 +82,7 @@ export default function DebtForm({ onSubmit, onCancel, initialData, editMode = f
     setAttempted(true);
     if (!isValid || saving) return;
     setSaving(true);
-    try { await onSubmit(form); } finally { setSaving(false); }
+    try { await onSubmit({ ...form, currency_code: currency }); } finally { setSaving(false); }
   }
 
   function fieldBorder(valid: boolean): React.CSSProperties {
@@ -149,8 +152,8 @@ export default function DebtForm({ onSubmit, onCancel, initialData, editMode = f
       <div style={section}>
         <p style={label}>Monto <span style={required}>*</span></p>
         <div style={{ display: "flex", gap: 8 }}>
-          <select style={{ ...inp, width: 88, flexShrink: 0 }} value={form.currency_code} onChange={setStr("currency_code")}>
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          <select style={{ ...inp, width: 88, flexShrink: 0 }} value={currency} onChange={setStr("currency_code")}>
+            {(CURRENCIES.includes(currency) ? CURRENCIES : [currency, ...CURRENCIES]).map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <input
             style={fieldBorder(form.total_amount > 0)}
