@@ -40,8 +40,11 @@ export default async function DashboardPage() {
       .select("id, category_id, amount, currency_code, type, description, date, space_id, categories(name, icon, color)")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", monthStart)
-      .order("created_at", { ascending: false })
-      .limit(50),
+      // Mes completo, sin .limit(50): Ingresos/Gastos/Balance del mes y los
+      // límites por categoría sumaban solo los últimos 50 movimientos. Mismo
+      // rango que Actividad (el tope de 1000 filas de Supabase aplica igual).
+      .lt("date", new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().split("T")[0])
+      .order("created_at", { ascending: false }),
     supabase.from("transactions")
       .select("amount, currency_code, type, date, space_id, description")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
