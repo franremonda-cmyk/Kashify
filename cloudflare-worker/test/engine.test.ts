@@ -8,6 +8,7 @@ import type { NeoState } from "../../src/lib/neo/engine/types.ts";
 import { DEFAULT_TZ, isoDay, localIso, wallToday } from "../../src/lib/dates.ts";
 import { createDebt, deleteDebt, insertDebtTx } from "../../src/lib/debts/create.ts";
 import { payDebt } from "../../src/lib/debts/pay.ts";
+import { isLoan, loanFlows } from "../../src/lib/ledger/loans.ts";
 
 // ─── Stub de Supabase ────────────────────────────────────────────────────────
 
@@ -550,6 +551,35 @@ async function main() {
 
     const r4 = await deleteDebt(makeStub(seed()), USER, "no-existe");
     check("deleteDebt de otra/inexistente → ok:false", !r4.ok);
+  }
+
+  // 15j) Préstamos fuera de Ingresos/Gastos del mes (prestar no es gastar;
+  // que te devuelvan no es ganar). Siguen contando en el Balance total.
+  {
+    const ids = new Set(["d-me", "d-debo"].slice(0, 1)); // solo las "me deben"
+    check("isLoan: enlazado a 'me deben' → préstamo", isLoan({ debt_id: "d-me" }, ids));
+    check("isLoan: pago de algo que DEBO → no es préstamo (es gasto)", !isLoan({ debt_id: "d-debo" }, ids));
+    check("isLoan: gasto común → no", !isLoan({ debt_id: null }, ids) && !isLoan({}, ids));
+    const f = loanFlows([
+      { debt_id: "d-me", type: "expense", amount: 100000, currency_code: "ARS" },
+      { debt_id: "d-me", type: "income", amount: 40000, currency_code: "ARS" },
+      { debt_id: null, type: "expense", amount: 5000, currency_code: "ARS" },
+    ], ids);
+    check("loanFlows: prestaste 100.000 · te devolvieron 40.000", f.length === 1 && f[0].lent === 100000 && f[0].returned === 40000, JSON.stringify(f));
+
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    const { debt } = await createDebt(makeStub(db), USER, { spaceId: SPACE, direction: "me_deben", counterparty: "Mamá", amount: 100000, currency: "ARS" });
+    await payDebt(makeStub(db), USER, debt!.id, 40000);
+    const today = isoDay(new Date(), DEFAULT_TZ);
+    db.transactions.push({ id: "g1", user_id: USER, space_id: SPACE, type: "expense", amount: 5000, currency_code: "ARS", date: today, description: "nafta" });
+    db.transactions.push({ id: "i1", user_id: USER, space_id: SPACE, type: "income", amount: 50000, currency_code: "ARS", date: today, description: "sueldo" });
+    const g = await runNeo({ supabase: makeStub(db), userId: USER, message: "cuánto gasté este mes", channel: "whatsapp" });
+    check("Neo 'cuánto gasté': 5.000 sin el préstamo, y lo prestado aparte", g.text.includes("ARS 5.000") && !g.text.includes("105.000") && g.text.includes("prestaste ARS 100.000"), g.text);
+    const i = await runNeo({ supabase: makeStub(db), userId: USER, message: "cuánto cobré este mes", channel: "whatsapp" });
+    check("Neo 'cuánto cobré': 50.000 sin el cobro del préstamo, y lo devuelto aparte", i.text.includes("ARS 50.000") && !i.text.includes("90.000") && i.text.includes("ARS 40.000"), i.text);
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "resumen", channel: "whatsapp" });
+    check("Neo 'resumen': balance del mes +45.000 (50.000 − 5.000), préstamos aparte", r.text.includes("Balance del mes: +ARS 45.000") && r.text.includes("prestaste ARS 100.000 · te devolvieron ARS 40.000"), r.text);
   }
   {
     // cobro en la moneda de la deuda: matchea la fila USD, no crea ingreso suelto

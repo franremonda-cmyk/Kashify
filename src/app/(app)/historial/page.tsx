@@ -13,6 +13,8 @@ import FilterSheet, { type Filters, sortTransactions } from "@/components/Filter
 import TxBreakdownModal from "@/components/TxBreakdownModal";
 import type { Transaction } from "@/types";
 import { catColorOrFallback, FALLBACK_COLORS } from "@/lib/colors";
+import LoansLine from "@/components/LoansLine";
+import { isLoan, loanDebtIds, loanFlows } from "@/lib/ledger/loans";
 
 // Import modal usando el overlay estándar
 function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
@@ -369,12 +371,14 @@ export default function ActividadPage() {
   const [viewMonth, setViewMonth]           = useState(() => new Date().getMonth() + 1);
   const [breakdownType, setBreakdownType] = useState<"income" | "expense" | null>(null);
   const currencyInitialized = useRef(false);
+  const [loanIds, setLoanIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then((cats: { id: string; name: string; color?: string; icon?: string }[]) => {
       setCategories(cats.map(c => ({ id: c.id, name: c.name, icon: c.icon ?? "", color: c.color })));
     }).catch(() => {});
     const supabase = createClient();
+    loanDebtIds(supabase).then(setLoanIds);
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase.from("profiles").select("primary_currency").eq("user_id", user.id).single()
@@ -445,13 +449,16 @@ export default function ActividadPage() {
     );
   }, [transactions, selectedCurrency, filters, search]);
 
-  const incomeTotal  = filtered.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-  const expenseTotal = filtered.filter(t => t.type === "expense" || t.type === "installment-payment").reduce((s, t) => s + Number(t.amount), 0);
+  // La lista muestra todo; los totales y gráficos van sin préstamos (lib/ledger/loans).
+  const counted      = filtered.filter(t => !isLoan(t, loanIds));
+  const monthLoan    = loanFlows(filtered, loanIds)[0];
+  const incomeTotal  = counted.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+  const expenseTotal = counted.filter(t => t.type === "expense" || t.type === "installment-payment").reduce((s, t) => s + Number(t.amount), 0);
   const net          = incomeTotal - expenseTotal;
 
   const incomeByCurrency: Record<string, number> = {};
   const expenseByCurrency: Record<string, Record<string, ChartEntry>> = {};
-  filtered.forEach(t => {
+  counted.forEach(t => {
     const cur = t.currency_code ?? "ARS";
     if (t.type === "income") {
       incomeByCurrency[cur] = (incomeByCurrency[cur] ?? 0) + Number(t.amount);
@@ -477,7 +484,7 @@ export default function ActividadPage() {
   const spaceChartByCurrency: Record<string, ChartEntry[]> = {};
   if (canSplitBySpace) {
     const byId: Record<string, ChartEntry> = {};
-    filtered.forEach(t => {
+    counted.forEach(t => {
       if (t.type !== "expense" && t.type !== "installment-payment") return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sid = (t as any).space_id ?? "none";
@@ -593,7 +600,7 @@ export default function ActividadPage() {
       </div>{/* /hist-context */}
 
       {/* Resumen del mes: banda a lo ancho — más aire para los números. */}
-      {filtered.length > 0 && (
+      {filtered.length > 0 && (<>
         <div className="hist-summary enter-up" data-delay="1" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
           <button onClick={() => setBreakdownType("income")} className="card-glass stat-tile" style={{ padding: "14px", textAlign: "left", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -612,12 +619,13 @@ export default function ActividadPage() {
           <div className="card-glass stat-tile" style={{ padding: "14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 78 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: 999, background: net >= 0 ? "var(--positive)" : "var(--negative)", flexShrink: 0 }} />
-              <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Balance</p>
+              <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Balance del mes</p>
             </div>
             <p className="mono stat-num" style={{ color: net >= 0 ? "var(--positive)" : "var(--negative)" }}>{net.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
-      )}
+        <LoansLine loan={monthLoan} />
+      </>)}
 
       {/* Detalle (lista) a la izquierda, gráfico a la derecha (sticky en desktop). */}
       <div className="hist-cols">

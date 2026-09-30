@@ -17,6 +17,8 @@ import BudgetDetailModal from "./BudgetDetailModal";
 import TxBreakdownModal from "./TxBreakdownModal";
 import type { BalanceView, SavingsGoal } from "@/types";
 import { catColorOrFallback } from "@/lib/colors";
+import type { LoanFlow } from "@/lib/ledger/loans";
+import LoansLine from "@/components/LoansLine";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; prevIncome?: number; prevExpense?: number; }
 interface RecentTx {
@@ -53,6 +55,7 @@ interface Props {
   daysInMonth?: number;
   upcoming?: { currency_code: string; total: number; count: number }[];
   debts?: DebtSummary[];
+  loans?: LoanFlow[];
   recurring?: RecurringItem[];
   chartData: Record<string, ChartMonth[]>;
   spaceStacksData?: Record<string, SpaceExpenseStack[]>;
@@ -93,22 +96,30 @@ function useCounter(target: number, duration = 600) {
   return value;
 }
 
-// Ingresos − gastos del mes (lo mismo que "Balance" en Actividad). Se llama
-// "Balance del mes" porque la tarjeta de arriba ya es "Balance" = acumulado.
-function MonthNet({ income, expense, sym }: { income: number; expense: number; sym: string }) {
-  if (income === 0 && expense === 0) return null;
+// Ingresos − gastos del mes, SIN préstamos (lib/ledger/loans): prestar no es
+// gastar y que te devuelvan no es ganar. Se llama "Balance del mes" porque la
+// tarjeta de arriba ya es "Balance" (acumulado, donde los préstamos sí cuentan).
+// Los préstamos del mes se ven aparte, en neutro: no son buenos ni malos.
+function MonthNet({ income, expense, sym, loan }: { income: number; expense: number; sym: string; loan?: LoanFlow }) {
+  const hasLoans = !!loan && (loan.lent > 0 || loan.returned > 0);
+  if (income === 0 && expense === 0 && !hasLoans) return null;
   const net = income - expense;
   const color = net >= 0 ? "var(--positive)" : "var(--negative)";
   return (
-    <div className="card-glass" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 18 }}>
-      <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flexShrink: 0 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Balance del mes</p>
-        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 2 }}>ingresos − gastos</p>
+    <div className="card-glass" style={{ borderRadius: 18, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px" }}>
+        <span aria-hidden style={{ width: 8, height: 8, borderRadius: 999, background: color, flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--ink-muted)" }}>Balance del mes</p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 2 }}>
+            ingresos − gastos
+          </p>
+        </div>
+        <p className="mono" style={{ fontSize: "var(--text-base)", fontWeight: 700, color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+          {net >= 0 ? "+" : "−"}{sym} {Math.abs(Math.round(net)).toLocaleString("es-AR")}
+        </p>
       </div>
-      <p className="mono" style={{ fontSize: "var(--text-base)", fontWeight: 700, color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-        {net >= 0 ? "+" : "−"}{sym} {Math.abs(Math.round(net)).toLocaleString("es-AR")}
-      </p>
+      <LoansLine loan={loan} prefix={sym} divider />
     </div>
   );
 }
@@ -347,7 +358,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, usdRate, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], debts = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, usdRate, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], debts = [], loans = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -440,7 +451,7 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
           <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  deltaPct={incomeDelta}  onClick={() => setBreakdownType("income")} />
           <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />
         </div>
-        <MonthNet income={m.income} expense={m.expense} sym={sym} />
+        <MonthNet income={m.income} expense={m.expense} sym={sym} loan={loans.find((l) => l.currency_code === selectedCurrency)} />
       </div>
 
       {/* Pendientes: deudas y cuotas del mes, a un toque (también siguen en Perfil) */}

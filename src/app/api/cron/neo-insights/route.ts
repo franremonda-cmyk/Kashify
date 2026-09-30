@@ -9,6 +9,7 @@ import {
   notifFamily, type Candidate, type NotifFamily,
 } from "@/lib/neo/insights";
 import { detectRecurring, normalizeDesc } from "@/lib/recurring";
+import { isLoan, loanDebtIds } from "@/lib/ledger/loans";
 
 // Cron: escribe consejos in-app en `neo_notifications` (gratis, sin costo Meta).
 // El personaje Neo los levanta en el feed y en su globito. Todo determinista
@@ -51,12 +52,18 @@ export async function GET(request: Request) {
   const in3daysISO = new Date(now.getTime() + 3 * 86_400_000).toISOString().split("T")[0];
 
   // Movimientos desde priorStart de TODOS los usuarios en una query; agrego en JS.
-  const { data: rows } = await supabase
-    .from("transactions")
-    .select("user_id, amount, currency_code, category_id, date, type, space_id, description")
-    .is("deleted_at", null)
-    .gte("date", priorStart.toISOString().split("T")[0])
-    .in("type", ["expense", "installment-payment", "income"]);
+  const [{ data: allRows }, loanIds] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("user_id, amount, currency_code, category_id, date, type, space_id, description, debt_id")
+      .is("deleted_at", null)
+      .gte("date", priorStart.toISOString().split("T")[0])
+      .in("type", ["expense", "installment-payment", "income"]),
+    loanDebtIds(supabase), // todos los usuarios (service role)
+  ]);
+  // Prestar no es gastar (lib/ledger/loans): un préstamo grande no dispara
+  // "superaste el límite" ni "gastaste más que el mes pasado".
+  const rows = (allRows ?? []).filter((t) => !isLoan(t, loanIds));
 
   if (!rows?.length) return NextResponse.json({ insights: 0 });
 

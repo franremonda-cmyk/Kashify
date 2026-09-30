@@ -7,6 +7,9 @@ import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import RowsSkeleton from "@/components/RowsSkeleton";
 import type { Transaction } from "@/types";
 import { useEscape } from "@/lib/useEscape";
+import { useSpaces } from "@/context/SpaceContext";
+import { createClient } from "@/lib/supabase/client";
+import { isLoan, loanDebtIds } from "@/lib/ledger/loans";
 
 interface Tx {
   id: string;
@@ -16,6 +19,7 @@ interface Tx {
   date: string;
   type: string;
   category_id?: string | null;
+  debt_id?: string | null;
   categories?: { name?: string; icon?: string; color?: string } | null;
 }
 
@@ -35,6 +39,7 @@ function fmt(n: number, currency: string) {
 
 export default function TxBreakdownModal({ type, currency, onClose }: Props) {
   useEscape(onClose);
+  const { activeId } = useSpaces();
   const { mounted, overlayRef, scrollRef } = useModalTouchLock();
   const [txs, setTxs] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,13 +61,19 @@ export default function TxBreakdownModal({ type, currency, onClose }: Props) {
   const bg = isIncome ? "rgba(52,199,89,0.07)" : "rgba(255,59,48,0.06)";
   const border = isIncome ? "0.5px solid rgba(52,199,89,0.18)" : "0.5px solid rgba(255,59,48,0.16)";
 
+  // Mismo universo que la tarjeta tocada: espacio activo, mes completo (antes
+  // cortaba en 100) y sin préstamos (lib/ledger/loans).
   const loadTxs = useCallback(() => {
     const typeParam = type === "expense" ? "expense,installment-payment" : "income";
-    fetch(`/api/transactions?type=${typeParam}&from=${from}&to=${to}&currency=${currency}&sort_by=date&sort_dir=desc&page=1&limit=100`)
-      .then(r => r.ok ? r.json() : { data: [] })
-      .then(json => { setTxs(json.data ?? []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [type, from, to, currency]);
+    Promise.all([
+      fetch(`/api/transactions?type=${typeParam}&from=${from}&to=${to}&currency=${currency}&space=${activeId}&sort_by=date&sort_dir=desc&page=1&limit=1000`)
+        .then(r => r.ok ? r.json() : { data: [] }),
+      loanDebtIds(createClient()),
+    ])
+      .then(([json, loans]) => setTxs(((json.data ?? []) as Tx[]).filter((t) => !isLoan(t, loans))))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [type, from, to, currency, activeId]);
 
   useEffect(() => { loadTxs(); }, [loadTxs]);
 

@@ -8,6 +8,7 @@ import SpaceSwitcher from "@/components/SpaceSwitcher";
 import SpacesHintCard from "@/components/SpacesHintCard";
 import { computeBalances } from "@/lib/ledger/balances";
 import { userTimezone, wallToday } from "@/lib/dates";
+import { isLoan, loanDebtIds, loanFlows } from "@/lib/ledger/loans";
 import { detectRecurring, type RecTx } from "@/lib/recurring";
 import { scopeForSpace, SPACE_COOKIE } from "@/lib/space-scope";
 import type { ChartMonth } from "@/components/SpendingChart";
@@ -32,12 +33,12 @@ export default async function DashboardPage() {
   const spaces = (spacesData as Space[] | null) ?? [];
   const scopeIds = scopeForSpace(spaces, activeSpace);
 
-  const [profileRes, pendingRes, txMonthRes, txHistoryRes, txAllRes, goalsRes, budgetsRes, installmentsRes, debtsRes] = await Promise.all([
+  const [profileRes, pendingRes, txMonthRes, txHistoryRes, txAllRes, goalsRes, budgetsRes, installmentsRes, debtsRes, loanIds] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", user.id).single(),
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
     supabase.from("transactions")
-      .select("id, category_id, amount, currency_code, type, description, date, space_id, categories(name, icon, color)")
+      .select("id, category_id, amount, currency_code, type, description, date, space_id, debt_id, categories(name, icon, color)")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", monthStart)
       // Mes completo, sin .limit(50): Ingresos/Gastos/Balance del mes y los
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
       .lt("date", new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().split("T")[0])
       .order("created_at", { ascending: false }),
     supabase.from("transactions")
-      .select("amount, currency_code, type, date, space_id, description")
+      .select("amount, currency_code, type, date, space_id, description, debt_id")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", yearAgo)
       .order("date", { ascending: true }),
@@ -60,13 +61,18 @@ export default async function DashboardPage() {
     supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds),
     supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(status, due_date, amount), categories(name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds).eq("status", "active").order("created_at", { ascending: false }),
     supabase.from("debts").select("direction, total_amount, paid_amount, currency_code").eq("user_id", user.id).eq("status", "active").in("space_id", scopeIds),
+    loanDebtIds(supabase, user.id),
   ]);
 
   const balances   = computeBalances(txAllRes.data ?? []);
   const profile    = profileRes.data;
   const pending    = pendingRes.data ?? [];
-  const txAll      = txMonthRes.data ?? [];
-  const txHistory  = txHistoryRes.data ?? [];
+  // Préstamos que hiciste (y sus cobros) fuera de Ingresos/Gastos/límites/gráfico:
+  // prestar no es gastar. Siguen en el Balance total y en la lista (ver lib/ledger/loans).
+  const txMonthAll = txMonthRes.data ?? [];
+  const txAll      = txMonthAll.filter((t) => !isLoan(t, loanIds));
+  const txHistory  = (txHistoryRes.data ?? []).filter((t) => !isLoan(t, loanIds));
+  const monthLoans = loanFlows(txMonthAll, loanIds);
   const goals      = goalsRes.data ?? [];
   const budgetsRaw = budgetsRes.data ?? [];
 
@@ -99,7 +105,7 @@ export default async function DashboardPage() {
 
   // Gastos recurrentes / suscripciones: detectados de los últimos 4 meses del histórico.
   const recurringStart = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString().split("T")[0];
-  const recurring = detectRecurring((txHistoryRes.data ?? []).filter((t) => t.date >= recurringStart) as unknown as RecTx[]);
+  const recurring = detectRecurring(txHistory.filter((t) => t.date >= recurringStart) as unknown as RecTx[]);
 
   if (!profile?.display_name) redirect("/onboarding");
 
@@ -110,7 +116,7 @@ export default async function DashboardPage() {
   ];
 
   const allCurrencies = [...new Set([
-    ...txAll.map((t) => t.currency_code),
+    ...txMonthAll.map((t) => t.currency_code),
     ...balances.map((b) => b.currency_code),
   ])];
 
@@ -173,7 +179,7 @@ export default async function DashboardPage() {
   }));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recent = (txAll as any[]).slice(0, 5).map((t) => ({
+  const recent = (txMonthAll as any[]).slice(0, 5).map((t) => ({
     id:           t.id,
     description:  t.description,
     amount:       t.amount,
@@ -276,6 +282,7 @@ export default async function DashboardPage() {
         daysInMonth={daysInMonth}
         upcoming={upcoming}
         debts={debtsSummary}
+        loans={monthLoans}
         recurring={recurring}
         chartData={chartData}
         spaceStacksData={spaceStacksData}

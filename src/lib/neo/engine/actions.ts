@@ -3,6 +3,7 @@ import { categoryForText, CATEGORY_FALLBACK } from "@/lib/neo-keywords";
 import { learnFromCorrection } from "@/lib/neo/learning";
 import { payDebt } from "@/lib/debts/pay";
 import { createDebt, deleteDebt } from "@/lib/debts/create";
+import { isLoan, loanDebtIds, loanFlows } from "@/lib/ledger/loans";
 import { localIso, userTimezone, wallToday } from "@/lib/dates";
 import { scopeForSpace } from "@/lib/space-scope";
 import { deleteSpaceGuarded } from "@/lib/spaces";
@@ -368,51 +369,69 @@ export async function executeIntent(
     case "spending_query": {
       const range = await periodRange(supabase, userId, intent.period);
       let query = supabase.from("transactions")
-        .select("amount, currency_code, categories(name)").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
+        .select("amount, currency_code, debt_id, categories(name)").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
         .in("type", ["expense", "installment-payment"]).gte("date", range.from).lte("date", range.to);
       if (intent.category) {
         const match = await findCategory(supabase, userId, intent.category);
         if (match) query = query.eq("category_id", match.id);
       }
-      const { data: txs } = await query;
+      // Prestar no es gastar (lib/ledger/loans): mismo número que la app.
+      const [{ data: all }, loans] = await Promise.all([query, loanDebtIds(supabase, userId)]);
+      const txs = (all ?? []).filter((t) => !isLoan(t, loans));
+      const lent = loanFlows((all ?? []).map((t) => ({ ...t, type: "expense" })), loans);
+      const lentNote = lent.length ? `\n(Sin contar préstamos: prestaste ${lent.map((l) => fmt(l.lent, l.currency_code)).join(" · ")}.)` : "";
       const period = intent.period === "week" ? "esta semana" : intent.period === "today" ? "hoy" : "este mes";
       const cat = intent.category ? ` en ${intent.category}` : "";
-      if (!txs?.length) return { text: `No encontré gastos${cat} ${period}.` };
+      if (!txs.length) return { text: `No encontré gastos${cat} ${period}.${lentNote}` };
       const byCurrency: Record<string, number> = {};
       for (const t of txs) byCurrency[t.currency_code] = (byCurrency[t.currency_code] ?? 0) + Number(t.amount);
       const lines = Object.entries(byCurrency).map(([cur, amt]) => fmt(amt, cur)).join(" · ");
-      return { text: `Gastaste${cat} ${period}: ${lines} (${txs.length} transacciones).` };
+      return { text: `Gastaste${cat} ${period}: ${lines} (${txs.length} ${txs.length === 1 ? "movimiento" : "movimientos"}).${lentNote}` };
     }
 
     case "income_query": {
       const range = await periodRange(supabase, userId, intent.period);
       const periodLabel = intent.period === "week" ? "esta semana" : intent.period === "today" ? "hoy" : "este mes";
-      const { data: txs } = await supabase.from("transactions")
-        .select("amount, currency_code").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
-        .eq("type", "income").gte("date", range.from).lte("date", range.to);
-      if (!txs?.length) return { text: `No registraste ingresos ${periodLabel}.` };
+      const [{ data: all }, loans] = await Promise.all([
+        supabase.from("transactions")
+          .select("amount, currency_code, debt_id").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
+          .eq("type", "income").gte("date", range.from).lte("date", range.to),
+        loanDebtIds(supabase, userId),
+      ]);
+      // Que te devuelvan un préstamo no es ganar (lib/ledger/loans).
+      const txs = (all ?? []).filter((t) => !isLoan(t, loans));
+      const back = loanFlows((all ?? []).map((t) => ({ ...t, type: "income" })), loans);
+      const backNote = back.length ? `\n(Sin contar lo que te devolvieron de préstamos: ${back.map((l) => fmt(l.returned, l.currency_code)).join(" · ")}.)` : "";
+      if (!txs.length) return { text: `No registraste ingresos ${periodLabel}.${backNote}` };
       const byCurrency: Record<string, number> = {};
       for (const t of txs) byCurrency[t.currency_code] = (byCurrency[t.currency_code] ?? 0) + Number(t.amount);
       const lines = Object.entries(byCurrency).map(([cur, amt]) => fmt(amt, cur)).join(" · ");
-      return { text: `Ingresaste ${periodLabel}: ${lines} (${txs.length} ${txs.length === 1 ? "ingreso" : "ingresos"}).` };
+      return { text: `Ingresaste ${periodLabel}: ${lines} (${txs.length} ${txs.length === 1 ? "ingreso" : "ingresos"}).${backNote}` };
     }
 
     case "summary_query": {
       const { from, to } = monthRange(await userNow(supabase, userId));
-      const { data: txs } = await supabase.from("transactions")
-        .select("amount, currency_code, type").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
-        .in("type", ["income", "expense", "installment-payment"]).gte("date", from).lte("date", to);
-      if (!txs?.length) return { text: "No hay movimientos este mes todavía." };
+      const [{ data: all }, loans] = await Promise.all([
+        supabase.from("transactions")
+          .select("amount, currency_code, type, debt_id").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
+          .in("type", ["income", "expense", "installment-payment"]).gte("date", from).lte("date", to),
+        loanDebtIds(supabase, userId),
+      ]);
+      if (!all?.length) return { text: "No hay movimientos este mes todavía." };
+      const txs = all.filter((t) => !isLoan(t, loans));
+      const flows = loanFlows(all, loans);
       const inc: Record<string, number> = {}, exp: Record<string, number> = {};
       for (const t of txs) {
         const n = Number(t.amount);
         if (t.type === "income") inc[t.currency_code] = (inc[t.currency_code] ?? 0) + n;
         else exp[t.currency_code] = (exp[t.currency_code] ?? 0) + n;
       }
-      const currencies = [...new Set([...Object.keys(inc), ...Object.keys(exp)])];
+      const currencies = [...new Set([...Object.keys(inc), ...Object.keys(exp), ...flows.map((f) => f.currency_code)])];
       const lines = currencies.map((cur) => {
         const i = inc[cur] ?? 0, e = exp[cur] ?? 0, net = i - e;
-        return `${cur}:\n  Ingresos: ${fmt(i, cur)}\n  Gastos: ${fmt(e, cur)}\n  Neto: ${net >= 0 ? "+" : ""}${fmt(Math.abs(net), cur)}${net < 0 ? " 🔴" : " 🟢"}`;
+        const f = flows.find((x) => x.currency_code === cur);
+        const loanLine = f ? `\n  Préstamos (aparte): prestaste ${fmt(f.lent, cur)} · te devolvieron ${fmt(f.returned, cur)}` : "";
+        return `${cur}:\n  Ingresos: ${fmt(i, cur)}\n  Gastos: ${fmt(e, cur)}\n  Balance del mes: ${net >= 0 ? "+" : "−"}${fmt(Math.abs(net), cur)}${net < 0 ? " 🔴" : " 🟢"}${loanLine}`;
       });
       return { text: `Resumen de este mes:\n${lines.join("\n\n")}` };
     }

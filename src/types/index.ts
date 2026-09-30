@@ -76,6 +76,7 @@ export interface Transaction {
   exchange_rate: number | null;
   created_at: string;
   deleted_at: string | null;
+  debt_id?: string | null; // enlace a su deuda (migración 015)
   category?: Category;
 }
 
