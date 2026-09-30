@@ -41,6 +41,8 @@ interface BudgetEntry {
   applies_months?: number[] | null;
 }
 
+interface DebtSummary { currency_code: string; meDeben: number; meDebenCount: number; debo: number; deboCount: number; }
+
 interface Props {
   balances: BalanceView[];
   primaryCurrency: string;
@@ -50,6 +52,7 @@ interface Props {
   dayOfMonth?: number;
   daysInMonth?: number;
   upcoming?: { currency_code: string; total: number; count: number }[];
+  debts?: DebtSummary[];
   recurring?: RecurringItem[];
   chartData: Record<string, ChartMonth[]>;
   spaceStacksData?: Record<string, SpaceExpenseStack[]>;
@@ -221,6 +224,39 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
   );
 }
 
+// Lo que te deben, lo que debés y las cuotas de este mes: antes solo se llegaba
+// a Deudas/Cuotas entrando a Perfil. Una fila por cosa, oculta si está en cero.
+function PendingSection({ debt, upcoming, sym }: { debt?: DebtSummary; upcoming?: { total: number; count: number }; sym: string }) {
+  const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
+  const rows = [
+    debt && debt.meDeben > 0 && { href: "/deudas", label: "Te deben", sub: n(debt.meDebenCount, "deuda", "deudas"), amount: debt.meDeben, color: "var(--positive)" },
+    debt && debt.debo > 0 && { href: "/deudas", label: "Debés", sub: n(debt.deboCount, "deuda", "deudas"), amount: debt.debo, color: "var(--negative)" },
+    upcoming && upcoming.total > 0 && { href: "/cuotas", label: "Cuotas de este mes", sub: n(upcoming.count, "cuota por pagar", "cuotas por pagar"), amount: upcoming.total, color: "var(--warning)" },
+  ].filter(Boolean) as { href: string; label: string; sub: string; amount: number; color: string }[];
+  if (rows.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-2 enter-up dash-span-3" data-delay="3">
+      <div className="section-head" style={{ marginBottom: 0 }}>
+        <h2 className="section-title">Pendientes</h2>
+      </div>
+      <div className="card-glass" style={{ overflow: "hidden" }}>
+        {rows.map((r) => (
+          <Link key={r.label} href={r.href} className="list-row">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--ink)" }}>{r.label}</p>
+              <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 2 }}>{r.sub}</p>
+            </div>
+            <span className="mono" style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: r.color, flexShrink: 0 }}>
+              {sym}{Math.round(r.amount).toLocaleString("es-AR")}
+            </span>
+            <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}><path d="M9 6l6 6-6 6" /></svg>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // Franja horizontal de límites de categoría
 function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; currency: string; onSelect: (b: BudgetEntry) => void }) {
   // Sin tope: todas las categorías con límite, ordenadas por cercanía al 100%
@@ -275,7 +311,7 @@ function BudgetStrip({ budgets, currency, onSelect }: { budgets: BudgetEntry[]; 
   );
 }
 
-export default function DashboardShell({ balances, primaryCurrency, usdRate, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [] }: Props) {
+export default function DashboardShell({ balances, primaryCurrency, usdRate, spacesOverview = [], metrics, dayOfMonth = 1, daysInMonth = 30, upcoming = [], debts = [], recurring = [], chartData, spaceStacksData = {}, recent, goals = [], budgets = [] }: Props) {
   const router = useRouter();
   const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
   const [selectedTx, setSelectedTx] = useState<RecentTx | null>(null);
@@ -366,6 +402,9 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
         <MetricCard label="Ingresos" value={m.income}  sym={sym} isIncome={true}  deltaPct={incomeDelta}  onClick={() => setBreakdownType("income")} />
         <MetricCard label="Gastos"   value={m.expense} sym={sym} isIncome={false} deltaPct={expenseDelta} onClick={() => setBreakdownType("expense")} />
       </div>
+
+      {/* Pendientes: deudas y cuotas del mes, a un toque (también siguen en Perfil) */}
+      <PendingSection debt={debts.find((d) => d.currency_code === selectedCurrency)} upcoming={up} sym={sym} />
 
       {/* Neo dice una sola cosa (el resto, a un toque) */}
       <NeoSays lines={homeLines} />

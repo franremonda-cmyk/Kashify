@@ -1,4 +1,5 @@
 "use client";
+import { isoDay, localIso } from "@/lib/dates";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { PendingTransaction } from "@/types";
@@ -404,7 +405,7 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
     setBusyPending(pendingTx.id);
     const interp = pendingTx.neo_interpretation;
     const catMatch = categories.find(c => c.name.toLowerCase() === interp.category_name?.toLowerCase());
-    await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: interp.type, amount: interp.amount, currency_code: interp.currency_code, description: interp.description, category_id: catMatch?.id ?? null, date: new Date().toISOString().split("T")[0] }) });
+    await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: interp.type, amount: interp.amount, currency_code: interp.currency_code, description: interp.description, category_id: catMatch?.id ?? null, date: isoDay() }) });
     await fetch(`/api/pending/${pendingTx.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "confirmed" }) });
     window.dispatchEvent(new Event("transaction-added"));
     setMessages(prev => prev.map(m => m.pendingData?.id === pendingTx.id ? { ...m, isPending: false, pendingData: undefined, text: `Registré: ${interp.description} — ${interp.currency_code} ${Number(interp.amount).toLocaleString("es-AR")}` } : m));
@@ -810,7 +811,7 @@ function InstallmentFormCard({ prefill, busy, onSubmit, onDismiss }: {
   const nextMonth = new Date();
   nextMonth.setDate(1);
   nextMonth.setMonth(nextMonth.getMonth() + 1);
-  const [date, setDate] = useState(nextMonth.toISOString().split("T")[0]);
+  const [date, setDate] = useState(localIso(nextMonth));
 
   const nInt = parseInt(n);
   const amt = parseFloat(amount.replace(/\./g, "").replace(",", "."));

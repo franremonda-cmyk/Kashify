@@ -7,6 +7,7 @@ import NeoImg from "@/components/NeoImg";
 import SpaceSwitcher from "@/components/SpaceSwitcher";
 import SpacesHintCard from "@/components/SpacesHintCard";
 import { computeBalances } from "@/lib/ledger/balances";
+import { userTimezone, wallToday } from "@/lib/dates";
 import { detectRecurring, type RecTx } from "@/lib/recurring";
 import { scopeForSpace, SPACE_COOKIE } from "@/lib/space-scope";
 import type { ChartMonth } from "@/components/SpendingChart";
@@ -19,7 +20,8 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const now = new Date();
+  // Fecha de pared del usuario: el server corre en UTC y el 31 a las 21 (AR) ya "era" el mes siguiente.
+  const now = wallToday(await userTimezone(supabase, user.id));
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const yearAgo    = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().split("T")[0];
 
@@ -30,7 +32,7 @@ export default async function DashboardPage() {
   const spaces = (spacesData as Space[] | null) ?? [];
   const scopeIds = scopeForSpace(spaces, activeSpace);
 
-  const [profileRes, pendingRes, txMonthRes, txHistoryRes, txAllRes, goalsRes, budgetsRes, installmentsRes] = await Promise.all([
+  const [profileRes, pendingRes, txMonthRes, txHistoryRes, txAllRes, goalsRes, budgetsRes, installmentsRes, debtsRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", user.id).single(),
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
@@ -54,6 +56,7 @@ export default async function DashboardPage() {
     supabase.from("savings_goals").select("*").eq("user_id", user.id).in("space_id", scopeIds).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
     supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds),
     supabase.from("installment_plans").select("id, name, currency_code, n_installments, installment_amount, status, installment_payments(status, due_date, amount), categories(name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds).eq("status", "active").order("created_at", { ascending: false }),
+    supabase.from("debts").select("direction, total_amount, paid_amount, currency_code").eq("user_id", user.id).eq("status", "active").in("space_id", scopeIds),
   ]);
 
   const balances   = computeBalances(txAllRes.data ?? []);
@@ -80,6 +83,16 @@ export default async function DashboardPage() {
     }
   }
   const upcoming = Object.entries(upcomingMap).map(([currency_code, v]) => ({ currency_code, ...v }));
+
+  // Deudas activas, saldo pendiente por moneda (bloque "Pendientes" de Inicio).
+  const debtMap: Record<string, { meDeben: number; meDebenCount: number; debo: number; deboCount: number }> = {};
+  for (const d of (debtsRes.data ?? []) as { direction: string; total_amount: number; paid_amount: number; currency_code: string }[]) {
+    const left = Number(d.total_amount) - Number(d.paid_amount);
+    if (left <= 0) continue;
+    const e = (debtMap[d.currency_code] ??= { meDeben: 0, meDebenCount: 0, debo: 0, deboCount: 0 });
+    if (d.direction === "me_deben") { e.meDeben += left; e.meDebenCount++; } else { e.debo += left; e.deboCount++; }
+  }
+  const debtsSummary = Object.entries(debtMap).map(([currency_code, v]) => ({ currency_code, ...v }));
 
   // Gastos recurrentes / suscripciones: detectados de los últimos 4 meses del histórico.
   const recurringStart = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString().split("T")[0];
@@ -259,6 +272,7 @@ export default async function DashboardPage() {
         dayOfMonth={dayOfMonth}
         daysInMonth={daysInMonth}
         upcoming={upcoming}
+        debts={debtsSummary}
         recurring={recurring}
         chartData={chartData}
         spaceStacksData={spaceStacksData}

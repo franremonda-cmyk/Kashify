@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { localIso, userTimezone, wallToday } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 
 // Registra el pago de la próxima cuota pendiente del plan.
@@ -41,7 +42,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
       description: `${plan.name} — cuota ${next.payment_number}/${plan.n_installments}`,
       category_id: plan.category_id,
       card_name: plan.card_name,
-      date: new Date().toISOString().split("T")[0],
+      date: localIso(wallToday(await userTimezone(supabase, user.id))),
     })
     .select()
     .single();

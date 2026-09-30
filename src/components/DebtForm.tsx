@@ -12,7 +12,7 @@ export interface DebtFormData {
 }
 
 interface Props {
-  onSubmit: (data: DebtFormData) => void;
+  onSubmit: (data: DebtFormData) => void | Promise<unknown>;
   onCancel: () => void;
   initialData?: Partial<DebtFormData>;
   editMode?: boolean;
@@ -73,10 +73,13 @@ export default function DebtForm({ onSubmit, onCancel, initialData, editMode = f
 
   const isValid = form.counterparty.trim() !== "" && form.total_amount > 0;
 
-  function handleSubmit() {
+  // Bloqueado mientras guarda: un doble toque creaba la deuda/el plan dos veces.
+  const [saving, setSaving] = useState(false);
+  async function handleSubmit() {
     setAttempted(true);
-    if (!isValid) return;
-    onSubmit(form);
+    if (!isValid || saving) return;
+    setSaving(true);
+    try { await onSubmit(form); } finally { setSaving(false); }
   }
 
   function fieldBorder(valid: boolean): React.CSSProperties {
@@ -112,6 +115,11 @@ export default function DebtForm({ onSubmit, onCancel, initialData, editMode = f
               </button>
             ))}
           </div>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>
+            {form.direction === "me_deben"
+              ? "Se descuenta de tu neto (esa plata ya salió) y vuelve cuando te pagan."
+              : "Tu neto no cambia hasta que pagues."}
+          </p>
         </div>
       )}
 
@@ -170,8 +178,8 @@ export default function DebtForm({ onSubmit, onCancel, initialData, editMode = f
         <button onClick={onCancel} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
           Cancelar
         </button>
-        <button onClick={handleSubmit} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: attempted && !isValid ? 0.7 : 1 }}>
-          {editMode ? "Guardar cambios" : "Registrar ✓"}
+        <button onClick={handleSubmit} disabled={saving} aria-busy={saving} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: saving || (attempted && !isValid) ? 0.7 : 1 }}>
+          {saving ? "Guardando…" : editMode ? "Guardar cambios" : "Registrar ✓"}
         </button>
       </div>
     </div>

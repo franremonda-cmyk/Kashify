@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createDebt } from "@/lib/debts/create";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSpaceId, includedSpaceIds } from "@/lib/spaces";
 
@@ -38,22 +39,12 @@ export async function POST(request: Request) {
 
   const space_id = await resolveSpaceId(supabase, user.id, body.space_id);
 
-  const { data, error } = await supabase
-    .from("debts")
-    .insert({
-      user_id: user.id,
-      space_id,
-      direction,
-      counterparty: counterparty.trim(),
-      description: description?.trim() || null,
-      total_amount,
-      currency_code,
-      due_date: due_date || null,
-      status: "active",
-    })
-    .select()
-    .single();
+  const { debt: data, error } = await createDebt(supabase, user.id, {
+    spaceId: space_id, direction, counterparty: counterparty.trim(),
+    description: description?.trim(), amount: total_amount,
+    currency: currency_code, dueDate: due_date,
+  });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error }, { status: 500 });
   return NextResponse.json(data, { status: 201 });
 }

@@ -2,6 +2,8 @@ import { generatePaymentDates } from "@/lib/installments/calculator";
 import { categoryForText, CATEGORY_FALLBACK } from "@/lib/neo-keywords";
 import { learnFromCorrection } from "@/lib/neo/learning";
 import { payDebt } from "@/lib/debts/pay";
+import { createDebt } from "@/lib/debts/create";
+import { localIso, userTimezone, wallToday } from "@/lib/dates";
 import { scopeForSpace } from "@/lib/space-scope";
 import { deleteSpaceGuarded } from "@/lib/spaces";
 import { NOTIF_FAMILIES, typesForFamily, type NotifFamily } from "@/lib/neo/insights";
@@ -20,8 +22,12 @@ import type { DebtDirection } from "@/types";
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 
-function monthRange() {
-  const now = new Date();
+// `now` = fecha de pared del usuario (userNow), no la del servidor en UTC.
+async function userNow(supabase: NeoSupabase, userId: string): Promise<Date> {
+  return wallToday(await userTimezone(supabase, userId));
+}
+
+function monthRange(now: Date) {
   const y = now.getFullYear(), mo = now.getMonth() + 1;
   const from = `${y}-${String(mo).padStart(2, "0")}-01`;
   const last = new Date(y, mo, 0).getDate();
@@ -29,16 +35,20 @@ function monthRange() {
   return { from, to };
 }
 
-function weekRange() {
-  const now = new Date();
+function weekRange(now: Date) {
   const day = now.getDay() || 7;
   const mon = new Date(now); mon.setDate(now.getDate() - day + 1);
-  return { from: mon.toISOString().split("T")[0], to: now.toISOString().split("T")[0] };
+  return { from: localIso(mon), to: localIso(now) };
 }
 
-function todayRange() {
-  const today = new Date().toISOString().split("T")[0];
+function todayRange(now: Date) {
+  const today = localIso(now);
   return { from: today, to: today };
+}
+
+async function periodRange(supabase: NeoSupabase, userId: string, period: "month" | "week" | "today") {
+  const now = await userNow(supabase, userId);
+  return period === "week" ? weekRange(now) : period === "today" ? todayRange(now) : monthRange(now);
 }
 
 function fmt(n: number, currency: string): string {
@@ -201,7 +211,7 @@ export async function respondFlow(
       const { error } = await supabase.from("transactions").insert({
         user_id: userId, space_id: spaceId, type: ctx.flow, amount: ctx.amount,
         currency_code: currency, description: desc,
-        date: new Date().toISOString().split("T")[0], category_id: cat?.id ?? null,
+        date: localIso(await userNow(supabase, userId)), category_id: cat?.id ?? null,
       });
       if (error) return { text: "Uh, no pude guardarlo esta vez 😕. Probá de nuevo en un toque." };
       const catLabel = cat ? ` · ${cat.name}` : "";
@@ -215,18 +225,18 @@ export async function respondFlow(
       const n = ic.nInstallments!;
       const each = ic.installmentAmount!;
       const total = n * each;
-      const firstDate = new Date();
+      const firstDate = await userNow(supabase, userId);
       const { data: plan, error } = await supabase.from("installment_plans").insert({
         user_id: userId, space_id: spaceId, name: ic.name, total_amount: total, currency_code: currency,
         n_installments: n, installment_amount: each, interest_type: "none",
-        first_payment_date: firstDate.toISOString().split("T")[0], status: "active",
+        first_payment_date: localIso(firstDate), status: "active",
       }).select().single();
       if (error || !plan) return { text: "No pude crear la cuota. Intentá desde la app." };
       const dates = generatePaymentDates(firstDate, n);
       await supabase.from("installment_payments").insert(
         dates.map((date, i) => ({
           plan_id: plan.id, user_id: userId, payment_number: i + 1,
-          amount: each, due_date: date.toISOString().split("T")[0], status: "pending",
+          amount: each, due_date: localIso(date), status: "pending",
         }))
       );
       return { text: `✅ Creé la cuota "${ic.name}": ${n} cuotas de ${fmt(each, currency)}.\nTotal: ${fmt(total, currency)}.`, effects: [{ type: "refresh" }] };
@@ -262,21 +272,14 @@ export async function respondFlow(
     case "debt": {
       const spaceId = await getWriteSpaceId(supabase, userId, ctx.space_id ?? activeSpaceId);
       const currency = ctx.currency ?? await primaryCurrency(supabase, userId);
-      const { error } = await supabase.from("debts").insert({
-        user_id: userId, space_id: spaceId, direction: ctx.direction,
-        counterparty: ctx.counterparty, total_amount: ctx.amount, paid_amount: 0,
-        currency_code: currency, status: "active",
+      // me_deben ("presté" o "me debe", da igual) → createDebt registra también
+      // el egreso (misma regla que la web).
+      const { error } = await createDebt(supabase, userId, {
+        spaceId, direction: ctx.direction!, counterparty: ctx.counterparty!,
+        description: ctx.description, amount: ctx.amount!, currency,
       });
       if (error) return { text: "No pude anotar la deuda. Probá desde la sección Deudas." };
-      // me_deben ("presté" o "me debe", da igual) → esa plata ya salió del
-      // bolsillo: además de la fila en `debts`, un egreso.
-      if (ctx.originExpense) {
-        const cat = await resolveCategory(supabase, userId, "Deudas");
-        await supabase.from("transactions").insert({
-          user_id: userId, space_id: spaceId, type: "expense", amount: ctx.amount,
-          currency_code: currency, description: ctx.description || `Préstamo a ${ctx.counterparty}`,
-          date: new Date().toISOString().split("T")[0], category_id: cat?.id ?? null,
-        });
+      if (ctx.direction === "me_deben") {
         return { text: `✅ Anoté que ${ctx.counterparty} te debe ${fmt(ctx.amount!, currency)} y lo desconté de tu neto.`, effects: [{ type: "refresh" }] };
       }
       const txt = ctx.direction === "debo"
@@ -362,7 +365,7 @@ export async function executeIntent(
     }
 
     case "spending_query": {
-      const range = intent.period === "week" ? weekRange() : intent.period === "today" ? todayRange() : monthRange();
+      const range = await periodRange(supabase, userId, intent.period);
       let query = supabase.from("transactions")
         .select("amount, currency_code, categories(name)").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
         .in("type", ["expense", "installment-payment"]).gte("date", range.from).lte("date", range.to);
@@ -381,7 +384,7 @@ export async function executeIntent(
     }
 
     case "income_query": {
-      const range = intent.period === "week" ? weekRange() : intent.period === "today" ? todayRange() : monthRange();
+      const range = await periodRange(supabase, userId, intent.period);
       const periodLabel = intent.period === "week" ? "esta semana" : intent.period === "today" ? "hoy" : "este mes";
       const { data: txs } = await supabase.from("transactions")
         .select("amount, currency_code").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
@@ -394,7 +397,7 @@ export async function executeIntent(
     }
 
     case "summary_query": {
-      const { from, to } = monthRange();
+      const { from, to } = monthRange(await userNow(supabase, userId));
       const { data: txs } = await supabase.from("transactions")
         .select("amount, currency_code, type").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
         .in("type", ["income", "expense", "installment-payment"]).gte("date", from).lte("date", to);
@@ -428,7 +431,7 @@ export async function executeIntent(
     }
 
     case "budget_query": {
-      const { from } = monthRange();
+      const { from } = monthRange(await userNow(supabase, userId));
       const { data: budgets } = await supabase.from("category_budgets")
         .select("monthly_limit, currency_code, categories(id, name)").eq("user_id", userId);
       if (!budgets?.length) return { text: "No tenés límites configurados. Podés agregar uno en la sección Categorías." };
@@ -787,7 +790,7 @@ export async function executeIntent(
       if (!next) return { text: `No hay cuotas pendientes para "${match.name}".` };
       const { data: tx } = await supabase.from("transactions").insert({
         user_id: userId, space_id: match.space_id, type: "installment-payment", amount: next.amount, currency_code: match.currency_code,
-        description: `${match.name} — cuota ${next.payment_number}/${match.n_installments}`, date: new Date().toISOString().split("T")[0],
+        description: `${match.name} — cuota ${next.payment_number}/${match.n_installments}`, date: localIso(await userNow(supabase, userId)),
       }).select().single();
       await supabase.from("installment_payments").update({ status: "paid", transaction_id: tx?.id ?? null }).eq("id", next.id).eq("user_id", userId);
       const { count } = await supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("plan_id", match.id).eq("user_id", userId).eq("status", "pending");
@@ -801,7 +804,7 @@ export async function executeIntent(
     // ── Acciones destructivas: web usa botones (effects); WhatsApp pide sí/no (state) ──
 
     case "delete_tx": {
-      const { from } = monthRange();
+      const { from } = monthRange(await userNow(supabase, userId));
       const { data: txs } = await supabase.from("transactions")
         .select("id, description, amount, currency_code, date").eq("user_id", userId).is("deleted_at", null)
         .gte("date", from).order("date", { ascending: false }).limit(50);

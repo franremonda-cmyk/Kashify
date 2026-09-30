@@ -1,4 +1,5 @@
 "use client";
+import { isoDay } from "@/lib/dates";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -241,6 +242,8 @@ function guessCategory(description: string, categories: Category[]): string {
 function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose: () => void; onSaved: () => void; initialType?: "expense" | "income" }) {
   const { iconStyle } = useIconStyle();
   const { spaces, activeId } = useSpaces();
+  const router = useRouter();
+  const pathname = usePathname();
   const defaultSpaceId = spaces.find((s) => s.is_default)?.id ?? spaces[0]?.id ?? "";
   const [categories, setCategories] = useState<Category[]>([]);
   const [suggestion, setSuggestion] = useState<string | null>(null);
@@ -252,7 +255,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     currency_code: "ARS",
     category_id: "",
     space_id: activeId && activeId !== "total" ? activeId : defaultSpaceId,
-    date: new Date().toISOString().slice(0, 10),
+    date: isoDay(), // día del celular, no UTC
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -403,6 +406,19 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
                 {t === "expense" ? "Gasto" : "Ingreso"}
               </button>
             ))}
+            {/* Deuda: tiene su propio formulario (a quién, dirección, vencimiento) */}
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (pathname === "/deudas") window.dispatchEvent(new Event("open-debt-form"));
+                else router.push("/deudas?new=1");
+              }}
+              className="flex-1 py-2 rounded-lg text-sm font-medium"
+              style={{ background: "transparent", color: "var(--ink-muted)" }}
+            >
+              Deuda
+            </button>
           </div>
 
           {/* Descripción */}

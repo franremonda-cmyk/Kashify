@@ -18,7 +18,11 @@ export default function DeudasPage() {
   }, [activeId]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("new") === "1") { setShowForm(true); setEditingId(null); }
+    const open = () => { setShowForm(true); setEditingId(null); };
+    if (new URLSearchParams(window.location.search).get("new") === "1") open();
+    // "Deuda" desde el + estando ya en esta pantalla (sin remontar la página).
+    window.addEventListener("open-debt-form", open);
+    return () => window.removeEventListener("open-debt-form", open);
   }, []);
 
   async function handleCreate(data: DebtFormData) {
@@ -170,6 +174,9 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
   const [payOpen, setPayOpen] = useState(false);
   const [payAmount, setPayAmount] = useState("");
   const [payError, setPayError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  // "Me deben" → lo que entra es un cobro, no un pago.
+  const payWord = debt.direction === "me_deben" ? "cobro" : "pago";
 
   useEffect(() => {
     if (!confirmingDelete) return;
@@ -188,14 +195,16 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
   }
 
   async function submitPay() {
+    if (paying) return; // doble toque = doble pago parcial
     const amount = parseFloat(payAmount);
     if (!(amount > 0) || amount > remaining + 0.005) {
-      setPayError("Monto inválido");
+      setPayError(`El monto tiene que ser mayor a 0 y hasta ${debt.currency_code} ${remaining.toLocaleString("es-AR", { maximumFractionDigits: 2 })}`);
       return;
     }
-    const ok = await onPay(debt.id, amount);
+    setPaying(true);
+    const ok = await onPay(debt.id, amount).finally(() => setPaying(false));
     if (ok) setPayOpen(false);
-    else setPayError("No se pudo registrar el pago");
+    else setPayError(`No se pudo registrar el ${payWord}. Probá de nuevo.`);
   }
 
   return (
@@ -262,8 +271,8 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
             <button onClick={() => setPayOpen(false)} style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--raised)", border: "0.5px solid var(--glass-border)", color: "var(--ink-muted)" }}>
               Cancelar
             </button>
-            <button onClick={submitPay} style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}>
-              Confirmar pago
+            <button onClick={submitPay} disabled={paying} aria-busy={paying} style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}>
+              {paying ? "Guardando…" : `Confirmar ${payWord}`}
             </button>
           </div>
         </div>
@@ -274,7 +283,7 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
               onClick={openPay}
               style={{ flex: 1, padding: "9px", borderRadius: 10, fontSize: "var(--text-2xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)" }}
             >
-              Registrar pago
+              Registrar {payWord}
             </button>
           )}
           <button

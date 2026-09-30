@@ -1,4 +1,5 @@
 "use client";
+import { isoDay } from "@/lib/dates";
 import { useState, useEffect } from "react";
 import {
   calculateFrenchInstallment,
@@ -20,7 +21,7 @@ export interface InstallmentFormData {
 }
 
 interface Props {
-  onSubmit: (data: InstallmentFormData) => void;
+  onSubmit: (data: InstallmentFormData) => void | Promise<unknown>;
   onCancel: () => void;
   initialData?: Partial<InstallmentFormData>;
   editMode?: boolean;
@@ -75,7 +76,7 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
     tna: initialData?.tna ?? null,
     known_installment: null,
     first_payment_date: initialData?.first_payment_date ??
-      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      isoDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
   });
 
   const [calc, setCalc] = useState({ installment_amount: 0, total_to_pay: 0, financing_cost: 0 });
@@ -117,10 +118,13 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
 
   const isValid = form.name.trim() !== "" && form.total_amount > 0 && form.first_payment_date !== "";
 
-  function handleSubmit() {
+  // Bloqueado mientras guarda: un doble toque creaba la deuda/el plan dos veces.
+  const [saving, setSaving] = useState(false);
+  async function handleSubmit() {
     setAttempted(true);
-    if (!isValid) return;
-    onSubmit({ ...form, tna: form.tna ?? null, known_installment: null });
+    if (!isValid || saving) return;
+    setSaving(true);
+    try { await onSubmit({ ...form, tna: form.tna ?? null, known_installment: null }); } finally { setSaving(false); }
   }
 
   function fieldBorder(valid: boolean): React.CSSProperties {
@@ -232,8 +236,8 @@ export default function InstallmentForm({ onSubmit, onCancel, initialData, editM
         <button onClick={onCancel} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 500, background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>
           Cancelar
         </button>
-        <button onClick={handleSubmit} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: attempted && !isValid ? 0.7 : 1 }}>
-          {editMode ? "Guardar cambios" : "Registrar ✓"}
+        <button onClick={handleSubmit} disabled={saving} aria-busy={saving} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent)", color: "var(--on-accent)", opacity: saving || (attempted && !isValid) ? 0.7 : 1 }}>
+          {saving ? "Guardando…" : editMode ? "Guardar cambios" : "Registrar ✓"}
         </button>
       </div>
     </div>

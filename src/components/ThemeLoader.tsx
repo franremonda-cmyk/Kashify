@@ -18,6 +18,11 @@ export default function ThemeLoader() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        // Zona horaria del celular → perfil, para que Neo (servidor en UTC,
+        // WhatsApp sin zona) feche en tu hora. Solo escribe si cambió; sin la
+        // migración 015 falla en silencio.
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz) supabase.from("profiles").update({ timezone: tz }).eq("user_id", user.id).neq("timezone", tz).then(() => {});
         const { data } = await supabase
           .from("profiles").select("theme").eq("user_id", user.id).single();
         const dbTheme = data?.theme as string | null;

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Debt } from "@/types";
+import { insertDebtTx } from "./create";
+import { localIso, userTimezone, wallToday } from "@/lib/dates";
 
 export type PayDebtResult =
   | { ok: true; debt: Debt; transactionId: string | null }
@@ -38,20 +40,17 @@ export async function payDebt(
     .eq("name", "Deudas")
     .maybeSingle();
 
-  const { data: tx } = await supabase
-    .from("transactions")
-    .insert({
-      user_id: userId,
-      space_id: debt.space_id,
-      type: debt.direction === "debo" ? "expense" : "income",
-      amount,
-      currency_code: debt.currency_code,
-      description: `${debt.counterparty} — ${debt.direction === "debo" ? "pago de deuda" : "cobro de deuda"}`,
-      category_id: category?.id ?? null,
-      date: new Date().toISOString().split("T")[0],
-    })
-    .select()
-    .single();
+  const tx = await insertDebtTx(supabase, {
+    user_id: userId,
+    space_id: debt.space_id,
+    type: debt.direction === "debo" ? "expense" : "income",
+    amount,
+    currency_code: debt.currency_code,
+    description: `${debt.counterparty} — ${debt.direction === "debo" ? "pago de deuda" : "cobro de deuda"}`,
+    category_id: category?.id ?? null,
+    date: localIso(wallToday(await userTimezone(supabase, userId))),
+    debt_id: debtId,
+  });
 
   const paid_amount = Number(debt.paid_amount) + amount;
   const status = paid_amount >= Number(debt.total_amount) - 0.005 ? "paid" : "active";

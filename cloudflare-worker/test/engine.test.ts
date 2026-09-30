@@ -5,6 +5,9 @@
 import { runNeo } from "../../src/lib/neo/engine/index.ts";
 import { detectIntent } from "../../src/lib/neo/engine/intent.ts";
 import type { NeoState } from "../../src/lib/neo/engine/types.ts";
+import { DEFAULT_TZ, isoDay, localIso, wallToday } from "../../src/lib/dates.ts";
+import { createDebt, insertDebtTx } from "../../src/lib/debts/create.ts";
+import { payDebt } from "../../src/lib/debts/pay.ts";
 
 // ─── Stub de Supabase ────────────────────────────────────────────────────────
 
@@ -480,6 +483,47 @@ async function main() {
     db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
     await runNeo({ supabase: makeStub(db), userId: USER, message: "le presté 5000 a juan", channel: "whatsapp", state: { kind: "clarify_learn", original: "juan 5000 prestado" } });
     check("reformulación en clarify_learn que es deuda → se anota", db.debts.length === 1 && db.debts[0].counterparty === "Juan");
+  }
+
+  // 15g) Fechas en la hora del usuario, no en UTC (auditoría UX 30/09/2026).
+  {
+    // 22:30 del 30/09 en Buenos Aires = 01:30 UTC del 01/10.
+    const night = new Date("2026-10-01T01:30:00Z");
+    check("isoDay: 22:30 AR del 30/09 sigue siendo 30/09", isoDay(night, DEFAULT_TZ) === "2026-09-30", isoDay(night, DEFAULT_TZ));
+    check("isoDay: en UTC ya sería 01/10 (el bug)", night.toISOString().slice(0, 10) === "2026-10-01");
+    check("isoDay: en Zurich es 01/10 03:30", isoDay(night, "Europe/Zurich") === "2026-10-01");
+    check("localIso(wallToday(tz)) = isoDay(hoy, tz)", localIso(wallToday("Asia/Tokyo")) === isoDay(new Date(), "Asia/Tokyo"));
+
+    const db = seed();
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "nafta 5000", channel: "whatsapp" });
+    check("Neo fecha el gasto en la zona por defecto (AR)", db.transactions[0]?.date === isoDay(new Date(), DEFAULT_TZ), String(db.transactions[0]?.date));
+    const db2 = seed();
+    db2.profiles[0].timezone = "Pacific/Kiritimati"; // UTC+14: casi siempre otro día que UTC
+    await runNeo({ supabase: makeStub(db2), userId: USER, message: "nafta 5000", channel: "whatsapp" });
+    check("Neo usa la zona del perfil", db2.transactions[0]?.date === isoDay(new Date(), "Pacific/Kiritimati"), String(db2.transactions[0]?.date));
+  }
+
+  // 15h) Alta de deuda compartida web/Neo + movimientos enlazados (debt_id).
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    const { debt } = await createDebt(makeStub(db), USER, { spaceId: SPACE, direction: "me_deben", counterparty: "Mamá", amount: 100000, currency: "ARS" });
+    check("createDebt me_deben → egreso de origen enlazado a la deuda", db.transactions.length === 1 && db.transactions[0].type === "expense" && db.transactions[0].debt_id === debt?.id && db.transactions[0].category_id === "cat-deudas", JSON.stringify(db.transactions[0]));
+    const r = await payDebt(makeStub(db), USER, debt!.id, 40000);
+    check("payDebt → cobro enlazado a la deuda", r.ok && db.transactions.length === 2 && db.transactions[1].type === "income" && db.transactions[1].debt_id === debt?.id, JSON.stringify(db.transactions[1]));
+
+    const db2 = seed();
+    await createDebt(makeStub(db2), USER, { spaceId: SPACE, direction: "debo", counterparty: "Juan", amount: 5000, currency: "ARS" });
+    check("createDebt debo → sin movimiento (el neto no cambia hasta pagar)", db2.debts.length === 1 && db2.transactions.length === 0);
+
+    // Sin la migración 015 la columna debt_id no existe: se guarda igual, sin enlace.
+    const rows: Record<string, unknown>[] = [];
+    const legacy = { from: () => ({ insert: (row: Record<string, unknown>) => ({ select: () => ({ single: async () => {
+      if ("debt_id" in row) return { data: null, error: { message: "Could not find the 'debt_id' column of 'transactions' in the schema cache" } };
+      rows.push(row); return { data: { id: "tx-legacy" }, error: null };
+    } }) }) }) } as never;
+    const tx = await insertDebtTx(legacy, { user_id: USER, amount: 1, debt_id: "d1" });
+    check("insertDebtTx sin migración → reintenta sin debt_id y no pierde el movimiento", tx?.id === "tx-legacy" && rows.length === 1 && !("debt_id" in rows[0]));
   }
   {
     // cobro en la moneda de la deuda: matchea la fila USD, no crea ingreso suelto

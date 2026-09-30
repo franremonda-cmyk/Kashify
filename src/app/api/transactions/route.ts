@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { localIso, userTimezone, wallToday } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSpaceId, includedSpaceIds } from "@/lib/spaces";
 
@@ -68,7 +69,8 @@ export async function POST(request: Request) {
   const space_id = await resolveSpaceId(supabase, user.id, body.space_id);
   const { data, error } = await supabase
     .from("transactions")
-    .insert({ ...body, user_id: user.id, space_id })
+    // Sin fecha → hoy en la zona del usuario (el default de la DB es current_date en UTC).
+    .insert({ ...body, date: body.date || localIso(wallToday(await userTimezone(supabase, user.id))), user_id: user.id, space_id })
     .select()
     .single();
 

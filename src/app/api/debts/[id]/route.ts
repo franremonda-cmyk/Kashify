@@ -28,6 +28,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // "Me deben" tiene un egreso de origen (createDebt): si cambia el monto o la
+  // moneda, el egreso acompaña. Sin la migración 015 no hay debt_id → no-op.
+  if (data?.direction === "me_deben" && ("total_amount" in patch || "currency_code" in patch)) {
+    await supabase.from("transactions")
+      .update({ amount: data.total_amount, currency_code: data.currency_code })
+      .eq("debt_id", id).eq("user_id", user.id).eq("type", "expense");
+  }
   return NextResponse.json(data);
 }
 

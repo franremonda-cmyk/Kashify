@@ -1,5 +1,6 @@
 import { detectPurchaseIntent, categoryForText } from "@/lib/neo-keywords";
 import type { DebtDirection } from "@/types";
+import { DEFAULT_TZ, isoDay } from "@/lib/dates";
 import type { Intent, LearnedKeyword } from "./types";
 
 export function normalize(s: string): string {
@@ -70,7 +71,8 @@ function properName(original: string, fragment: string): string {
 // recién anotado: nada de "el tercer martes de marzo".
 function parseWhen(s: string): string | null {
   const t = s.trim();
-  const iso = (d: Date) => d.toISOString().split("T")[0];
+  // ponytail: zona fija AR (detectIntent es puro, no conoce al usuario); pasar la zona del perfil si hay usuarios fuera de AR.
+  const iso = (d: Date) => isoDay(d, DEFAULT_TZ);
   const shift = (days: number) => iso(new Date(Date.now() - days * 86_400_000));
   if (/^hoy$/.test(t)) return shift(0);
   if (/^ayer$/.test(t)) return shift(1);

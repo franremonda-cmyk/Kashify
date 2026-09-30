@@ -1,4 +1,5 @@
 "use client";
+import { isoDay } from "@/lib/dates";
 import { useState } from "react";
 import PendingTransactionsBanner from "@/components/PendingTransactionsBanner";
 import Tour from "@/components/Tour";
@@ -24,7 +25,7 @@ export default function DashboardClient({ pending: initialPending }: Props) {
         amount: item.neo_interpretation.amount,
         currency_code: item.neo_interpretation.currency_code,
         description: item.neo_interpretation.description,
-        date: new Date().toISOString().split("T")[0],
+        date: isoDay(),
       }),
     });
 
