@@ -3,7 +3,8 @@ import { normalize } from "./intent";
 import type { FlowContext } from "./types";
 
 export function parseNum(s: string): number | null {
-  const cleaned = s.replace(/[^\d.,]/g, "");
+  // normalize() expande "5 lucas"/"5k" a dígitos; si no, la respuesta "5 lucas" a "¿Cuánto?" daba 5.
+  const cleaned = normalize(s).replace(/[^\d.,]/g, "");
   if (!cleaned) return null;
   const n = parseFloat(cleaned.replace(/\./g, "").replace(",", "."));
   return isNaN(n) || n <= 0 ? null : n;

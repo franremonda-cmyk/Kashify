@@ -1,6 +1,6 @@
 import { learnFromConfirmation, learnFromCorrection, loadLearnedKeywords } from "@/lib/neo/learning";
 import { detectIntent, normalize } from "./intent";
-import { fillSlot, interpretClarify, isCancelMsg } from "./flow";
+import { fillSlot, interpretClarify, isCancelMsg, missingSlot, parseNum } from "./flow";
 import { domainHint, executeConfirm, executeIntent, respondFlow, loadUserSpaces, resolveSpaceReply, spaceQuestion } from "./actions";
 import { llmFallback } from "./llm-fallback";
 import type { ParsedTransaction } from "@/types";
@@ -92,6 +92,9 @@ export async function runNeo({ supabase, userId, message, channel, state, active
       state: { kind: "confirm_amount", keyword: intent.keyword, ctype: intent.ctype, category: intent.category, currency: cur, lastAmount: intent.lastAmount, spaceId: activeSpaceId ?? null },
     };
   }
+  if (intent.type === "multi_amount") {
+    return { text: "Veo más de un monto en el mensaje 🤔 Mandámelos de a uno así no anoto mal.\n(ej: _nafta 5000_ y después _super 3000_)" };
+  }
   if (intent.type !== "unknown") return executeIntent(supabase, userId, intent, channel, activeSpaceId);
 
   // ── No se entendió → hint de dominio → fallback Haiku → clarify ──
@@ -175,6 +178,9 @@ async function continueClarifyLearn(
     }
     return { ...reply, state: reply.state ?? null };
   }
+  // La explicación es otra cosa que las reglas sí entienden ("le presté 5000 a
+  // juan", "cuánto me deben"): se ejecuta normal, sin aprender ni gastar tokens.
+  if (intent.type !== "unknown") return runNeo({ supabase, userId, message, channel, state: null, activeSpaceId });
 
   // 2) Dejar que Haiku interprete la explicación (más clara que el original).
   const { data: cats } = await supabase.from("categories").select("name").eq("user_id", userId);
@@ -255,11 +261,10 @@ async function continueConfirmAmount(
   const norm = normalize(message);
   if (isCancelMsg(message) || /^no\b/.test(norm)) return { text: "Dale, no lo anoté 👍", state: null };
 
-  const amtMatch = message.match(/(\d[\d.,]+)/);
+  const parsed = parseNum(message);
   let amount = state.lastAmount;
-  if (amtMatch) {
-    const parsed = parseFloat(amtMatch[1].replace(/\./g, "").replace(",", "."));
-    if (parsed > 0) amount = parsed;
+  if (parsed) {
+    amount = parsed;
   } else if (/otro|otra|distinto|cambi/.test(norm)) {
     return { text: "¿De cuánto?", state };  // esperamos el número (mismo estado)
   } else if (!isAffirmative(message)) {
@@ -283,6 +288,20 @@ async function primaryCurrency(supabase: NeoSupabase, userId: string): Promise<s
   return (data as { primary_currency?: string } | null)?.primary_currency ?? "ARS";
 }
 
+// Una pregunta pendiente no se come un mensaje nuevo: si Neo preguntó "¿Cuánto
+// le prestaste?" y llega "4200 queso", eso es un gasto nuevo, no el monto del
+// préstamo. Señal: el mensaje solo ya es un registro completo Y trae palabras que
+// no son eco de la pregunta ("le presté 100000" o "3000 el sushi" sí son respuesta).
+const ECHO_WORD = /^(?:a|al|de|del|en|el|la|los|las|le|les|me|mi|son|fueron|eran?|fue|es|unos?|unas?|como|mas|menos|o|aprox|total|pesos?|ars|usd|dolares?|eur|euros?|preste|prestaste|gaste|sali[o]?|cobre|cada|cuotas?|x|y|por|para|mes)$/;
+function isFreshRecord(ctx: FlowContext, message: string): boolean {
+  const fresh = detectIntent(message);
+  const complete = fresh.type === "pay_debt" || (fresh.type === "flow" && fresh.ctx.flow !== "clarify" && missingSlot(fresh.ctx) === null);
+  if (!complete) return false;
+  const c = ctx as { counterparty?: string; description?: string; name?: string; category?: string | null };
+  const known = new Set(normalize([c.counterparty, c.description, c.name, c.category].filter(Boolean).join(" ")).split(" "));
+  return normalize(message).split(" ").some((w) => !/\d/.test(w) && !ECHO_WORD.test(w) && !known.has(w));
+}
+
 // Continuación de un flujo de slot-filling.
 async function continueFlow(
   supabase: NeoSupabase,
@@ -294,6 +313,11 @@ async function continueFlow(
 ): Promise<NeoReply> {
   if (isCancelMsg(message)) {
     return { text: "Dale, cancelado.", state: null, effects: [{ type: "cancel_pending" }] };
+  }
+
+  if (ctx.flow !== "clarify" && isFreshRecord(ctx, message)) {
+    const reply = await runNeo({ supabase, userId, message, channel, state: null, activeSpaceId });
+    return { ...reply, text: `${reply.text}\n\n(Lo que te había preguntado antes quedó sin anotar.)` };
   }
 
   // Neo preguntó a qué espacio va el movimiento y el usuario respondió.

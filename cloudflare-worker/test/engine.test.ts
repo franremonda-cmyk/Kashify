@@ -408,6 +408,79 @@ async function main() {
     check("'Le presté a mamá 100000' → deuda con Mamá por 100.000 + egreso, sin preguntar", !r.state && db.debts[0]?.counterparty === "Mamá" && Number(db.debts[0]?.total_amount) === 100000 && db.transactions.length === 1, `reply: ${r.text}`);
     check("respuesta sin el typo 'descontué'", r.text.includes("desconté"), r.text);
   }
+
+  // 15e) Clases de error "anota mal sin avisar" (auditoría 30/09/2026).
+  {
+    type I = ReturnType<typeof detectIntent>;
+    const desc = (i: I) => i.type === "flow" ? `${i.ctx.flow}:${"direction" in i.ctx ? i.ctx.direction ?? "" : ""}:${"counterparty" in i.ctx ? i.ctx.counterparty ?? "" : ""}:${i.ctx.amount ?? ""}`
+      : i.type === "pay_debt" ? `pay:${i.direction}:${i.counterparty}:${i.amount}` : i.type;
+    const expect = (msg: string, want: string) => { const got = desc(detectIntent(msg)); check(`'${msg}' → ${want}`, got === want, got); };
+
+    // Montos hablados (en todo el motor, no solo deudas)
+    expect("5k nafta", "expense:::5000");
+    expect("5 lucas nafta", "expense:::5000");
+    expect("5 mil nafta", "expense:::5000");
+    expect("1,5 lucas super", "expense:::1500");
+    expect("presté 100 lucas a mamá", "debt:me_deben:Mamá:100000");
+    expect("2 cafés 3000", "expense:::3000");
+
+    // Sinónimos y variantes de deudas
+    expect("le adelanté 5000 a juan", "debt:me_deben:Juan:5000");
+    expect("juan me tiene que dar 5000", "debt:me_deben:Juan:5000");
+    expect("tengo que pagarle 5000 a juan", "debt:debo:Juan:5000");
+    expect("préstamo a juan 5000", "debt:me_deben:Juan:5000");
+    expect("presté 5000 juan", "debt:me_deben:Juan:5000");
+    expect("debo 5000 juan", "debt:debo:Juan:5000");
+    expect("me deve 5000 juan", "debt:me_deben:Juan:5000");
+    expect("juan me debe 5000 de la cena", "debt:me_deben:Juan:5000");
+    expect("presté 5000 a Juan 🙂", "debt:me_deben:Juan:5000");
+    expect("le pasé 5000 a juan", "pay:debo:juan:5000");
+    expect("le cobré 5000 a juan", "pay:me_deben:juan:5000");
+    expect("juan me transfirió 5000", "pay:me_deben:juan:5000");
+    expect("juan me pagó 5000 de lo que me debe", "pay:me_deben:juan:5000");
+    expect("cuánta plata me deben", "debts_query");
+    expect("qué deudas tengo", "debts_query");
+
+    // Cobros que se anotaban como gasto
+    expect("me pagó un cliente 50000", "income:::50000");
+    expect("me pagó 5000", "income:::5000");
+
+    // Varios montos → de a uno (antes se perdía uno sin aviso)
+    expect("nafta 5000 y super 3000", "multi_amount");
+    expect("nafta 5000 super 3000", "multi_amount");
+
+    // Red de seguridad: vocabulario de deuda que ninguna regla entiende NUNCA
+    // termina en un gasto/ingreso directo.
+    for (const m of ["prestamo juan 5000", "juan 5000 prestado", "pagué la deuda de juan", "debo 5000 de luz"]) {
+      const i = detectIntent(m);
+      check(`'${m}' no se anota como gasto/ingreso`, !(i.type === "flow" && (i.ctx.flow === "expense" || i.ctx.flow === "income")), desc(i));
+    }
+  }
+  // 15f) Una pregunta pendiente no se come un mensaje nuevo.
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    const r1 = await runNeo({ supabase: makeStub(db), userId: USER, message: "le presté a mamá", channel: "whatsapp" });
+    const r2 = await runNeo({ supabase: makeStub(db), userId: USER, message: "4200 queso", channel: "whatsapp", state: r1.state as NeoState });
+    check("'¿Cuánto le prestaste?' + '4200 queso' → gasto queso, NO préstamo de 4200", db.debts.length === 0 && db.transactions.length === 1 && db.transactions[0].description === "queso", r2.text);
+    check("…y avisa que lo anterior quedó sin anotar", r2.text.includes("sin anotar"), r2.text);
+  }
+  {
+    for (const answer of ["100000", "le presté 100000", "100000 a mamá", "100 lucas"]) {
+      const db = seed();
+      db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+      const r1 = await runNeo({ supabase: makeStub(db), userId: USER, message: "le presté a mamá", channel: "whatsapp" });
+      await runNeo({ supabase: makeStub(db), userId: USER, message: answer, channel: "whatsapp", state: r1.state as NeoState });
+      check(`'¿Cuánto le prestaste?' + '${answer}' → sigue siendo la respuesta`, db.debts.length === 1 && Number(db.debts[0].total_amount) === 100000, JSON.stringify(db.debts));
+    }
+  }
+  {
+    // "No te entendí" + reformulación que es una deuda → se anota (antes: "sigo sin captarlo").
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    await runNeo({ supabase: makeStub(db), userId: USER, message: "le presté 5000 a juan", channel: "whatsapp", state: { kind: "clarify_learn", original: "juan 5000 prestado" } });
+    check("reformulación en clarify_learn que es deuda → se anota", db.debts.length === 1 && db.debts[0].counterparty === "Juan");
+  }
   {
     // cobro en la moneda de la deuda: matchea la fila USD, no crea ingreso suelto
     const db = seed();

@@ -16,6 +16,7 @@ export type Intent =
   | { type: "greeting" }
   | { type: "help" }
   | { type: "cancel_pending" }
+  | { type: "multi_amount" }
   | { type: "balance_query" }
   | { type: "spending_query"; category?: string; period: "month" | "week" | "today" }
   | { type: "income_query"; period: "month" | "week" | "today" }

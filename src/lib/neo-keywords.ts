@@ -66,7 +66,9 @@ export const INCOME_VERBS = [
   // Recibir
   "recibi", "recibí", "recibir",
   // Me pagaron / depositaron
-  "me pagaron", "me deposito", "me depositó", "me transfirieron",
+  "me pagaron", "me deposito", "me depositó", "me transfirieron", "me depositaron",
+  // "me pagó un cliente 50000": sin esto caía al registro pelado como GASTO.
+  "me pago", "me pagó", "me transfirio", "me transfirió",
   // Me dieron / me regalaron
   "me dieron", "me dio",
   "me regalaron", "me regalo", "me regaló",
