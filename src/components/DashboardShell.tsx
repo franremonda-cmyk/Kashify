@@ -225,14 +225,26 @@ function GoalsWidget({ goals }: { goals: SavingsGoal[] }) {
 }
 
 // Lo que te deben, lo que debés y las cuotas de este mes: antes solo se llegaba
-// a Deudas/Cuotas entrando a Perfil. Una fila por cosa, oculta si está en cero.
-function PendingSection({ debt, upcoming, sym }: { debt?: DebtSummary; upcoming?: { total: number; count: number }; sym: string }) {
+// a Deudas/Cuotas entrando a Perfil. Todas las monedas a la vez, cada una en su
+// línea y sin convertir (no depende de la moneda elegida arriba: con ARS
+// elegido se escondían los USD/EUR). Una fila por cosa, oculta si está en cero.
+function PendingSection({ debts, upcoming, primaryCurrency }: {
+  debts: DebtSummary[];
+  upcoming: { currency_code: string; total: number; count: number }[];
+  primaryCurrency: string;
+}) {
   const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
+  const byCur = <T extends { currency_code: string }>(xs: T[]) =>
+    [...xs].sort((a, b) => (a.currency_code === primaryCurrency ? -1 : b.currency_code === primaryCurrency ? 1 : a.currency_code.localeCompare(b.currency_code)));
+  const row = (href: string, label: string, unit: [string, string], color: string, items: { currency_code: string; amount: number; count: number }[]) => {
+    const list = byCur(items.filter((i) => i.amount > 0));
+    return list.length ? { href, label, color, list, sub: n(list.reduce((s, i) => s + i.count, 0), unit[0], unit[1]) } : null;
+  };
   const rows = [
-    debt && debt.meDeben > 0 && { href: "/deudas", label: "Te deben", sub: n(debt.meDebenCount, "deuda", "deudas"), amount: debt.meDeben, color: "var(--positive)" },
-    debt && debt.debo > 0 && { href: "/deudas", label: "Debés", sub: n(debt.deboCount, "deuda", "deudas"), amount: debt.debo, color: "var(--negative)" },
-    upcoming && upcoming.total > 0 && { href: "/cuotas", label: "Cuotas de este mes", sub: n(upcoming.count, "cuota por pagar", "cuotas por pagar"), amount: upcoming.total, color: "var(--warning)" },
-  ].filter(Boolean) as { href: string; label: string; sub: string; amount: number; color: string }[];
+    row("/deudas", "Te deben", ["deuda", "deudas"], "var(--positive)", debts.map((d) => ({ currency_code: d.currency_code, amount: d.meDeben, count: d.meDebenCount }))),
+    row("/deudas", "Debés", ["deuda", "deudas"], "var(--negative)", debts.map((d) => ({ currency_code: d.currency_code, amount: d.debo, count: d.deboCount }))),
+    row("/cuotas", "Cuotas de este mes", ["cuota por pagar", "cuotas por pagar"], "var(--warning)", upcoming.map((u) => ({ currency_code: u.currency_code, amount: u.total, count: u.count }))),
+  ].filter((r): r is NonNullable<typeof r> => r !== null);
   if (rows.length === 0) return null;
   return (
     <section className="flex flex-col gap-2 enter-up dash-span-3" data-delay="3">
@@ -246,9 +258,13 @@ function PendingSection({ debt, upcoming, sym }: { debt?: DebtSummary; upcoming?
               <p style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--ink)" }}>{r.label}</p>
               <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 2 }}>{r.sub}</p>
             </div>
-            <span className="mono" style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: r.color, flexShrink: 0 }}>
-              {sym}{Math.round(r.amount).toLocaleString("es-AR")}
-            </span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+              {r.list.map((i) => (
+                <span key={i.currency_code} className="mono" style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: r.color }}>
+                  {i.currency_code} {Math.round(i.amount).toLocaleString("es-AR")}
+                </span>
+              ))}
+            </div>
             <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--ink-dim)", flexShrink: 0 }}><path d="M9 6l6 6-6 6" /></svg>
           </Link>
         ))}
@@ -404,7 +420,7 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
       </div>
 
       {/* Pendientes: deudas y cuotas del mes, a un toque (también siguen en Perfil) */}
-      <PendingSection debt={debts.find((d) => d.currency_code === selectedCurrency)} upcoming={up} sym={sym} />
+      <PendingSection debts={debts} upcoming={upcoming} primaryCurrency={primaryCurrency} />
 
       {/* Neo dice una sola cosa (el resto, a un toque) */}
       <NeoSays lines={homeLines} />
