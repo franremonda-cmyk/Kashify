@@ -60,8 +60,10 @@ export async function insertDebtTx(
   return (retry.data as { id: string } | null) ?? null;
 }
 
-// Borrado compartido web/Neo. Los movimientos enlazados se van por cascada
-// (migración 015). `orphans` = hay movimientos esperables que NO estaban
+// Borrado compartido web/Neo. Los movimientos enlazados se marcan borrados
+// (deleted_at, como cualquier gasto borrado): salen del neto pero se pueden
+// recuperar. Con la migración 017 la FK es "set null", así que borrar la deuda
+// ya no los elimina de verdad. `orphans` = hay movimientos esperables que NO estaban
 // enlazados (deuda anterior a la migración, o migración sin correr): quedan en
 // Actividad y hay que avisarlo, nunca decir que se borraron.
 export async function deleteDebt(
@@ -77,6 +79,10 @@ export async function deleteDebt(
   const { count, error: countError } = await supabase.from("transactions")
     .select("id", { count: "exact", head: true }).eq("debt_id", debtId).eq("user_id", userId);
   const linked = countError ? 0 : (count ?? 0);
+  if (!countError) {
+    await supabase.from("transactions").update({ deleted_at: new Date().toISOString() })
+      .eq("debt_id", debtId).eq("user_id", userId).is("deleted_at", null);
+  }
   const { error } = await supabase.from("debts").delete().eq("id", debtId).eq("user_id", userId);
   if (error) return { ok: false, orphans: false };
   return { ok: true, orphans: linked < expected };

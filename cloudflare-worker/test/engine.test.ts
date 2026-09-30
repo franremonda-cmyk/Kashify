@@ -534,6 +534,7 @@ async function main() {
     await payDebt(makeStub(db), USER, debt!.id, 1000);
     const r = await deleteDebt(makeStub(db), USER, debt!.id);
     check("deleteDebt con egreso + cobro enlazados → sin huérfanos", r.ok && !r.orphans && db.debts.length === 0, JSON.stringify(r));
+    check("deleteDebt marca borrados (recuperables) el egreso y el cobro, no los elimina", db.transactions.length === 2 && db.transactions.every((t) => !!t.deleted_at), JSON.stringify(db.transactions.map((t) => t.deleted_at)));
 
     // Deuda vieja: egreso y cobro existen pero sin debt_id.
     const db2 = seed();
