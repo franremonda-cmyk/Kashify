@@ -277,7 +277,7 @@ export async function respondFlow(
           currency_code: currency, description: ctx.description || `Préstamo a ${ctx.counterparty}`,
           date: new Date().toISOString().split("T")[0], category_id: cat?.id ?? null,
         });
-        return { text: `✅ Anoté que ${ctx.counterparty} te debe ${fmt(ctx.amount!, currency)} y lo descontué de tu neto.`, effects: [{ type: "refresh" }] };
+        return { text: `✅ Anoté que ${ctx.counterparty} te debe ${fmt(ctx.amount!, currency)} y lo desconté de tu neto.`, effects: [{ type: "refresh" }] };
       }
       const txt = ctx.direction === "debo"
         ? `✅ Anoté que le debés ${fmt(ctx.amount!, currency)} a ${ctx.counterparty}.`

@@ -100,6 +100,26 @@ function debtCurrency(m: string): string | undefined {
 }
 const DEBT_CURRENCY_WORDS = /\b(usd|dolares?|dolar|eur|euros?|chf|brl)\b/g;
 
+// La gente no respeta el orden "verbo MONTO a NOMBRE": "le presté a mamá 100000"
+// dejaba "mamá 100000" como contraparte y "le pagué a juan 5000" terminaba en un
+// gasto basura. Se lleva el texto al orden canónico que entienden los regex de
+// abajo, así cada regla nueva no tiene que contemplar todas las permutaciones.
+// El nombre no puede arrancar con artículo/preposición: "me devolvieron 5000 del
+// impuesto" no es una deuda con "del impuesto".
+const DEBT_VERB_OUT = "(?:yo\\s+)?(?:le\\s+)?(?:preste|fie|debo|pag(?:ue|o)|devolvi|di)";
+const DEBT_VERB_IN = "(?:debe[n]?|prest(?:o|aron)|pag(?:o|aron)|devolvi(?:o|eron))";
+const NOT_A_NAME = "(?!(?:de|del|el|la|los|las|por|en|para|un|una|lo)\\b)";
+function debtWordOrder(md: string): string {
+  return md
+    // "le presté a mamá 100000 [para X]" → "le presté 100000 a mamá [para X]"
+    .replace(new RegExp(`^(${DEBT_VERB_OUT})\\s+(?:plata\\s+)?a\\s+(.+?)\\s+(\\d[\\d.,]*)((?:\\s+para\\s+.+)?)$`), "$1 $3 a $2$4")
+    // "a mamá le presté 100000" → "le presté 100000 a mamá"
+    .replace(new RegExp(`^a\\s+(.+?)\\s+(le\\s+(?:preste|fie|debo|pag(?:ue|o)|devolvi|di))\\s+(\\d[\\d.,]*)((?:\\s+para\\s+.+)?)$`), "$2 $3 a $1$4")
+    // "me debe mamá 100000" / "me prestó 5000 juan" → "mamá me debe 100000"
+    .replace(new RegExp(`^me\\s+(${DEBT_VERB_IN})\\s+${NOT_A_NAME}(\\D+?)\\s+(\\d[\\d.,]*)$`), "$2 me $1 $3")
+    .replace(new RegExp(`^me\\s+(${DEBT_VERB_IN})\\s+(\\d[\\d.,]*)\\s+${NOT_A_NAME}(\\D+)$`), "$3 me $1 $2");
+}
+
 // Alta de deuda: los slots que falten los pregunta el flujo (flow.ts).
 // opts.originExpense: nació de un "presté/fié" → el flujo registra también el
 // egreso. opts.rawMotivo: el "para <motivo>", que va como descripción del egreso.
@@ -201,9 +221,9 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
   // que anotaban "debo 10000 a juan" como un gasto llamado "debo a juan".
   {
     // Consultas
-    if (/cuant[ao]s?\s+(?:plata\s+)?me\s+deben|quien(?:es)?\s+me\s+debe[n]?|me\s+deben\s+plata/.test(m))
+    if (/cuant[ao]s?\s+(?:plata\s+)?me\s+debe[n]?|quien(?:es)?\s+me\s+debe[n]?|me\s+deben\s+plata/.test(m))
       return { type: "debts_query", direction: "me_deben" };
-    if (/cuant[ao]s?\s+(?:plata\s+)?debo|a\s+quien(?:es)?\s+le[s]?\s+debo/.test(m))
+    if (/cuant[ao]s?\s+(?:plata\s+)?(?:le[s]?\s+)?debo|a\s+quien(?:es)?\s+le[s]?\s+debo/.test(m))
       return { type: "debts_query", direction: "debo" };
     if (/mis\s+deudas|ver\s+deudas|deudas\s+activas|deudas\s+pendientes|mis\s+prestamos/.test(m))
       return { type: "debts_query" };
@@ -212,7 +232,7 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     // del string de trabajo `md` para que los regex de monto no choquen ($ y u$s
     // ya los limpió normalize), y se guarda aparte para que viaje al flujo.
     const dc = debtCurrency(m);
-    const md = dc ? m.replace(DEBT_CURRENCY_WORDS, "").replace(/\s+/g, " ").trim() : m;
+    const md = debtWordOrder(dc ? m.replace(DEBT_CURRENCY_WORDS, "").replace(/\s+/g, " ").trim() : m);
 
     // Alta — yo debo
     const owe = md.match(/^(?:yo\s+)?(?:le\s+)?debo\s+(\d[\d.,]*)\s+a\s+(.+)$/);

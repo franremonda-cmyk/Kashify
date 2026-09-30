@@ -377,6 +377,37 @@ async function main() {
     await runNeo({ supabase: makeStub(db), userId: USER, message: "debo 500 usd a ana", channel: "whatsapp" });
     check("'debo 500 usd a ana' → deuda debo en USD", db.debts[0]?.direction === "debo" && db.debts[0]?.currency_code === "USD" && Number(db.debts[0]?.total_amount) === 500);
   }
+
+  // 15d) Orden de palabras libre en deudas: cada variante da el MISMO intent que
+  // la forma canónica. Caso real de WhatsApp: "Le presté a mamá 100000" dejaba
+  // "Mamá 100000" como contraparte y preguntaba el monto.
+  {
+    const same = (variant: string, canon: string) =>
+      check(`'${variant}' ≡ '${canon}'`, JSON.stringify(detectIntent(variant)) === JSON.stringify(detectIntent(canon)), JSON.stringify(detectIntent(variant)));
+    same("Le presté a mamá 100000", "le presté 100000 a mamá");
+    same("presté a juan 5000 para la nafta", "presté 5000 a juan para la nafta");
+    same("a mamá le presté 100000", "le presté 100000 a mamá");
+    same("le presté a nico 100 usd", "le presté 100 usd a nico");
+    same("me debe mamá 100000", "mamá me debe 100000");
+    same("me prestó 5000 juan", "juan me prestó 5000");
+    same("me devolvió 5000 juan", "juan me devolvió 5000");
+    same("le pagué a juan 5000", "le pagué 5000 a juan");
+    same("le devolví a juan 5000", "le devolví 5000 a juan");
+    same("cuánto me debe mamá", "quién me debe");
+    same("cuánto le debo a juan", "cuánto debo");
+    // Lo que NO es una deuda no se reordena como si lo fuera.
+    for (const m of ["me pagaron 50000 de sueldo", "me devolvieron 5000 del impuesto", "me pagaron el sueldo 50000"]) {
+      const i = detectIntent(m);
+      check(`'${m}' no es deuda`, i.type !== "pay_debt" && !(i.type === "flow" && i.ctx.flow === "debt"), JSON.stringify(i));
+    }
+  }
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "Le presté a mamá 100000", channel: "whatsapp" });
+    check("'Le presté a mamá 100000' → deuda con Mamá por 100.000 + egreso, sin preguntar", !r.state && db.debts[0]?.counterparty === "Mamá" && Number(db.debts[0]?.total_amount) === 100000 && db.transactions.length === 1, `reply: ${r.text}`);
+    check("respuesta sin el typo 'descontué'", r.text.includes("desconté"), r.text);
+  }
   {
     // cobro en la moneda de la deuda: matchea la fila USD, no crea ingreso suelto
     const db = seed();
