@@ -2,6 +2,15 @@ name = "neo-webhook"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
+# Cada hora: si Meta sacó el número de prueba, se re-registra solo (src/keep-alive.ts)
+[triggers]
+crons = ["0 * * * *"]
+
+# La foto de perfil de Neo va dentro del worker, para reponerla al re-registrar
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
+
 [vars]
 APP_URL = "https://kashify.vercel.app"
 
@@ -13,3 +22,4 @@ APP_URL = "https://kashify.vercel.app"
 # SUPABASE_URL              — URL del proyecto Supabase
 # SUPABASE_SERVICE_ROLE_KEY — service role key de Supabase
 # PROCESS_WEBHOOK_SECRET    — secreto compartido con el backend (== CRON_SECRET en Vercel)
+# WHATSAPP_TWO_STEP_PIN     — PIN de dos pasos del número, para re-registrarlo (keep-alive)

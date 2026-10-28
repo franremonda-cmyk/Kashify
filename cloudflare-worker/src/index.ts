@@ -1,3 +1,7 @@
+import { keepNumberAlive } from "./keep-alive";
+// wrangler lo importa como ArrayBuffer (regla Data en wrangler.toml)
+import perfilNeo from "./perfil-neo.png";
+
 export interface Env {
   WHATSAPP_VERIFY_TOKEN: string;
   WHATSAPP_APP_SECRET: string;
@@ -9,9 +13,18 @@ export interface Env {
   // Secreto compartido con el backend para autorizar el disparo inmediato
   // del procesador. Debe coincidir con CRON_SECRET en Vercel.
   PROCESS_WEBHOOK_SECRET: string;
+  WHATSAPP_TWO_STEP_PIN: string;
 }
 
 export default {
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      keepNumberAlive(env, perfilNeo)
+        .then((r) => console.log(`keep-alive: ${r}`))
+        .catch((err) => console.error("keep-alive:", err))
+    );
+  },
+
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
