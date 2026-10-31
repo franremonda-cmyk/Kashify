@@ -5,7 +5,12 @@ contesta ahí mismo. Es el mismo motor que WhatsApp: entiende lo mismo y aprende
 
 Los nombres de los botones pueden variar un poco según la versión de iOS.
 
-## Armarlo (10 min)
+## La forma rápida (2 min)
+
+`python3 scripts/armar-atajo.py` deja `~/Downloads/Neo.shortcut` firmado y con la clave adentro. Pasalo al iPhone
+por AirDrop, tocá **Agregar atajo** y borrá el archivo de la Mac. Si eso falla, armalo a mano con los pasos de abajo.
+
+## Armarlo a mano (10 min)
 
 1. App **Atajos** → **+** → nombre: **Neo**.
 2. Agregá **Solicitar entrada**: tipo **Texto**, pregunta `¿Qué anoto?`.
