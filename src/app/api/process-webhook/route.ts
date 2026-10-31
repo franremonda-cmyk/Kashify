@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { runNeo } from "@/lib/neo/engine";
 import { sendTextMessage, sendReaction, sendTypingIndicator } from "@/lib/neo/send-template";
-import type { NeoState } from "@/lib/neo/engine/types";
+import { clearState, loadState, saveState } from "@/lib/neo/conversation-state";
 
 // Adaptador WhatsApp del motor unificado de Neo (mismo cerebro que la web).
 // Se llama de dos formas:
@@ -89,31 +89,4 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ processed });
-}
-
-type ServiceClient = Awaited<ReturnType<typeof createServiceClient>>;
-
-async function loadState(supabase: ServiceClient, userId: string): Promise<NeoState | null> {
-  const { data } = await supabase
-    .from("neo_conversation_state")
-    .select("state, expires_at")
-    .eq("user_id", userId)
-    .single();
-  if (!data) return null;
-  if (new Date(data.expires_at).getTime() < Date.now()) {
-    await clearState(supabase, userId);
-    return null;
-  }
-  return data.state as NeoState;
-}
-
-async function saveState(supabase: ServiceClient, userId: string, state: NeoState): Promise<void> {
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-  await supabase
-    .from("neo_conversation_state")
-    .upsert({ user_id: userId, state, expires_at: expiresAt, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-}
-
-async function clearState(supabase: ServiceClient, userId: string): Promise<void> {
-  await supabase.from("neo_conversation_state").delete().eq("user_id", userId);
 }
