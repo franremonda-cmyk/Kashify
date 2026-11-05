@@ -55,7 +55,7 @@ export default async function DashboardPage() {
     // ponytail: scan O(n) sobre las tx del usuario; si alguien acumula decenas de
     // miles, reintroducir un cache de balance por espacio.
     supabase.from("transactions")
-      .select("amount, currency_code, type, to_currency_code, to_amount, space_id")
+      .select("amount, currency_code, type, to_currency_code, to_amount, space_id, debt_id")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds),
     supabase.from("savings_goals").select("*").eq("user_id", user.id).in("space_id", scopeIds).neq("status", "archived").order("created_at", { ascending: false }).limit(3),
     supabase.from("category_budgets").select("*, categories(id, name, color, icon)").eq("user_id", user.id).in("space_id", scopeIds),
@@ -64,7 +64,8 @@ export default async function DashboardPage() {
     loanDebtIds(supabase, user.id),
   ]);
 
-  const balances   = computeBalances(txAllRes.data ?? []);
+  // Los préstamos que hiciste no bajan el balance (ver lib/ledger/balances).
+  const balances   = computeBalances(txAllRes.data ?? [], loanIds);
   const profile    = profileRes.data;
   const pending    = pendingRes.data ?? [];
   // Préstamos que hiciste (y sus cobros) fuera de Ingresos/Gastos/límites/gráfico:
@@ -194,7 +195,7 @@ export default async function DashboardPage() {
   const includedSpaces = spaces.filter((s) => s.include_in_total);
   const spacesOverview = activeSpace === "total" && includedSpaces.length > 1
     ? includedSpaces.map((sp) => {
-        const spBalances = computeBalances((txAllRes.data ?? []).filter((t) => t.space_id === sp.id));
+        const spBalances = computeBalances((txAllRes.data ?? []).filter((t) => t.space_id === sp.id), loanIds);
         const pick = spBalances.find((b) => b.currency_code === sp.primary_currency)
           ?? [...spBalances].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0];
         return {

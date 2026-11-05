@@ -4,6 +4,7 @@ import { learnFromCorrection } from "@/lib/neo/learning";
 import { payDebt } from "@/lib/debts/pay";
 import { createDebt, deleteDebt } from "@/lib/debts/create";
 import { isLoan, loanDebtIds, loanFlows } from "@/lib/ledger/loans";
+import { computeBalances } from "@/lib/ledger/balances";
 import { localIso, userTimezone, wallToday } from "@/lib/dates";
 import { scopeForSpace } from "@/lib/space-scope";
 import { deleteSpaceGuarded } from "@/lib/spaces";
@@ -352,17 +353,15 @@ export async function executeIntent(
       return { text: `Soy Neo, tu asistente de finanzas. Esto es lo que puedo hacer por vos:\n• Registrar gastos: "compré nafta por 5000"\n• Registrar ingresos: "cobré el sueldo"\n• Ver saldo: "¿cuánto tengo?"\n• Ver gastos: "¿cuánto gasté este mes?"\n• Resumen del mes: "resumen"\n• Últimas transacciones: "mis últimas"\n\nMetas:\n• Ver: "mis metas"\n• Crear: "agrega una meta viaje"\n• Renombrar: "renombrá la meta viaje a vacaciones"\n• Cambiar objetivo: "cambiá el objetivo de viaje a 50000"\n• Depositar: "depositá 5000 en viaje"\n• Eliminar: "eliminá la meta viaje"\n\nCuotas (compras financiadas con tarjeta):\n• Ver: "mis cuotas"\n• Crear: "agrega cuota Netflix por 6 meses de 5000"\n• Pagar: "pagué la cuota de Netflix"\n• Saldar: "cancelá la cuota de iPhone"\n\nDeudas (plata entre personas):\n• Prestar (te baja el neto): "presté 10000 a Juan"\n• Anotar: "debo 10000 a Juan" · "Ana me debe 5000"\n• Ver: "cuánto debo" · "quién me debe"\n• Cobrar: "Juan me devolvió 3000" · Pagar: "le pagué 3000 a Juan"\n• Saldar: "saldé la deuda de Juan"\n\nLímites:\n• Ver: "mis límites"\n• Poner: "poné un límite de 30000 en Comida"\n• Editar: "editá el límite de Comida a 30000"\n• Eliminar: "eliminá el límite de Comida"\n\nCorregir lo ya anotado:\n• Monto: "el último gasto eran 5000"\n• Categoría: "cambiá la categoría de netflix a Ocio"\n• Fecha: "cambiá la fecha del último a ayer"\n• Borrar: "borrá el gasto de netflix"\n\nEspacios y categorías:\n• Ver: "mis espacios" · "mis categorías"\n• Crear: "creá el espacio Freelance"\n• Mover: "pasá este gasto a Casa"\n\nOtros:\n• Dólar: "poné el dólar a 1450"\n• Avisos: "no me avises más de límites"\n• Exportar: "pasame mis datos en csv"` };
 
     case "balance_query": {
-      const { data: balances } = await supabase.from("transactions")
-        .select("amount, currency_code, type").eq("user_id", userId).is("deleted_at", null).in("space_id", scope)
-        .in("type", ["income", "expense", "installment-payment"]);
-      if (!balances?.length) return { text: "Todavía no tenés transacciones registradas." };
-      const byCurrency: Record<string, number> = {};
-      for (const t of balances) {
-        const sign = t.type === "income" ? 1 : -1;
-        byCurrency[t.currency_code] = (byCurrency[t.currency_code] ?? 0) + sign * Number(t.amount);
-      }
-      const lines = Object.entries(byCurrency)
-        .map(([cur, bal]) => `${cur}: ${bal >= 0 ? "+" : ""}${bal.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`).join("\n");
+      // Mismo cálculo que Inicio (lib/ledger/balances): los préstamos que
+      // hiciste no restan, las conversiones mueven las dos monedas.
+      const { data: txs } = await supabase.from("transactions")
+        .select("amount, currency_code, type, to_currency_code, to_amount, debt_id")
+        .eq("user_id", userId).is("deleted_at", null).in("space_id", scope);
+      if (!txs?.length) return { text: "Todavía no tenés transacciones registradas." };
+      const balances = computeBalances(txs, await loanDebtIds(supabase, userId));
+      const lines = balances
+        .map((b) => `${b.currency_code}: ${b.amount >= 0 ? "+" : ""}${b.amount.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`).join("\n");
       return { text: `Tu balance acumulado:\n${lines}` };
     }
 
