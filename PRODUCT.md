@@ -18,10 +18,11 @@ Kashify es un ledger personal multi-moneda donde Neo (IA) parsea lo que le escri
 
 El éxito se ve cuando el usuario dicta "almuerzo 850" y 5 segundos después ve su balance actualizado sin abrir la app.
 
-**El balance es la plata en la mano** (regla de Fran, 05/11/2026). Lo que prestaste no se
-descuenta: la app no vio entrar la plata que ya tenías antes de instalarla, así que
-descontarla dejaba el balance en negativo. Lo que te deben y lo que debés se muestran
-aparte —debajo del número y en Pendientes—, nunca sumados al número grande.
+**El balance es la plata en la mano** (regla de Fran, 05/11/2026): se mueve solo cuando la
+plata pasa por tu mano. Un préstamo de hoy resta; una deuda vieja (la plata salió antes de
+usar la app, o ya anotaste el gasto que la originó) no. Se decide al anotar la deuda con
+«¿Le diste vos esta plata?». Lo que te deben y lo que debés se muestran aparte —debajo del
+número y en Pendientes—, nunca sumados al número grande.
 
 ## Brand Personality
 

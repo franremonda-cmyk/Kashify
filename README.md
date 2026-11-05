@@ -27,9 +27,9 @@ transactions — the web app is for *seeing your numbers*, not data entry.
   keyword→category mapping (fuzzy-matched with Fuse.js) instead of guessing or burning
   tokens. A `NEO_LLM_FALLBACK=false` switch lets Neo run at zero LLM cost.
 - **Multi-currency ledger** — ARS + USD side by side (the Argentine "dollar cushion"
-  is a first-class concept, not an afterthought). The balance is *cash in hand*: money
-  you lent out is tracked as debt, never subtracted from it (see
-  `src/lib/ledger/balances.ts`).
+  is a first-class concept, not an afterthought). The balance is *cash in hand*: a loan
+  you make today lowers it, an old debt you just record doesn't (the debt form asks
+  "did you hand over this money?"; see `src/lib/debts/create.ts`).
 - **Web dashboard** — balances, charts (Recharts), category breakdowns. PWA-installable.
 - **Currency exchange** — one movement records both legs (EUR 1.000 out → USD 1.100
   in), shows the resulting rate, and never counts as spending or income.
