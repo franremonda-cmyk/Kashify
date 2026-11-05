@@ -9,14 +9,19 @@ product
 Personas comunes de Argentina, 20-60 años (beta real: Fran + familia — no power-users de
 finanzas). Manejan ARS y USD en simultáneo, en contexto de inflación ("gastaste más pesos"
 no siempre es "gastaste más"). Usan la app en el celular (PWA), muchas veces después de
-mandarle un mensaje a Neo por WhatsApp. Quieren ver sus números rápido, sin ansiedad, y
+dictarle algo a Neo por el Atajo de iPhone (antes era WhatsApp; se abandonó el 31/10/2026). Quieren ver sus números rápido, sin ansiedad, y
 volver a lo que estaban haciendo.
 
 ## Product Purpose
 
-Kashify es un ledger personal multi-moneda donde Neo (IA) parsea mensajes de WhatsApp y los convierte en transacciones. No es un banco ni una app de inversiones — es una libreta inteligente que entiende español rioplatense.
+Kashify es un ledger personal multi-moneda donde Neo (IA) parsea lo que le escribís en lenguaje natural y lo convierte en transacciones. No es un banco ni una app de inversiones — es una libreta inteligente que entiende español rioplatense.
 
-El éxito se ve cuando el usuario manda "almuerzo 850" y 5 segundos después ve su balance actualizado sin abrir la app.
+El éxito se ve cuando el usuario dicta "almuerzo 850" y 5 segundos después ve su balance actualizado sin abrir la app.
+
+**El balance es la plata en la mano** (regla de Fran, 05/11/2026). Lo que prestaste no se
+descuenta: la app no vio entrar la plata que ya tenías antes de instalarla, así que
+descontarla dejaba el balance en negativo. Lo que te deben y lo que debés se muestran
+aparte —debajo del número y en Pendientes—, nunca sumados al número grande.
 
 ## Brand Personality
 
@@ -47,7 +52,7 @@ canchero, voseo, nunca culpa.
 4. **Calidez en el tono, no en la paleta.** La personalidad humana va en la copia de Neo, no en fondos crema ni gradientes anaranjados.
 5. **Resumen arriba, detalle adentro.** Inicio responde "¿cómo vengo?" de un vistazo; el desglose completo vive en actividades/historial. No mezclar las dos alturas en una pantalla.
 6. **Registrar no puede pesar.** Cada campo se explica solo; lo que Neo pueda deducir (categoría, espacio, fecha) lo deduce y el usuario solo confirma.
-7. **El puente WhatsApp↔web siempre a mano.** Lo que pasa en un canal enlaza al otro (registrás por WhatsApp → link para verlo en la web).
+7. **El puente canal↔web siempre a mano.** Lo que registrás por fuera de la app (hoy el Atajo de iPhone) enlaza a la web para verlo en contexto.
 
 ## Accessibility & Inclusion
 
