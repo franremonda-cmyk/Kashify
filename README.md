@@ -31,6 +31,8 @@ transactions — the web app is for *seeing your numbers*, not data entry.
   you lent out is tracked as debt, never subtracted from it (see
   `src/lib/ledger/balances.ts`).
 - **Web dashboard** — balances, charts (Recharts), category breakdowns. PWA-installable.
+- **Currency exchange** — one movement records both legs (EUR 1.000 out → USD 1.100
+  in), shows the resulting rate, and never counts as spending or income.
 - **Installments (cuotas)** — splits a purchase into scheduled monthly entries.
 - **Budgets & savings goals** — period budgets and goal tracking.
 - **Bulk import** — ingests monthly spreadsheets (xlsx/csv), including a
