@@ -408,6 +408,8 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
           selectedCurrency={selectedCurrency}
           onSelectCurrency={setSelectedCurrency}
           usdRate={usdRate}
+          owed={debts.find((d) => d.currency_code === selectedCurrency)?.meDeben ?? 0}
+          owing={debts.find((d) => d.currency_code === selectedCurrency)?.debo ?? 0}
         />
       </div>
 

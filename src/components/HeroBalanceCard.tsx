@@ -46,9 +46,11 @@ interface Props {
   selectedCurrency?: string;
   onSelectCurrency?: (c: string) => void;
   usdRate?: number | null; // 1 USD = X moneda principal (fijado por el usuario en Perfil)
+  owed?: number;  // te deben, en la moneda elegida
+  owing?: number; // debés, en la moneda elegida
 }
 
-export default function HeroBalanceCard({ balances, primaryCurrency, selectedCurrency, onSelectCurrency, usdRate }: Props) {
+export default function HeroBalanceCard({ balances, primaryCurrency, selectedCurrency, onSelectCurrency, usdRate, owed = 0, owing = 0 }: Props) {
   const [internalSelected, setInternalSelected] = useState(primaryCurrency);
   const selected    = selectedCurrency ?? internalSelected;
   const setSelected = onSelectCurrency ?? setInternalSelected;
@@ -117,6 +119,18 @@ export default function HeroBalanceCard({ balances, primaryCurrency, selectedCur
           <p style={{ fontSize: "var(--text-xs)", color: "var(--hero-ink-soft)", marginTop: 8, fontWeight: 500 }}>
             {NAMES[selected] ?? selected}
           </p>
+          {/* Lo que te deben y lo que debés, debajo del número grande (pedido de
+              Fran, 05/11/2026): el balance es la plata en la mano, y esto es lo
+              que falta entrar o salir. No se suma arriba. */}
+          {(owed > 0 || owing > 0) && (
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--hero-ink-soft)", marginTop: 10, fontWeight: 500, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {owed > 0 && <span>Te deben {symbol} {Math.round(owed).toLocaleString("es-AR")}</span>}
+              {owing > 0 && <span style={{ color: "var(--negative)" }}>Debés {symbol} {Math.round(owing).toLocaleString("es-AR")}</span>}
+              <span style={{ opacity: 0.75 }}>
+                → {symbol} {Math.round(amount + owed - owing).toLocaleString("es-AR")} si se salda todo
+              </span>
+            </p>
+          )}
           {(() => {
             // Total unificado: suma los USD convertidos al cambio fijado por el
             // usuario. Solo con tasa cargada, mirando la moneda principal.
