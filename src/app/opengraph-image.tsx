@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Kashify — Tus finanzas, por WhatsApp. Con Neo.";
+export const alt = "Kashify — Tus finanzas, claras y al día. Con Neo.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -46,7 +46,7 @@ export default function OpengraphImage() {
             Tus finanzas, claras y al día.
           </span>
           <span style={{ fontSize: 34, color: "rgba(237,241,239,0.62)", marginTop: 20 }}>
-            Cargá gastos por WhatsApp. Neo, tu asistente, ordena todo.
+            Anotá gastos con una frase. Neo, tu asistente, ordena todo.
           </span>
         </div>
       </div>

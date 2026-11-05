@@ -62,7 +62,7 @@ export default function DesktopSidebar() {
 
   async function inviteFriend() {
     const url = "https://kashify.vercel.app";
-    const text = `Te invito a Kashify, la app para llevar tus finanzas hablándole a Neo por WhatsApp 💚 ${url}`;
+    const text = `Te invito a Kashify, la app para llevar tus finanzas hablándole a Neo 💚 ${url}`;
     try {
       if (navigator.share) { await navigator.share({ title: "Kashify", text, url }); return; }
       await navigator.clipboard.writeText(text);

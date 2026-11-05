@@ -4,11 +4,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
 import Logo, { LogoMark } from "@/components/Logo";
-import { toWhatsappFrom } from "@/lib/phone";
+import { CURRENCIES } from "@/lib/currencies";
 const ImportFlow = dynamic(() => import("@/components/ImportFlow"), { ssr: false });
 
-const CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU", "CLP", "GBP", "CHF"];
-const STEPS = 4;
+const STEPS = 3;
 
 const inp: React.CSSProperties = {
   background: "var(--raised)",
@@ -35,14 +34,13 @@ function ProgressDots({ step }: { step: number }) {
   );
 }
 
-type Step = 0 | 1 | 2 | 3;
+type Step = 0 | 1 | 2;
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep]           = useState<Step>(0);
   const [name, setName]           = useState("");
   const [currency, setCurrency]   = useState("ARS");
-  const [phone, setPhone]         = useState("");
   const [saving, setSaving]       = useState(false);
   const [checking, setChecking]   = useState(true);
   const [showImport, setShowImport] = useState(false);
@@ -79,17 +77,6 @@ export default function OnboardingPage() {
       display_name: name.trim(),
       primary_currency: currency,
     });
-
-    const phoneDigits = toWhatsappFrom(phone);
-    if (phoneDigits) {
-      await supabase.from("user_phones").insert({
-        user_id: user.id,
-        phone_number: phoneDigits,
-        verified: true,
-      });
-      // La bienvenida la inicia el usuario tocando "Activar Neo en WhatsApp"
-      // (link wa.me) en el paso final → conversación gratis, sin template.
-    }
 
     // Usuario nuevo: habilitar el tour guiado una sola vez en el dashboard
     try { localStorage.setItem("kashify-tour-pending", "1"); } catch {}
@@ -145,58 +132,8 @@ export default function OnboardingPage() {
       </div>
     ),
 
-    /* ── Paso 1: WhatsApp ────────────────────── */
+    /* ── Paso 1: Importar o empezar de cero ─── */
     1: (
-      <div className="flex flex-col gap-6 scale-up">
-        <div>
-          <div style={{
-            width: 48, height: 48, borderRadius: 14, marginBottom: 16,
-            background: "rgba(37,211,102,0.12)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "#25d366" }}>
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          </div>
-          <h2 className="display font-bold" style={{ fontSize: "1.45rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>
-            Conectá WhatsApp
-          </h2>
-          <p style={{ fontSize: "var(--text-xs)", marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
-            Mandále un mensaje a Neo y él registra el gasto automáticamente. Podés saltear esto.
-          </p>
-        </div>
-
-        <input
-          style={inp}
-          placeholder="+54 11 1234-5678"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-        />
-        <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: -12, lineHeight: 1.4 }}>
-          Importante: ingresá tu número <strong style={{ color: "var(--ink)" }}>sin el 9</strong> después
-          del código de país (ej: <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 11 …</span>, no <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 9 11 …</span>).
-        </p>
-
-        <div style={{
-          padding: "12px 14px", borderRadius: 12,
-          background: "var(--accent-soft)",
-          border: "0.5px solid var(--accent-glow)",
-        }}>
-          <p style={{ fontSize: "var(--text-2xs)", color: "var(--accent)", fontFamily: "var(--font-mono, monospace)" }}>
-            "Almuerzo 1500"
-          </p>
-          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 4 }}>
-            Así de fácil — Neo lo categoriza y registra solo.
-          </p>
-        </div>
-      </div>
-    ),
-
-    /* ── Paso 2: Importar o empezar de cero ─── */
-    2: (
       <div className="flex flex-col gap-5 scale-up">
         {showImport ? (
           <ImportFlow
@@ -278,8 +215,8 @@ export default function OnboardingPage() {
       </div>
     ),
 
-    /* ── Paso 3: todo listo ─────────────────── */
-    3: (
+    /* ── Paso 2: todo listo ─────────────────── */
+    2: (
       <div className="flex flex-col gap-6 items-center text-center scale-up">
         <div style={{
           width: 72, height: 72, borderRadius: "50%",
@@ -298,27 +235,9 @@ export default function OnboardingPage() {
           <p style={{ fontSize: "var(--text-xs)", marginTop: 8, color: "var(--ink-muted)", lineHeight: 1.5 }}>
             {importedCount > 0
               ? `${importedCount} movimiento${importedCount !== 1 ? "s" : ""} importado${importedCount !== 1 ? "s" : ""}. Kashify ya tiene tu historial.`
-              : phone.trim()
-              ? "Neo está esperando tu primer mensaje. Escribile por WhatsApp para empezar."
               : "Podés registrar gastos desde el ✚ o hablarle a Neo desde la app."}
           </p>
         </div>
-        {phone.trim() && (
-          <a
-            href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "15556597324"}?text=${encodeURIComponent("Hola Neo 👋")}`}
-            target="_blank" rel="noopener noreferrer"
-            style={{
-              width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-              padding: "14px", borderRadius: 14, textDecoration: "none",
-              background: "#25D366", color: "#04130D", fontWeight: 700, fontSize: "var(--text-row)",
-              boxShadow: "0 6px 20px rgba(37,211,102,0.35)",
-            }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.043zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-            </svg>
-            Activar Neo en WhatsApp
-          </a>
-        )}
         {importedCount === 0 && (
           <div style={{
             width: "100%", padding: "14px 16px", borderRadius: 14,
@@ -358,8 +277,8 @@ export default function OnboardingPage() {
     );
   }
 
-  // In step 2 with import open, hide the outer nav buttons
-  const hideNav = step === 2 && showImport;
+  // En el paso de importar, con el importador abierto, se esconden los botones de abajo
+  const hideNav = step === 1 && showImport;
 
   return (
     <div className="flex flex-col gap-8">
@@ -382,8 +301,8 @@ export default function OnboardingPage() {
             </button>
           )}
 
-          {/* Paso 2 (importar): no muestra botón "Continuar" ya que las opciones actúan de nav */}
-          {step !== 2 && (
+          {/* Paso 1 (importar): no muestra botón "Continuar" ya que las opciones actúan de nav */}
+          {step !== 1 && (
             step < STEPS - 1 ? (
               <button onClick={next}
                 disabled={step === 0 && !name.trim()}
@@ -393,7 +312,7 @@ export default function OnboardingPage() {
                   background: "var(--accent)", color: "var(--on-accent)",
                   opacity: step === 0 && !name.trim() ? 0.35 : 1,
                 }}>
-                {step === 1 && !phone.trim() ? "Saltear →" : "Continuar →"}
+                Continuar →
               </button>
             ) : (
               <button onClick={finishOnboarding} disabled={saving}

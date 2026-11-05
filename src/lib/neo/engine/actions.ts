@@ -437,14 +437,17 @@ export async function executeIntent(
 
     case "recent_tx_query": {
       const { data: txs } = await supabase.from("transactions")
-        .select("amount, currency_code, type, description, date, categories(name)")
+        .select("amount, currency_code, type, description, date, to_amount, to_currency_code, categories(name)")
         .eq("user_id", userId).is("deleted_at", null).order("date", { ascending: false }).limit(7);
       if (!txs?.length) return { text: "No tenés transacciones registradas." };
       const lines = txs.map((t) => {
         const cat = t.categories as { name?: string } | null;
-        const sign = t.type === "income" ? "+" : "-";
         const d = new Date(t.date).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
-        return `${d} · ${t.description || cat?.name || "Sin descripción"} ${sign}${fmt(Number(t.amount), t.currency_code)}`;
+        // Un cambio no es gasto: se lee con sus dos puntas.
+        const money = t.type === "conversion" && t.to_currency_code
+          ? `${fmt(Number(t.amount), t.currency_code)} → ${fmt(Number(t.to_amount), t.to_currency_code)}`
+          : `${t.type === "income" ? "+" : "-"}${fmt(Number(t.amount), t.currency_code)}`;
+        return `${d} · ${t.description || cat?.name || "Sin descripción"} ${money}`;
       });
       return { text: `Últimas transacciones:\n${lines.join("\n")}` };
     }

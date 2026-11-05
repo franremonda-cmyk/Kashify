@@ -188,7 +188,7 @@ export default function DeudasPage() {
         <div className="card-glass p-8 text-center enter-up">
           <p style={{ fontSize: "var(--text-sm)", color: "var(--ink)", fontWeight: 500 }}>Sin deudas registradas</p>
           <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 4 }}>Registrá lo que debés o lo que te deben para hacerle seguimiento.</p>
-          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 8 }}>O escribile a Neo por WhatsApp: <em>presté 10000 a Juan</em></p>
+          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 8 }}>O decíselo a Neo: <em>presté 10000 a Juan</em></p>
         </div>
       )}
     </div>

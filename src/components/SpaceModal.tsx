@@ -141,7 +141,7 @@ export default function SpaceModal({ space, onSave, onDelete, onClose }: Props) 
             checked={isDefault}
             onChange={setIsDefault}
             title="Espacio por defecto"
-            subtitle="Donde caen los registros de WhatsApp si no elegís otro."
+            subtitle="Donde caen los registros de Neo si no elegís otro."
           />
 
           <button onClick={handleSave} disabled={!name.trim() || saving}

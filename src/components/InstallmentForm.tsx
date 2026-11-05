@@ -6,6 +6,7 @@ import {
   calculateNoInterest,
   calculateImpliedTNA,
 } from "@/lib/installments/calculator";
+import { CURRENCIES } from "@/lib/currencies";
 
 export interface InstallmentFormData {
   name: string;
@@ -28,7 +29,6 @@ interface Props {
 }
 
 const INSTALLMENT_OPTIONS = [1, 2, 3, 6, 9, 12, 18, 24, 36];
-const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU"];
 
 const inp: React.CSSProperties = {
   background: "var(--raised)",

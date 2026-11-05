@@ -8,21 +8,24 @@ import { useIconStyle } from "@/context/IconStyleContext";
 import { useModalTouchLock } from "@/hooks/useModalTouchLock";
 import type { Transaction } from "@/types";
 import { useEscape } from "@/lib/useEscape";
+import { CURRENCIES } from "@/lib/currencies";
+import { conversionError, fmtMoney, rateText, txAmountColor, txAmountText } from "@/lib/ledger/conversion";
 
 interface Category { id: string; name: string; icon?: string; color?: string; }
 
 const TYPE_LABELS: Record<string, string> = {
-  expense: "Gasto", income: "Ingreso", conversion: "Conversión", "installment-payment": "Cuota",
+  expense: "Gasto", income: "Ingreso", conversion: "Cambio", "installment-payment": "Cuota",
 };
 
+// Tipos a los que se puede pasar un movimiento al editarlo. "Cambio" no está:
+// un gasto convertido en cambio quedaría sin la moneda que entra. Un cambio se
+// edita con sus dos montos y no muestra este selector.
 const TX_TYPES = [
   { value: "expense",             label: "Gastos" },
   { value: "income",              label: "Ingresos" },
   { value: "installment-payment", label: "Cuotas" },
-  { value: "conversion",          label: "Conversiones" },
 ];
 
-const CURRENCIES_LIST = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP"];
 
 interface Props {
   tx: Transaction & { categories?: { name?: string; icon?: string; color?: string } | null };
@@ -50,15 +53,16 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   const [date, setDate]           = useState(tx.date ?? "");
   const [categoryId, setCategoryId] = useState(tx.category_id ?? "");
   const [txType, setTxType]       = useState(tx.type);
+  const isConversion = tx.type === "conversion";
+  const [toAmount, setToAmount]     = useState(tx.to_amount != null ? String(tx.to_amount) : "");
+  const [toCurrency, setToCurrency] = useState(tx.to_currency_code ?? "USD");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const catData = (tx as any).categories ?? tx.category;
   const currentCat = categories.find(c => c.id === categoryId)
     ?? (catData ? { id: tx.category_id ?? "", name: catData.name ?? "", icon: catData.icon, color: catData.color } : undefined);
 
-  const isIncome  = tx.type === "income";
-  const isInstall = tx.type === "installment-payment";
-  const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
+  const amtColor  = txAmountColor(tx.type);
 
   const inpSm: React.CSSProperties = {
     background: "var(--raised)", border: "0.5px solid var(--glass-border)",
@@ -67,15 +71,30 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
   };
 
   async function handleSave() {
-    if (parseFloat(amount) <= 0) { setError("El monto tiene que ser mayor a 0."); return; }
+    let body: Record<string, unknown>;
+    if (isConversion) {
+      const pair = { amount: parseFloat(amount), currency_code: currency, to_amount: parseFloat(toAmount), to_currency_code: toCurrency };
+      const err = conversionError(pair);
+      if (err) { setError(err); return; }
+      body = { description: desc.trim(), date, ...pair };
+    } else {
+      if (!(parseFloat(amount) > 0)) { setError("El monto tiene que ser mayor a 0."); return; }
+      body = { description: desc.trim(), amount: parseFloat(amount), currency_code: currency, date, category_id: categoryId || null, type: txType };
+    }
     setSaving(true);
     setError("");
     try {
       const res = await fetch(`/api/transactions/${tx.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: desc.trim(), amount: parseFloat(amount), currency_code: currency, date, category_id: categoryId || null, type: txType }),
+        body: JSON.stringify(body),
       });
+      if (res.status === 400) {
+        const j = await res.json().catch(() => ({}));
+        setError(j.error ?? "Revisá los datos.");
+        setSaving(false);
+        return;
+      }
       if (!res.ok) throw new Error();
       onSaved();
       onClose();
@@ -94,11 +113,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
       const res = await fetch(`/api/transactions/${tx.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       // Toast global con deshacer (lo escucha UndoToast en el layout)
-      window.dispatchEvent(new CustomEvent("tx-deleted", { detail: {
-        description: tx.description, amount: tx.amount, currency_code: tx.currency_code,
-        date: tx.date, category_id: tx.category_id, type: tx.type,
-        space_id: (tx as unknown as { space_id?: string }).space_id,
-      }}));
+      window.dispatchEvent(new CustomEvent("tx-deleted", { detail: { id: tx.id } }));
       onDeleted();
       onClose();
       window.dispatchEvent(new Event("transaction-added"));
@@ -174,21 +189,41 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: "var(--text-base)", fontWeight: 600, color: "var(--ink)", wordBreak: "break-word" }}>{tx.description}</p>
                     <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 3 }}>
-                      {catData?.name ?? "Sin categoría"} · {TYPE_LABELS[tx.type] ?? tx.type}
+                      {isConversion ? "Cambio de moneda" : `${catData?.name ?? "Sin categoría"} · ${TYPE_LABELS[tx.type] ?? tx.type}`}
                     </p>
                   </div>
                 </div>
 
                 <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)" }}>
-                  <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 2 }}>Monto</p>
-                  <p style={{ fontSize: 24, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
-                    {isIncome ? "+" : "−"}{tx.currency_code} {Number(tx.amount).toLocaleString("es-AR", { maximumFractionDigits: 2 })}
-                  </p>
+                  {isConversion ? (
+                    <>
+                      <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 2 }}>Salió</p>
+                      <p style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
+                        {fmtMoney(tx.currency_code, tx.amount, 2)}
+                      </p>
+                      <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", margin: "10px 0 2px" }}>Entró</p>
+                      <p style={{ fontSize: 24, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
+                        {fmtMoney(tx.to_currency_code ?? "", tx.to_amount ?? 0, 2)}
+                      </p>
+                      {Number(tx.amount) > 0 && Number(tx.to_amount) > 0 && tx.to_currency_code && (
+                        <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginTop: 4 }}>
+                          {rateText(Number(tx.amount), tx.currency_code, Number(tx.to_amount), tx.to_currency_code)}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginBottom: 2 }}>Monto</p>
+                      <p style={{ fontSize: 24, fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
+                        {txAmountText(tx, 2)}
+                      </p>
+                    </>
+                  )}
                   {tx.date && <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-muted)", marginTop: 4 }}>{new Date(tx.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}</p>}
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 4 }}>
-                  <button
+                  {!isConversion && <button
                     onClick={() => setShowCatModal(true)}
                     style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", borderRadius: 14, background: "var(--raised)", border: "0.5px solid var(--glass-border)", textAlign: "left" }}>
                     <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", flexShrink: 0 }}>
@@ -203,7 +238,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--ink-dim)", marginLeft: "auto", flexShrink: 0 }}>
                       <polyline points="9 18 15 12 9 6"/>
                     </svg>
-                  </button>
+                  </button>}
 
                   {confirmDel ? (
                     <div style={{ display: "flex", gap: 8 }}>
@@ -220,7 +255,7 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
               </>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 4 }}>
-                <div>
+                {!isConversion && <div>
                   <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Tipo</p>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {TX_TYPES.map(t => {
@@ -233,31 +268,42 @@ export default function TransactionSheet({ tx, categories, onClose, onDeleted, o
                       );
                     })}
                   </div>
-                </div>
+                </div>}
                 <div>
                   <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Descripción</p>
                   <input style={inpSm} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripción" aria-label="Descripción"/>
                 </div>
                 <div>
-                  <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Monto</p>
+                  <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>{isConversion ? "Salió" : "Monto"}</p>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={currency} onChange={e => setCurrency(e.target.value)} aria-label="Moneda">
-                      {CURRENCIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
+                    <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={currency} onChange={e => setCurrency(e.target.value)} aria-label={isConversion ? "Moneda que salió" : "Moneda"}>
+                      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <input style={inpSm} type="number" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" aria-label="Monto"/>
+                    <input style={inpSm} type="number" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" aria-label={isConversion ? "Monto que salió" : "Monto"}/>
                   </div>
                 </div>
+                {isConversion && (
+                  <div>
+                    <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Entró</p>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <select style={{ ...inpSm, width: "auto", flexShrink: 0 }} value={toCurrency} onChange={e => setToCurrency(e.target.value)} aria-label="Moneda que entró">
+                        {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <input style={inpSm} type="number" inputMode="decimal" value={toAmount} onChange={e => setToAmount(e.target.value)} placeholder="0" aria-label="Monto que entró"/>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Fecha</p>
                   <input style={inpSm} type="date" value={date} onChange={e => setDate(e.target.value)}/>
                 </div>
-                <div>
+                {!isConversion && <div>
                   <p style={{ fontSize: "var(--text-row)", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 6 }}>Categoría</p>
                   <select style={inpSm} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
                     <option value="">Sin categoría</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
-                </div>
+                </div>}
                 {error && <p style={{ fontSize: "var(--text-2xs)", color: "var(--negative)" }}>{error}</p>}
                 <div style={{ display: "flex", gap: 8, paddingTop: 8 }}>
                   <button onClick={() => setMode("view")} style={{ flex: 1, padding: "13px", borderRadius: 12, fontSize: "var(--text-xs)", background: "var(--raised)", color: "var(--ink-muted)", border: "0.5px solid var(--glass-border)" }}>Cancelar</button>

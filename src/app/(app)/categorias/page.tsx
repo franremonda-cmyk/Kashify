@@ -6,6 +6,7 @@ import { useIconStyle } from "@/context/IconStyleContext";
 import { BackButton } from "@/components/ui/BackButton";
 import RowsSkeleton from "@/components/RowsSkeleton";
 import { useSpaces } from "@/context/SpaceContext";
+import { CURRENCIES } from "@/lib/currencies";
 
 interface Budget { id: string; space_id?: string; monthly_limit: number; currency_code: string; period_type?: PeriodType; applies_months?: number[] | null }
 interface Category {
@@ -14,7 +15,6 @@ interface Category {
 }
 
 type PeriodType = "always" | "specific_months";
-const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP"];
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 function MonthGrid({ selected, onToggle }: { selected: number[]; onToggle: (m: number) => void }) {

@@ -19,12 +19,14 @@ import type { BalanceView, SavingsGoal } from "@/types";
 import { catColorOrFallback } from "@/lib/colors";
 import type { LoanFlow } from "@/lib/ledger/loans";
 import LoansLine from "@/components/LoansLine";
+import { conversionFromText, txAmountColor, txAmountText } from "@/lib/ledger/conversion";
 
 interface CurrencyMetrics { currency_code: string; income: number; expense: number; prevIncome?: number; prevExpense?: number; }
 interface RecentTx {
   id: string;
   description: string; amount: number; currency_code: string;
   type: string; date: string;
+  to_amount?: number | null; to_currency_code?: string | null;
   category_id?: string | null;
   categories?: { name?: string; icon?: string; color?: string } | null;
 }
@@ -370,7 +372,8 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
   const [txFilters, setTxFilters] = useState<Filters>({ categories: [], types: [], sort: "date_desc" });
 
   useEffect(() => {
-    fetch("/api/categories").then(r => r.json()).then(setCategories).catch(() => {});
+    fetch("/api/categories").then(r => r.json())
+      .then((d) => setCategories(Array.isArray(d) ? d : [])).catch(() => {}); // {error} rompía el detalle
   }, []);
 
   const m = metrics.find((x) => x.currency_code === selectedCurrency)
@@ -494,9 +497,7 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
           <div className="card-glass dash-tx-card" style={{ overflow: "hidden" }}>
             {visibleTx.map((t, i) => {
               const cat = t.categories as { name?: string; icon?: string; color?: string } | null;
-              const isIncome  = t.type === "income";
-              const isInstall = t.type === "installment-payment";
-              const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
+              const amtColor  = txAmountColor(t.type);
               const catColor  = catColorOrFallback(cat?.color, cat?.name ?? "");
               return (
                 <button key={`${t.id}-${i}`} onClick={() => setSelectedTx(t)} className="press list-row" style={{ transition: "background 120ms ease-out" }}>
@@ -508,11 +509,11 @@ export default function DashboardShell({ balances, primaryCurrency, usdRate, spa
                       {t.description}
                     </p>
                     <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>
-                      {cat?.name ?? "Sin categoría"} · {t.date}
+                      {t.type === "conversion" ? conversionFromText(t) : cat?.name ?? "Sin categoría"} · {t.date}
                     </p>
                   </div>
                   <span className="mono" style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-                    {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+                    {txAmountText(t)}
                   </span>
                 </button>
               );

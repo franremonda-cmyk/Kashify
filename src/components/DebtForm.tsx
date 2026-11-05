@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { DebtDirection } from "@/types";
 import { usePrimaryCurrency } from "@/lib/usePrimaryCurrency";
+import { CURRENCIES } from "@/lib/currencies";
 
 export interface DebtFormData {
   direction: DebtDirection;
@@ -19,7 +20,6 @@ interface Props {
   editMode?: boolean;
 }
 
-const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU"];
 
 const inp: React.CSSProperties = {
   background: "var(--raised)",

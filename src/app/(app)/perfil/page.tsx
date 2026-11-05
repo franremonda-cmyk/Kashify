@@ -8,7 +8,5 @@ export default async function PerfilPage() {
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
-  const { data: phones } = await supabase.from("user_phones").select("*").eq("user_id", user.id);
-
-  return <PerfilClient profile={profile} phones={phones ?? []} email={user.email ?? ""} />;
+  return <PerfilClient profile={profile} email={user.email ?? ""} />;
 }

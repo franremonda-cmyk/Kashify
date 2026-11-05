@@ -5,15 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useIconStyle } from "@/context/IconStyleContext";
 import type { IconStyle } from "@/context/IconStyleContext";
-import { toWhatsappFrom } from "@/lib/phone";
 import CategoryIcon from "@/components/CategoryIcon";
 import CategoryModal from "@/components/CategoryModal";
 import RowsSkeleton from "@/components/RowsSkeleton";
 import LoadError from "@/components/LoadError";
 import { NOTIF_FAMILIES } from "@/lib/neo/insights";
 import type { Profile } from "@/types";
+import { CURRENCIES } from "@/lib/currencies";
 
-interface UserPhone { id: string; phone_number: string; verified: boolean }
 interface Category  { id: string; name: string; icon?: string; color?: string }
 interface Budget    {
   id: string;
@@ -28,12 +27,10 @@ interface Budget    {
 
 interface Props {
   profile: Profile | null;
-  phones: UserPhone[];
   email: string;
 }
 
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const CURRENCIES = ["ARS","USD","EUR","CHF","BRL","UYU","CLP","GBP","PYG","PEN","COP"];
 const THEMES = [
   { id: "arctic", label: "Oscuro", desc: "Grafito + verde", preview: "#46B58C", bg: "#15181A", ink: "#E8EAE7", sub: "rgba(232,234,231,0.55)" },
   { id: "light",  label: "Claro",  desc: "Marfil + verde",  preview: "#2E9E74", bg: "#F4F1EA", ink: "#1A2C22", sub: "rgba(26,44,34,0.55)" },
@@ -118,7 +115,7 @@ function Divider() {
   return <div style={{ height: "0.5px", background: "var(--glass-border-dim)", margin: "0 -4px" }} />;
 }
 
-export default function PerfilClient({ profile, phones, email }: Props) {
+export default function PerfilClient({ profile, email }: Props) {
   const isDesktop = useIsDesktop();
   const searchParams = useSearchParams();
   const activeSection = searchParams.get("section") ?? "datos";
@@ -126,7 +123,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
   const sec = (id: string) => ({ sectionId: id, activeSection, isDesktop });
   const [displayName, setDisplayName]       = useState(profile?.display_name ?? "");
   const [primaryCurrency, setPrimaryCurrency] = useState(profile?.primary_currency ?? "ARS");
-  const [newPhone, setNewPhone]             = useState("");
   const [savingName, setSavingName]         = useState(false);
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [savedName, setSavedName]           = useState(false);
@@ -252,26 +248,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
     setTimeout(() => setSavedRate(false), 2000);
   }
 
-  async function addPhone() {
-    // Normalizar al formato canónico que WhatsApp manda en `message.from`
-    // (549 + área + número). Acepta cualquier formato tipeado por el usuario.
-    const digits = toWhatsappFrom(newPhone);
-    if (!digits || !profile?.user_id) return;
-    await supabase.from("user_phones").insert({
-      user_id: profile.user_id,
-      phone_number: digits,
-      verified: true,
-    });
-    setNewPhone("");
-    window.location.reload();
-  }
-
-  async function deletePhone(id: string) {
-    if (!profile?.user_id) return;
-    await supabase.from("user_phones").delete().eq("id", id).eq("user_id", profile.user_id);
-    window.location.reload();
-  }
-
   async function signOut() {
     await supabase.auth.signOut();
     window.location.href = "/login";
@@ -279,7 +255,7 @@ export default function PerfilClient({ profile, phones, email }: Props) {
 
   async function inviteFriend() {
     const url = typeof window !== "undefined" ? window.location.origin : "https://kashify.vercel.app";
-    const text = "Manejá tus finanzas por WhatsApp con Neo. Probá Kashify 👇";
+    const text = "Anotá tus gastos con una frase y Neo ordena todo. Probá Kashify 👇";
     // Web Share API → menú nativo de compartir (WhatsApp, Mensajes, etc.) en mobile.
     if (typeof navigator !== "undefined" && navigator.share) {
       try { await navigator.share({ title: "Kashify", text, url }); } catch { /* usuario canceló */ }
@@ -407,61 +383,6 @@ export default function PerfilClient({ profile, phones, email }: Props) {
           <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 6 }}>
             Con esto el balance te muestra el total unificado en {primaryCurrency}. Dejalo vacío para no convertir.
           </p>
-        </div>
-
-        <Divider />
-
-        {/* WhatsApp */}
-        <div>
-          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginBottom: 8 }}>WhatsApp vinculado</p>
-          {phones.length > 0 ? phones.map((p) => (
-            <div key={p.id} className="flex items-center justify-between" style={{ marginBottom: 8 }}>
-              <div className="flex items-center gap-2">
-                <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: p.verified ? "var(--positive)" : "var(--warning)" }} />
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--ink)" }}>{p.phone_number}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span style={{ fontSize: "var(--text-2xs)", padding: "2px 8px", borderRadius: 999, fontWeight: 600, background: p.verified ? "rgba(52,199,89,0.10)" : "rgba(255,149,0,0.10)", color: p.verified ? "var(--positive)" : "var(--warning)", border: `0.5px solid ${p.verified ? "rgba(52,199,89,0.25)" : "rgba(255,149,0,0.25)"}` }}>
-                  {p.verified ? "verificado" : "pendiente"}
-                </span>
-                <button onClick={() => deletePhone(p.id)} aria-label="Eliminar número"
-                  style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", color: "var(--ink-dim)", flexShrink: 0 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )) : <p style={{ fontSize: "var(--text-xs)", color: "var(--ink-dim)", marginBottom: 8 }}>Ningún número vinculado</p>}
-          <div className="flex gap-2">
-            <input style={{ ...inp, flex: 1 }} placeholder="+54 11 0000-0000" value={newPhone}
-              aria-label="Número de WhatsApp" type="tel" inputMode="tel" autoComplete="tel"
-              onChange={(e) => setNewPhone(e.target.value)} />
-            <button onClick={addPhone}
-              style={{ padding: "0 14px", borderRadius: 12, fontSize: "var(--text-xs)", fontWeight: 600, background: "var(--accent-soft)", border: "0.5px solid var(--accent-glow)", color: "var(--accent)", flexShrink: 0 }}>
-              Agregar
-            </button>
-          </div>
-          <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 8, lineHeight: 1.4 }}>
-            Importante: ingresá tu número <strong style={{ color: "var(--ink)" }}>sin el 9</strong> después
-            del código de país (ej: <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 11 …</span>, no <span style={{ fontFamily: "var(--font-mono, monospace)" }}>+54 9 11 …</span>).
-          </p>
-          {phones.length > 0 && (
-            <a
-              href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "15556597324"}?text=${encodeURIComponent("Hola Neo 👋")}`}
-              target="_blank" rel="noopener noreferrer"
-              style={{
-                marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                padding: "12px", borderRadius: 12, textDecoration: "none",
-                background: "#25D366", color: "#04130D", fontWeight: 700, fontSize: "var(--text-sm)",
-                boxShadow: "0 4px 14px rgba(37,211,102,0.30)",
-              }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.043zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-              </svg>
-              Activar Neo en WhatsApp
-            </a>
-          )}
         </div>
 
         <Divider />

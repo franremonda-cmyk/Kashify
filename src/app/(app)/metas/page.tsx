@@ -10,10 +10,10 @@ import { BackButton } from "@/components/ui/BackButton";
 import RowsSkeleton from "@/components/RowsSkeleton";
 import { useSpaces } from "@/context/SpaceContext";
 import type { SavingsGoal } from "@/types";
+import { CURRENCIES } from "@/lib/currencies";
 
 const IconPicker = dynamic(() => import("@/components/IconPicker"), { ssr: false });
 
-const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP", "PYG", "PEN", "COP"];
 
 const inp: React.CSSProperties = {
   background: "var(--raised)",

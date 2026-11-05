@@ -8,7 +8,7 @@ export default async function NeoPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [pendingRes, notifRes, phonesRes] = await Promise.all([
+  const [pendingRes, notifRes] = await Promise.all([
     supabase
       .from("pending_transactions")
       .select("*")
@@ -22,24 +22,15 @@ export default async function NeoPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: true })
       .limit(50),
-    supabase
-      .from("user_phones")
-      .select("phone_number, verified")
-      .eq("user_id", user.id),
   ]);
 
   const pending = (pendingRes.data ?? []) as PendingTransaction[];
   const notifications = notifRes.data ?? [];
-  const phones = phonesRes.data ?? [];
-  const hasPhone = phones.length > 0;
-  const phoneNumber = phones[0]?.phone_number;
 
   return (
     <NeoChat
       notifications={notifications}
       pending={pending}
-      hasPhone={hasPhone}
-      phoneNumber={phoneNumber}
     />
   );
 }

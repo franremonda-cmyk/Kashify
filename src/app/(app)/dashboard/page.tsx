@@ -38,7 +38,7 @@ export default async function DashboardPage() {
     supabase.from("pending_transactions").select("*").eq("user_id", user.id).eq("status", "waiting")
       .gt("expires_at", new Date().toISOString()),
     supabase.from("transactions")
-      .select("id, category_id, amount, currency_code, type, description, date, space_id, debt_id, categories(name, icon, color)")
+      .select("id, category_id, amount, currency_code, type, description, date, space_id, debt_id, to_amount, to_currency_code, categories(name, icon, color)")
       .eq("user_id", user.id).is("deleted_at", null).in("space_id", scopeIds)
       .gte("date", monthStart)
       // Mes completo, sin .limit(50): Ingresos/Gastos/Balance del mes y los
@@ -187,6 +187,8 @@ export default async function DashboardPage() {
     currency_code: t.currency_code,
     type:         t.type,
     date:         t.date,
+    to_amount:        t.to_amount ?? null,
+    to_currency_code: t.to_currency_code ?? null,
     categories:   t.categories ?? null,
   }));
 

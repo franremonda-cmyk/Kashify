@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { localIso, userTimezone, wallToday } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSpaceId, includedSpaceIds } from "@/lib/spaces";
+import { conversionError, exchangeRate } from "@/lib/ledger/conversion";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -66,6 +67,15 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  // Un cambio de moneda sin las dos puntas restaría en una moneda y no sumaría
+  // en ninguna: se rechaza acá, no solo en el formulario.
+  if (body.type === "conversion") {
+    const err = conversionError(body);
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
+    body.amount = Number(body.amount);
+    body.to_amount = Number(body.to_amount);
+    body.exchange_rate = exchangeRate(body.amount, body.to_amount);
+  }
   const space_id = await resolveSpaceId(supabase, user.id, body.space_id);
   const { data, error } = await supabase
     .from("transactions")

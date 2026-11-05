@@ -15,6 +15,7 @@ import type { Transaction } from "@/types";
 import { catColorOrFallback, FALLBACK_COLORS } from "@/lib/colors";
 import LoansLine from "@/components/LoansLine";
 import { isLoan, loanDebtIds, loanFlows } from "@/lib/ledger/loans";
+import { conversionFromText, txAmountColor, txAmountText } from "@/lib/ledger/conversion";
 
 // Import modal usando el overlay estándar
 function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
@@ -79,7 +80,7 @@ function ImportModal({ onDone, onClose }: { onDone: () => void; onClose: () => v
 interface Category { id: string; name: string; icon: string; color?: string; }
 
 const TYPE_LABELS: Record<string, string> = {
-  expense: "Gasto", income: "Ingreso", conversion: "Conversión", "installment-payment": "Cuota",
+  expense: "Gasto", income: "Ingreso", conversion: "Cambio", "installment-payment": "Cuota",
 };
 
 const inp: React.CSSProperties = {
@@ -252,11 +253,7 @@ function TxRow({ t, byDay, onOpen }: { t: Transaction; byDay: boolean; onOpen: (
     try {
       const res = await fetch(`/api/transactions/${t.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      window.dispatchEvent(new CustomEvent("tx-deleted", { detail: {
-        description: t.description, amount: t.amount, currency_code: t.currency_code,
-        date: t.date, category_id: t.category_id, type: t.type,
-        space_id: (t as unknown as { space_id?: string }).space_id,
-      }}));
+      window.dispatchEvent(new CustomEvent("tx-deleted", { detail: { id: t.id } }));
       window.dispatchEvent(new Event("transaction-added")); // la página refetchea
     } catch {
       setFailed(true);
@@ -267,9 +264,7 @@ function TxRow({ t, byDay, onOpen }: { t: Transaction; byDay: boolean; onOpen: (
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const catData   = (t as any).categories ?? t.category;
-  const isIncome  = t.type === "income";
-  const isInstall = t.type === "installment-payment";
-  const amtColor  = isIncome ? "var(--positive)" : isInstall ? "var(--warning)" : "var(--negative)";
+  const amtColor  = txAmountColor(t.type);
   const catColor  = catColorOrFallback(catData?.color, catData?.name ?? "");
 
   return (
@@ -302,11 +297,11 @@ function TxRow({ t, byDay, onOpen }: { t: Transaction; byDay: boolean; onOpen: (
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: "var(--text-row)", fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</p>
-            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>{catData?.name ?? "Sin categoría"}{!byDay && t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2 }}>{t.type === "conversion" ? conversionFromText(t) : catData?.name ?? "Sin categoría"}{!byDay && t.date ? ` · ${new Date(t.date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : ""}</p>
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
             <p className="mono" style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: amtColor, fontVariantNumeric: "tabular-nums" }}>
-              {isIncome ? "+" : "−"}{t.currency_code} {Number(t.amount).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+              {txAmountText(t)}
             </p>
             <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-muted)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.04em" }}>{TYPE_LABELS[t.type] ?? t.type}</p>
           </div>

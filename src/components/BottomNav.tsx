@@ -12,8 +12,9 @@ import NeoOrb from "@/components/NeoOrb";
 import { useIconStyle } from "@/context/IconStyleContext";
 import { useSpaces } from "@/context/SpaceContext";
 import { useEscape } from "@/lib/useEscape";
+import { CURRENCIES } from "@/lib/currencies";
+import { conversionDescription, conversionError, exchangeRate, rateText } from "@/lib/ledger/conversion";
 
-const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "PYG", "BOB", "COP", "PEN", "GBP"];
 
 interface Category { id: string; name: string; icon: string; }
 
@@ -241,6 +242,17 @@ function guessCategory(description: string, categories: Category[]): string {
   return "";
 }
 
+// Label chico arriba de cada campo — Registrar se explica solo. Va afuera del
+// modal: definido adentro se volvía a crear (y a montar) en cada tecla.
+function FieldLabel({ text, hint }: { text: string; hint?: string }) {
+  return (
+    <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)", marginBottom: 5 }}>
+      {text}
+      {hint && <span style={{ fontWeight: 400, color: "var(--ink-dim)" }}> · {hint}</span>}
+    </p>
+  );
+}
+
 function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose: () => void; onSaved: () => void; initialType?: "expense" | "income" }) {
   const { iconStyle } = useIconStyle();
   const { spaces, activeId } = useSpaces();
@@ -251,10 +263,12 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [showNewCat, setShowNewCat] = useState(false);
   const [form, setForm] = useState({
-    type: initialType as "expense" | "income",
+    type: initialType as "expense" | "income" | "conversion",
     description: "",
     amount: "",
     currency_code: "", // "" = todavía no la eligió → moneda principal del perfil
+    to_amount: "",        // solo en un cambio: lo que entró
+    to_currency_code: "", // "" = la que tenga sentido (ver toCurrency)
     category_id: "",
     space_id: activeId && activeId !== "total" ? activeId : defaultSpaceId,
     date: isoDay(), // día del celular, no UTC
@@ -263,13 +277,24 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
   const [error, setError] = useState("");
   const primaryCurrency = usePrimaryCurrency();
   const currency = form.currency_code || primaryCurrency || "ARS";
+  const isConversion = form.type === "conversion";
+  // Destino por defecto del cambio: dólares, salvo que lo que sale ya sean
+  // dólares (entonces la moneda principal, o pesos).
+  const toCurrency = form.to_currency_code
+    || (currency !== "USD" ? "USD" : primaryCurrency && primaryCurrency !== "USD" ? primaryCurrency : "ARS");
+  const fromNum = parseFloat(form.amount);
+  const toNum = parseFloat(form.to_amount);
+  const showRate = isConversion && fromNum > 0 && toNum > 0 && currency !== toCurrency;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Última categoría puesta por Neo: si la vigente es de Neo, una nueva descripción
   // puede reemplazarla; si la eligió el usuario a mano, no se toca.
   const lastAutoRef = useRef<string>("");
 
   useEffect(() => {
-    fetch("/api/categories").then((r) => r.json()).then(setCategories).catch(() => {});
+    // Si la API falla (sesión vencida, 500) devuelve {error}: sin este chequeo,
+    // categories.map rompía el formulario entero.
+    fetch("/api/categories").then((r) => r.json())
+      .then((d) => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
   useEscape(onClose); // cierra solo la ventana de arriba
@@ -292,15 +317,37 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
   }
 
   const suggestedCat = suggestion ? categories.find((c) => c.id === suggestion) : null;
-  const selectedCatName = form.category_id
-    ? categories.find((c) => c.id === form.category_id)?.name
-    : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.description.trim() || !form.amount || parseFloat(form.amount) <= 0) {
-      setError("Completá la descripción y un monto mayor a 0.");
-      return;
+    let payload: Record<string, unknown>;
+    if (isConversion) {
+      const pair = { amount: fromNum, currency_code: currency, to_amount: toNum, to_currency_code: toCurrency };
+      const err = conversionError(pair);
+      if (err) { setError(err); return; }
+      payload = {
+        type: "conversion",
+        ...pair,
+        exchange_rate: exchangeRate(fromNum, toNum),
+        description: form.description.trim() || conversionDescription(currency, toCurrency),
+        category_id: null, // un cambio no es gasto: sin categoría
+        space_id: form.space_id,
+        date: form.date,
+      };
+    } else {
+      if (!form.description.trim() || !form.amount || fromNum <= 0) {
+        setError("Completá la descripción y un monto mayor a 0.");
+        return;
+      }
+      payload = {
+        type: form.type,
+        description: form.description,
+        amount: fromNum,
+        currency_code: currency,
+        category_id: form.category_id || null,  // never send empty string
+        space_id: form.space_id,
+        date: form.date,
+      };
     }
     setSaving(true);
     setError("");
@@ -308,12 +355,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          currency_code: currency,
-          amount: parseFloat(form.amount),
-          category_id: form.category_id || null,  // never send empty string
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         window.dispatchEvent(new Event("transaction-added"));
@@ -341,14 +383,6 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
     boxSizing: "border-box",
     display: "block",
   };
-
-  // Label chico arriba de cada campo — Registrar se explica solo.
-  const FieldLabel = ({ text, hint }: { text: string; hint?: string }) => (
-    <p style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--ink-muted)", marginBottom: 5 }}>
-      {text}
-      {hint && <span style={{ fontWeight: 400, color: "var(--ink-dim)" }}> · {hint}</span>}
-    </p>
-  );
 
   if (typeof document === "undefined") return null;
   return createPortal(
@@ -388,24 +422,24 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
         <form onSubmit={handleSubmit} className="flex flex-col gap-3" style={{ width: "100%" }}>
           {/* Tipo */}
           <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--raised)" }}>
-            {(["expense", "income"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, type: t }))}
-                className="flex-1 py-2 rounded-lg text-sm font-medium"
-                style={{
-                  background: form.type === t
-                    ? t === "expense" ? "rgba(255,59,48,0.10)" : "rgba(52,199,89,0.10)"
-                    : "transparent",
-                  color: form.type === t
-                    ? t === "expense" ? "var(--negative)" : "var(--positive)"
-                    : "var(--ink-muted)",
-                }}
-              >
-                {t === "expense" ? "Gasto" : "Ingreso"}
-              </button>
-            ))}
+            {(["expense", "income", "conversion"] as const).map((t) => {
+              const on = form.type === t;
+              const tint = t === "expense" ? ["rgba(255,59,48,0.10)", "var(--negative)"]
+                : t === "income" ? ["rgba(52,199,89,0.10)", "var(--positive)"]
+                : ["var(--accent-soft)", "var(--accent)"];
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => { setForm((f) => ({ ...f, type: t })); setError(""); }}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium"
+                  style={{ background: on ? tint[0] : "transparent", color: on ? tint[1] : "var(--ink-muted)" }}
+                >
+                  {t === "expense" ? "Gasto" : t === "income" ? "Ingreso" : "Cambio"}
+                </button>
+              );
+            })}
             {/* Deuda: tiene su propio formulario (a quién, dirección, vencimiento) */}
             <button
               type="button"
@@ -423,17 +457,20 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
 
           {/* Descripción */}
           <div>
-            <FieldLabel text="Descripción" hint={form.type === "expense" ? "qué compraste o pagaste" : "de dónde vino la plata"} />
+            <FieldLabel
+              text="Descripción"
+              hint={isConversion ? "opcional" : form.type === "expense" ? "qué compraste o pagaste" : "de dónde vino la plata"}
+            />
             <input
               style={inp}
-              placeholder={form.type === "expense" ? "Ej: super, nafta, farmacia…" : "Ej: sueldo, venta, transferencia…"}
-              aria-label={form.type === "expense" ? "Descripción del gasto" : "Descripción del ingreso"}
+              placeholder={isConversion ? `Ej: ${conversionDescription(currency, toCurrency)}` : form.type === "expense" ? "Ej: super, nafta, farmacia…" : "Ej: sueldo, venta, transferencia…"}
+              aria-label={isConversion ? "Descripción del cambio" : form.type === "expense" ? "Descripción del gasto" : "Descripción del ingreso"}
               value={form.description}
               autoFocus
-              onChange={(e) => handleDescriptionChange(e.target.value)}
+              onChange={(e) => isConversion ? setForm((f) => ({ ...f, description: e.target.value })) : handleDescriptionChange(e.target.value)}
             />
             {/* Neo auto-eligió */}
-            {suggestedCat && form.category_id === suggestion && (
+            {!isConversion && suggestedCat && form.category_id === suggestion && (
               <div className="flex items-center gap-1.5 mt-1.5 px-1" style={{ fontSize: "var(--text-xs)" }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "var(--accent)", flexShrink: 0 }}>
                   <circle cx="12" cy="12" r="9"/><path d="M9 8v8M15 8v8"/>
@@ -447,7 +484,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
 
           {/* Monto + Moneda */}
           <div>
-          <FieldLabel text="Monto y moneda" />
+          <FieldLabel text={isConversion ? "Sale" : "Monto y moneda"} hint={isConversion ? "lo que entregaste" : undefined} />
           <div className="flex gap-2">
             <input
               style={{ ...inp, width: "60%" }}
@@ -470,7 +507,40 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
           </div>
           </div>
 
-          {/* Categoría */}
+          {isConversion && (
+            <div>
+              <FieldLabel text="Entra" hint="lo que recibiste" />
+              <div className="flex gap-2">
+                <input
+                  style={{ ...inp, width: "60%" }}
+                  placeholder="0.00"
+                  aria-label="Monto que entra"
+                  type="number" inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={form.to_amount}
+                  onChange={(e) => setForm((f) => ({ ...f, to_amount: e.target.value }))}
+                />
+                <select
+                  style={{ ...inp, width: "40%" }}
+                  aria-label="Moneda que entra"
+                  value={toCurrency}
+                  onChange={(e) => setForm((f) => ({ ...f, to_currency_code: e.target.value }))}
+                >
+                  {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              {/* La tasa que sale de los dos montos: un cero de más se nota acá */}
+              <p aria-live="polite" style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)", marginTop: 6, minHeight: "1.2em" }}>
+                {currency === toCurrency
+                  ? "Elegí dos monedas distintas."
+                  : showRate ? `Te quedó a ${rateText(fromNum, currency, toNum, toCurrency)}` : "No cuenta como gasto ni como ingreso."}
+              </p>
+            </div>
+          )}
+
+          {/* Categoría (un cambio no lleva) */}
+          {!isConversion && (
           <div>
           <FieldLabel text="Categoría" hint="Neo la elige sola; podés cambiarla" />
           <div style={{ display: "flex", gap: 6 }}>
@@ -501,6 +571,7 @@ function QuickAddModal({ onClose, onSaved, initialType = "expense" }: { onClose:
             >+</button>
           </div>
           </div>
+          )}
 
           {/* Espacio (solo si hay más de uno) */}
           {spaces.length > 1 && (

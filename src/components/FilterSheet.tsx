@@ -14,7 +14,7 @@ export const TX_TYPES = [
   { value: "expense",             label: "Gastos" },
   { value: "income",              label: "Ingresos" },
   { value: "installment-payment", label: "Cuotas" },
-  { value: "conversion",          label: "Conversiones" },
+  { value: "conversion",          label: "Cambios" },
 ];
 
 export const SORT_OPTIONS = [

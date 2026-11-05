@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 function exportCSV(rows: Record<string, unknown>[]): Response {
   const headers = ["Fecha", "Descripción", "Monto", "Moneda", "Tipo", "Categoría", "Tarjeta", "Notas"];
   const typeLabels: Record<string, string> = {
-    expense: "Gasto", income: "Ingreso", conversion: "Conversión", "installment-payment": "Cuota",
+    expense: "Gasto", income: "Ingreso", conversion: "Cambio", "installment-payment": "Cuota",
   };
 
   const lines = [
@@ -84,7 +84,7 @@ async function exportXLSX(rows: Record<string, unknown>[]): Promise<Response> {
   ];
 
   const typeLabels: Record<string, string> = {
-    expense: "Gasto", income: "Ingreso", conversion: "Conversión", "installment-payment": "Cuota",
+    expense: "Gasto", income: "Ingreso", conversion: "Cambio", "installment-payment": "Cuota",
   };
 
   rows.forEach((r) => {

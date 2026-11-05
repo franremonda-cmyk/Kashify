@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-interface DeletedTx {
-  description: string; amount: number; type: string;
-  currency_code?: string; date?: string; category_id?: string | null; space_id?: string;
-}
+interface DeletedTx { id: string }
 
 /** Toast global "Movimiento eliminado · Deshacer". Escucha el evento `tx-deleted`
- *  (lo dispara TransactionSheet al borrar) y restaura re-creando la transacción. */
+ *  (lo disparan TransactionSheet y el swipe de Actividad) y restaura la MISMA
+ *  fila (PATCH restore: le saca el deleted_at). Antes la re-creaba con algunos
+ *  campos y se perdían el enlace a la deuda, las notas y la otra punta de un
+ *  cambio de moneda. */
 export default function UndoToast() {
   const [tx, setTx] = useState<DeletedTx | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -29,10 +29,10 @@ export default function UndoToast() {
   async function undo() {
     if (!tx || restoring) return;
     setRestoring(true);
-    const res = await fetch("/api/transactions", {
-      method: "POST",
+    const res = await fetch(`/api/transactions/${tx.id}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(tx),
+      body: JSON.stringify({ restore: true }),
     }).catch(() => null);
     setRestoring(false);
     setTx(null);

@@ -8,6 +8,7 @@ import {
 import type { MatrixDetectionResult } from "@/lib/matrixImport";
 import { useSpaces } from "@/context/SpaceContext";
 import { useEscape } from "@/lib/useEscape";
+import { CURRENCIES } from "@/lib/currencies";
 
 const KASHIFY_FIELDS: { key: keyof ColumnMapping; label: string; required?: boolean; desc: string }[] = [
   { key: "date",        label: "Fecha",        required: true,  desc: "Cuándo ocurrió" },
@@ -22,7 +23,6 @@ const KASHIFY_FIELDS: { key: keyof ColumnMapping; label: string; required?: bool
 ];
 
 const TX_TYPE_LABELS = { expense: "Gasto", income: "Ingreso" };
-const CURRENCIES = ["ARS", "USD", "EUR", "CHF", "BRL", "UYU", "CLP", "GBP"];
 
 interface Props {
   defaultCurrency?: string;

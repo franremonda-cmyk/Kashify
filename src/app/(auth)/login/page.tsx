@@ -69,7 +69,7 @@ export default function LoginPage() {
             Tus finanzas,<br/><span style={{ color: "var(--accent)" }}>claras y al día.</span>
           </h1>
           <p className="mt-3" style={{ fontSize: "var(--text-row)", color: "var(--ink-muted)", lineHeight: 1.5 }}>
-            Cargá gastos por WhatsApp y dejá que Neo, tu asistente, ordene todo por vos.
+            Anotá gastos con una frase y dejá que Neo, tu asistente, ordene todo por vos.
           </p>
         </div>
 

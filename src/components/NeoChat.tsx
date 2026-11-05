@@ -49,8 +49,6 @@ interface ChatMessage {
 interface Props {
   notifications: NeoNotification[];
   pending: PendingTransaction[];
-  hasPhone: boolean;
-  phoneNumber?: string;
 }
 
 const SUGGESTIONS = [
@@ -99,7 +97,7 @@ function pendingToMessage(p: PendingTransaction): ChatMessage {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function NeoChat({ notifications, pending, hasPhone, phoneNumber }: Props) {
+export default function NeoChat({ notifications, pending }: Props) {
   const { activeId } = useSpaces();
   const initialMessages: ChatMessage[] = [
     ...notifications.map(notifToMessage),
@@ -527,12 +525,6 @@ export default function NeoChat({ notifications, pending, hasPhone, phoneNumber 
                 Tu asistente personal de finanzas
               </p>
             </div>
-
-            {!hasPhone && (
-              <a href="/perfil" className="press enter-up" data-delay="2" style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 18px", borderRadius: 999, fontSize: "var(--text-xs)", fontWeight: 700, background: "var(--accent)", color: "var(--on-accent)", textDecoration: "none", boxShadow: "0 4px 18px var(--shadow-accent)" }}>
-                Conectar WhatsApp →
-              </a>
-            )}
 
             <div style={{ width: "100%", maxWidth: 420, marginTop: 2 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
