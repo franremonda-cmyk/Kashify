@@ -78,6 +78,9 @@ ok(c5.type === "pay_debt" && c5.direction === "me_deben" && c5.currency === "USD
 // regresión: sin mención de moneda → ctx.currency undefined (usa la principal)
 const c6 = detectIntent("nico me debe 1800") as CurCtx;
 ok(c6.ctx?.currency === undefined, "sin moneda explícita → ctx.currency undefined");
+// "me debe" solo anota la deuda: no baja el balance (regla de Fran, 05/11/2026)
+ok(!(c6 as DebtCtx).ctx?.originExpense, "‘nico me debe 1800’ NO prende originExpense");
+ok(!(detectIntent("me deben 500") as DebtCtx).ctx?.originExpense, "‘me deben 500’ NO prende originExpense");
 
 // ── diccionario global argentino + fallback de categorías ──
 ok(categoryForText("quilmes") === "Comida", "quilmes → Comida");

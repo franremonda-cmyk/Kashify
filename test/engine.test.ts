@@ -6,7 +6,8 @@ import { runNeo } from "../src/lib/neo/engine/index.ts";
 import { detectIntent } from "../src/lib/neo/engine/intent.ts";
 import type { NeoState } from "../src/lib/neo/engine/types.ts";
 import { DEFAULT_TZ, isoDay, localIso, wallToday } from "../src/lib/dates.ts";
-import { createDebt, deleteDebt, insertDebtTx } from "../src/lib/debts/create.ts";
+import { createDebt, deleteDebt, fromBalanceIds, insertDebtTx, setFromBalance } from "../src/lib/debts/create.ts";
+import { computeBalances } from "../src/lib/ledger/balances.ts";
 import { payDebt } from "../src/lib/debts/pay.ts";
 import { isLoan, loanFlows } from "../src/lib/ledger/loans.ts";
 
@@ -300,7 +301,8 @@ async function main() {
     db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
     await runNeo({ supabase: makeStub(db), userId: USER, message: "mamá me debe 50000", channel: "whatsapp" });
     check("'mamá me debe 50000' → deuda direction=me_deben", db.debts[0]?.direction === "me_deben" && Number(db.debts[0]?.total_amount) === 50000);
-    check("'mamá me debe 50000' → también egreso (esa plata ya salió)", db.transactions.length === 1 && db.transactions[0].type === "expense" && Number(db.transactions[0].amount) === 50000);
+    // Regla de Fran (05/11/2026): "me debe" solo anota; el balance baja con "presté".
+    check("'mamá me debe 50000' → NO crea egreso (no dice que la plata salió hoy)", db.transactions.length === 0);
   }
   {
     const db = seed();
@@ -321,7 +323,7 @@ async function main() {
     const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "presté 10000 a juan", channel: "whatsapp" });
     check("'presté 10000 a juan' (sin 'le') → deuda me_deben", db.debts.length === 1 && db.debts[0].direction === "me_deben" && db.debts[0].counterparty === "Juan" && Number(db.debts[0].total_amount) === 10000, `reply: ${r.text}`);
     check("'presté 10000 a juan' → egreso de 10000 en Deudas (baja el neto)", db.transactions.length === 1 && db.transactions[0].type === "expense" && Number(db.transactions[0].amount) === 10000 && db.transactions[0].category_id === "cat-deudas", JSON.stringify(db.transactions[0]));
-    check("'presté ...' avisa que se descontó del neto", r.text.toLowerCase().includes("neto"), `reply: ${r.text}`);
+    check("'presté ...' avisa que se descontó del balance", r.text.toLowerCase().includes("balance"), `reply: ${r.text}`);
   }
   {
     const db = seed();
@@ -363,7 +365,7 @@ async function main() {
   {
     const db = seed();
     const r = await runNeo({ supabase: makeStub(db), userId: USER, message: "nico me debe 1800 usd", channel: "whatsapp" });
-    check("'nico me debe 1800 usd' → deuda me_deben en USD (no ARS) + egreso en USD", db.debts.length === 1 && db.debts[0].direction === "me_deben" && db.debts[0].counterparty === "Nico" && Number(db.debts[0].total_amount) === 1800 && db.debts[0].currency_code === "USD" && db.transactions.length === 1 && db.transactions[0].currency_code === "USD" && Number(db.transactions[0].amount) === 1800, JSON.stringify(db.debts[0]) + ` | reply: ${r.text}`);
+    check("'nico me debe 1800 usd' → deuda me_deben en USD (no ARS), sin egreso", db.debts.length === 1 && db.debts[0].direction === "me_deben" && db.debts[0].counterparty === "Nico" && Number(db.debts[0].total_amount) === 1800 && db.debts[0].currency_code === "USD" && db.transactions.length === 0, JSON.stringify(db.debts[0]) + ` | reply: ${r.text}`);
   }
   {
     const db = seed();
@@ -551,6 +553,35 @@ async function main() {
 
     const r4 = await deleteDebt(makeStub(seed()), USER, "no-existe");
     check("deleteDebt de otra/inexistente → ok:false", !r4.ok);
+  }
+
+  // 15i-bis) «¿Salió de tu plata ahora?» (regla de Fran, 05/11/2026): el balance
+  // es la plata en la mano. Una deuda vieja no baja el balance; un préstamo de hoy sí.
+  {
+    const db = seed();
+    db.categories.push({ id: "cat-deudas", user_id: USER, name: "Deudas" });
+    const live = () => db.transactions.filter((t) => !t.deleted_at);
+    const usd = () => computeBalances(live() as never).find((b) => b.currency_code === "USD")?.amount ?? 0;
+
+    const { debt: vieja } = await createDebt(makeStub(db), USER, { spaceId: SPACE, direction: "me_deben", counterparty: "Papá", amount: 5000, currency: "USD", fromBalance: false });
+    check("deuda vieja (fromBalance:false) → sin egreso, el balance no cambia", live().length === 0 && usd() === 0);
+    check("fromBalanceIds: la vieja no bajó el balance", !(await fromBalanceIds(makeStub(db), USER, [vieja!.id])).has(vieja!.id));
+
+    const { debt: hoy } = await createDebt(makeStub(db), USER, { spaceId: SPACE, direction: "me_deben", counterparty: "Papá", amount: 1000, currency: "USD", fromBalance: true });
+    check("préstamo de hoy (fromBalance:true) → egreso, el balance baja 1.000", usd() === -1000);
+
+    // Corregir al editar: apagar y volver a prender el mismo egreso (no crea otro).
+    await setFromBalance(makeStub(db), USER, { ...hoy!, created_at: "2026-11-05T12:00:00Z" }, false);
+    check("setFromBalance(false) → el egreso queda borrado recuperable, el balance vuelve", usd() === 0 && db.transactions.length === 1 && !!db.transactions[0].deleted_at);
+    await setFromBalance(makeStub(db), USER, { ...hoy!, created_at: "2026-11-05T12:00:00Z" }, true);
+    check("setFromBalance(true) → recupera el mismo egreso, no duplica", usd() === -1000 && db.transactions.length === 1 && !db.transactions[0].deleted_at);
+    await setFromBalance(makeStub(db), USER, { ...hoy!, created_at: "2026-11-05T12:00:00Z" }, true);
+    check("setFromBalance(true) dos veces → sigue habiendo uno solo", db.transactions.length === 1);
+
+    // Una vieja que pasa a «sí salió»: se crea el egreso con la fecha de la deuda.
+    await setFromBalance(makeStub(db), USER, { ...vieja!, created_at: "2026-09-01T12:00:00Z" }, true);
+    const nuevo = db.transactions.find((t) => t.debt_id === vieja!.id);
+    check("setFromBalance(true) en una deuda sin egreso → lo crea con la fecha de la deuda", !!nuevo && nuevo.date === "2026-09-01" && Number(nuevo.amount) === 5000 && usd() === -6000, JSON.stringify(nuevo));
   }
 
   // 15j) Préstamos fuera de Ingresos/Gastos del mes (prestar no es gastar;

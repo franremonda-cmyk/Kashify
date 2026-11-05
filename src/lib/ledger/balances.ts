@@ -7,31 +7,24 @@ import type { Balance } from "@/types";
 // income suma; expense/installment-payment restan; conversion resta en la moneda
 // origen y suma en la destino.
 //
-// Lo que prestás NO baja el balance (regla de Fran, 05/11/2026). El balance
-// responde "¿cuánta plata tengo?", y la plata que presta alguien que arrancó a
-// usar la app con dinero encima nunca se anotó como ingreso: descontarla dejaba
-// el balance en negativo por el tamaño exacto del préstamo. El egreso se sigue
-// guardando (es el registro de cuándo prestaste, y alimenta "Prestaste este
-// mes"), solo no cuenta acá. El cobro SÍ suma: esa plata entró de verdad.
-// Lo que te deben se ve aparte, en "Pendientes → Te deben".
+// El balance es la plata que tenés en la mano (regla de Fran, 05/11/2026), y se
+// mueve solo cuando la plata pasa por tu mano. Cada movimiento cuenta, incluido
+// el egreso de un préstamo: si le diste plata a alguien, la tenés menos. Una
+// deuda vieja (la plata salió antes de usar la app) no tiene ese egreso, así que
+// no resta: eso se decide al anotarla («¿salió de tu plata ahora?», ver
+// lib/debts/create). Lo que te deben se ve aparte, debajo del balance.
 export interface TxForBalance {
   amount: number | string;
   currency_code: string;
   type: string;
   to_currency_code?: string | null;
   to_amount?: number | string | null;
-  debt_id?: string | null;
 }
 
-export function computeBalances(
-  txs: TxForBalance[],
-  loanDebtIds?: Set<string>,
-): { currency_code: string; amount: number }[] {
+export function computeBalances(txs: TxForBalance[]): { currency_code: string; amount: number }[] {
   const by: Record<string, number> = {};
   for (const t of txs) {
     const amt = Number(t.amount);
-    // Egreso de un préstamo que hiciste: plata que la app nunca vio entrar.
-    if (t.type === "expense" && t.debt_id && loanDebtIds?.has(t.debt_id)) continue;
     if (t.type === "income") by[t.currency_code] = (by[t.currency_code] ?? 0) + amt;
     else if (t.type === "expense" || t.type === "installment-payment") by[t.currency_code] = (by[t.currency_code] ?? 0) - amt;
     else if (t.type === "conversion") {

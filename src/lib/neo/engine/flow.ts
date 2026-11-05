@@ -78,9 +78,9 @@ export function fillSlot(ctx: FlowContext, message: string): FlowContext {
       if (num != null) c.amount = num;
       break;
     case "ddirection":
-      // "yo debo" / "le debo" vs "me deben" / "me debe". Si te deben, esa plata
-      // ya salió de tu bolsillo → mismo egreso que "presté" (originExpense).
-      if (/me\s+deb|deben|cobrar/.test(normalize(message))) { c.direction = "me_deben"; c.originExpense = true; }
+      // "yo debo" / "le debo" vs "me deben" / "me debe". "Me deben" solo anota la
+      // deuda; el balance baja únicamente con "presté/fié" (originExpense).
+      if (/me\s+deb|deben|cobrar/.test(normalize(message))) c.direction = "me_deben";
       else if (/debo|yo|pagar/.test(normalize(message))) c.direction = "debo";
       break;
     case "dcounterparty":

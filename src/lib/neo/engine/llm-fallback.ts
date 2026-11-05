@@ -32,7 +32,8 @@ export async function llmFallback(text: string, userCategories?: string[]): Prom
           direction: parsed.debt_direction,
           counterparty: parsed.counterparty || undefined,
           amount: parsed.amount,
-          ...(parsed.debt_direction === "me_deben" ? { originExpense: true as const } : {}),
+          // Baja el balance solo si dijo que prestó/fió (la plata salió ahora).
+          ...(parsed.debt_direction === "me_deben" && /prest[eé]|fi[eé]/i.test(text) ? { originExpense: true as const } : {}),
         },
       };
     }

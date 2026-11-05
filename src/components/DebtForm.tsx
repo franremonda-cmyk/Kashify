@@ -11,6 +11,7 @@ export interface DebtFormData {
   total_amount: number;
   currency_code: string;
   due_date: string;
+  from_balance: boolean; // solo «me deben»: ¿le diste vos esta plata? (baja el balance)
 }
 
 interface Props {
@@ -63,6 +64,7 @@ export default function DebtForm({ onSubmit, onCancel, initialData, editMode = f
     total_amount: initialData?.total_amount ?? 0,
     currency_code: initialData?.currency_code ?? "", // "" → moneda principal del perfil
     due_date: initialData?.due_date ?? "",
+    from_balance: initialData?.from_balance ?? true,
   });
   const [attempted, setAttempted] = useState(false);
   const primaryCurrency = usePrimaryCurrency();
@@ -118,10 +120,39 @@ export default function DebtForm({ onSubmit, onCancel, initialData, editMode = f
               </button>
             ))}
           </div>
+          {form.direction === "debo" && (
+            <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>Tu balance no cambia hasta que pagues.</p>
+          )}
+        </div>
+      )}
+
+      {/* ①b ¿Salió de tu plata? — decide si el balance baja (solo «me deben») */}
+      {form.direction === "me_deben" && (
+        <div style={section}>
+          <p style={label}>¿Le diste vos esta plata?</p>
+          <div style={{ display: "flex", gap: 8 }} role="radiogroup" aria-label="¿Le diste vos esta plata?">
+            {([true, false] as const).map((v) => (
+              <button
+                key={String(v)}
+                type="button"
+                role="radio"
+                aria-checked={form.from_balance === v}
+                onClick={() => setForm((f) => ({ ...f, from_balance: v }))}
+                style={{
+                  flex: 1, padding: "10px", borderRadius: 10, fontSize: "var(--text-xs)", fontWeight: 600,
+                  background: form.from_balance === v ? "var(--accent)" : "var(--raised)",
+                  color: form.from_balance === v ? "var(--on-accent)" : "var(--ink-muted)",
+                  border: "0.5px solid var(--glass-border)",
+                }}
+              >
+                {v ? "Sí, se la di" : "No, ya me la debía"}
+              </button>
+            ))}
+          </div>
           <p style={{ fontSize: "var(--text-2xs)", color: "var(--ink-dim)" }}>
-            {form.direction === "me_deben"
-              ? "Se descuenta de tu neto (esa plata ya salió) y vuelve cuando te pagan."
-              : "Tu neto no cambia hasta que pagues."}
+            {form.from_balance
+              ? "Baja tu balance ahora, y vuelve a subir cuando te pague."
+              : "Tu balance no cambia. Sube cuando te pague."}
           </p>
         </div>
       )}

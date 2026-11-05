@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createDebt } from "@/lib/debts/create";
+import { createDebt, fromBalanceIds } from "@/lib/debts/create";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSpaceId, includedSpaceIds } from "@/lib/spaces";
 
@@ -19,7 +19,11 @@ export async function GET(request: Request) {
     .order("due_date", { ascending: true, nullsFirst: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  // from_balance: si la deuda bajó tu balance (tiene vivo su egreso de origen).
+  // Lo necesita el formulario de Editar para mostrar «¿salió de tu plata?».
+  const rows = (data ?? []) as { id: string; direction: string }[];
+  const on = await fromBalanceIds(supabase, user.id, rows.filter((d) => d.direction === "me_deben").map((d) => d.id));
+  return NextResponse.json(rows.map((d) => ({ ...d, from_balance: on.has(d.id) })));
 }
 
 export async function POST(request: Request) {
@@ -43,6 +47,8 @@ export async function POST(request: Request) {
     spaceId: space_id, direction, counterparty: counterparty.trim(),
     description: description?.trim(), amount: total_amount,
     currency: currency_code, dueDate: due_date,
+    // «¿Salió de tu plata ahora?»: sí salvo que digan explícitamente que no.
+    fromBalance: body.from_balance !== false,
   });
 
   if (error) return NextResponse.json({ error }, { status: 500 });

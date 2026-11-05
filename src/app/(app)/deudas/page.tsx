@@ -60,6 +60,7 @@ export default function DeudasPage() {
         total_amount: data.total_amount,
         currency_code: data.currency_code,
         due_date: data.due_date || null,
+        ...(data.direction === "me_deben" ? { from_balance: data.from_balance } : {}),
       }),
     }).catch(() => null);
     if (!res?.ok) return false; // el form queda abierto con lo escrito
@@ -289,6 +290,7 @@ function DebtCard({ debt, onPay, onDelete, isEditing, onEditToggle, onSubmitEdit
             total_amount: debt.total_amount,
             currency_code: debt.currency_code,
             due_date: debt.due_date ?? "",
+            from_balance: debt.from_balance ?? false,
           }}
           onSubmit={async (data) => { setEditError(false); if (!(await onSubmitEdit(data))) setEditError(true); }}
           onCancel={() => { setEditError(false); onEditToggle(); }}

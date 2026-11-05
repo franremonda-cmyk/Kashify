@@ -277,16 +277,18 @@ export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []
     const lentMeNoOne = md.match(/^me\s+prest(?:aron|o)\s+(\d[\d.,]*)$/);
     if (lentMeNoOne) return debtFlow(msg, "debo", undefined, lentMeNoOne[1], { currency: dc });
 
-    // Alta — me deben. Si alguien te debe es porque esa plata ya salió de tu
-    // bolsillo (prestada o adelantada) → mismo egreso que "presté" (originExpense).
+    // Alta — me deben. "X me debe N" solo anota la deuda: no dice que la plata
+    // salió hoy de tu mano (puede ser de antes, o de un gasto que ya anotaste,
+    // como la cena que pagaste vos), así que no baja el balance. Lo que sí lo
+    // baja es "presté/fié", más abajo (regla de Fran, 05/11/2026).
     // "me debe[n] N" sin nombre va primero, para que la variante laxa de abajo
     // ("X [me] debe N") no capture "me" como contraparte.
     const owedNoOne = md.match(/^me\s+debe[n]?\s+(\d[\d.,]*)$/);
-    if (owedNoOne) return debtFlow(msg, "me_deben", undefined, owedNoOne[1], { originExpense: true, currency: dc });
+    if (owedNoOne) return debtFlow(msg, "me_deben", undefined, owedNoOne[1], { currency: dc });
     // "nico me debe 1800" y también "nico debe 1800" (el "me" es opcional).
     // "juan me debe 5000 de la cena": la cola va como motivo del egreso.
     const owed = md.match(/^(.+?)\s+(?:me\s+)?debe[n]?\s+(\d[\d.,]*)(?:\s+(?:de|del|por)\s+(.+))?$/);
-    if (owed) return debtFlow(msg, "me_deben", owed[1], owed[2], { originExpense: true, rawMotivo: owed[3], currency: dc });
+    if (owed) return debtFlow(msg, "me_deben", owed[1], owed[2], { rawMotivo: owed[3], currency: dc });
     // "presté 3000 a ana" · "le presté 3000 a ana para la nafta" · "fié 3000 a ana".
     // Prestar/fiar = la plata YA salió → el flujo registra también un egreso (originExpense).
     const lent = md.match(new RegExp(`^(?:yo\\s+)?(?:le\\s+)?(?:preste|fie)\\s+(${N})\\s+(?:a\\s+)?${NOT_A_NAME}(.+?)(?:\\s+para\\s+(.+))?$`));

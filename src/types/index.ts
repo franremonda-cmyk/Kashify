@@ -111,6 +111,7 @@ export interface Debt {
   due_date: string | null;
   status: PlanStatus;
   created_at: string;
+  from_balance?: boolean; // «me deben»: si bajó tu balance (lo calcula GET /api/debts)
 }
 
 export interface InstallmentPayment {

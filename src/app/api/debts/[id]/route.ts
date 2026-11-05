@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { deleteDebt } from "@/lib/debts/create";
+import { deleteDebt, setFromBalance } from "@/lib/debts/create";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -16,17 +16,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (k in body) patch[k] = body[k];
   }
 
-  if (Object.keys(patch).length === 0) {
+  const toggle = typeof body.from_balance === "boolean";
+  if (Object.keys(patch).length === 0 && !toggle) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
-    .from("debts")
-    .update(patch)
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .select()
-    .single();
+  const q = supabase.from("debts");
+  const { data, error } = Object.keys(patch).length
+    ? await q.update(patch).eq("id", id).eq("user_id", user.id).select().single()
+    : await q.select().eq("id", id).eq("user_id", user.id).single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -36,6 +34,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     await supabase.from("transactions")
       .update({ amount: data.total_amount, currency_code: data.currency_code })
       .eq("debt_id", id).eq("user_id", user.id).eq("type", "expense");
+  }
+  // «¿Salió de tu plata?» cambiado al editar: prende o apaga el egreso de origen.
+  if (toggle && data?.direction === "me_deben") {
+    await setFromBalance(supabase, user.id, data, body.from_balance);
   }
   return NextResponse.json(data);
 }
