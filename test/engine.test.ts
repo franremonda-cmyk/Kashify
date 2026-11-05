@@ -2,13 +2,13 @@
 // toca prod ni red. Correr con: npx tsx cloudflare-worker/test/engine.test.ts
 //
 // NOTA: importa desde src/ vía alias relativo; tsx resuelve TS directamente.
-import { runNeo } from "../../src/lib/neo/engine/index.ts";
-import { detectIntent } from "../../src/lib/neo/engine/intent.ts";
-import type { NeoState } from "../../src/lib/neo/engine/types.ts";
-import { DEFAULT_TZ, isoDay, localIso, wallToday } from "../../src/lib/dates.ts";
-import { createDebt, deleteDebt, insertDebtTx } from "../../src/lib/debts/create.ts";
-import { payDebt } from "../../src/lib/debts/pay.ts";
-import { isLoan, loanFlows } from "../../src/lib/ledger/loans.ts";
+import { runNeo } from "../src/lib/neo/engine/index.ts";
+import { detectIntent } from "../src/lib/neo/engine/intent.ts";
+import type { NeoState } from "../src/lib/neo/engine/types.ts";
+import { DEFAULT_TZ, isoDay, localIso, wallToday } from "../src/lib/dates.ts";
+import { createDebt, deleteDebt, insertDebtTx } from "../src/lib/debts/create.ts";
+import { payDebt } from "../src/lib/debts/pay.ts";
+import { isLoan, loanFlows } from "../src/lib/ledger/loans.ts";
 
 // ─── Stub de Supabase ────────────────────────────────────────────────────────
 

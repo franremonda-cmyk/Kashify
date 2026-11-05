@@ -1,6 +1,6 @@
 // Lo que Neo dice en Inicio: prioridad y voz.
 // Correr: npx tsx cloudflare-worker/test/home-line.test.ts
-import { buildHomeLines, moodForTone } from "../../src/lib/neo/home-line.ts";
+import { buildHomeLines, moodForTone } from "../src/lib/neo/home-line.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {

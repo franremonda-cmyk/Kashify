@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../src/app/globals.css"), "utf8");
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../src/app/globals.css"), "utf8");
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {

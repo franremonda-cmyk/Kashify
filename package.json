@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "for f in cloudflare-worker/test/*.test.ts; do echo \"── $f\"; npx tsx \"$f\" || exit 1; done"
+    "test": "for f in test/*.test.ts; do echo \"── $f\"; npx tsx \"$f\" || exit 1; done"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

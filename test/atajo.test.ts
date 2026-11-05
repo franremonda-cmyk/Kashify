@@ -1,7 +1,7 @@
 // Self-check del Atajo de iPhone. Stubea Supabase en memoria: no toca prod ni red.
 // Correr: npx tsx cloudflare-worker/test/atajo.test.ts
-import { responderAtajo, tokenValido } from "../../src/lib/neo/atajo.ts";
-import type { NeoState, NeoSupabase } from "../../src/lib/neo/engine/types.ts";
+import { responderAtajo, tokenValido } from "../src/lib/neo/atajo.ts";
+import type { NeoState, NeoSupabase } from "../src/lib/neo/engine/types.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {

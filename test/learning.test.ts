@@ -1,8 +1,8 @@
 // Self-check del aprendizaje de Neo (Fase 1). No toca prod ni red.
 // Correr: npx tsx cloudflare-worker/test/learning.test.ts
-import { extractKeyword, promoteGlobalRules } from "../../src/lib/neo/learning.ts";
-import { detectIntent } from "../../src/lib/neo/engine/intent.ts";
-import { categoryForText, KEYWORD_TO_CATEGORY, CATEGORY_FALLBACK } from "../../src/lib/neo-keywords.ts";
+import { extractKeyword, promoteGlobalRules } from "../src/lib/neo/learning.ts";
+import { detectIntent } from "../src/lib/neo/engine/intent.ts";
+import { categoryForText, KEYWORD_TO_CATEGORY, CATEGORY_FALLBACK } from "../src/lib/neo-keywords.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {

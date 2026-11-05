@@ -1,6 +1,6 @@
 // Self-check de la voz del personaje Neo (pickLine + cadencia). No toca red.
 // Correr: npx tsx cloudflare-worker/test/mascot.test.ts
-import { pickLine, canSpeak, LINE_GAP_MS } from "../../src/lib/neo/mascot-bus.ts";
+import { pickLine, canSpeak, LINE_GAP_MS } from "../src/lib/neo/mascot-bus.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {

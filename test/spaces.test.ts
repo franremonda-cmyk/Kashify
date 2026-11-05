@@ -1,6 +1,6 @@
 // Self-check de includedSpaceIds (aislamiento de espacios en las lecturas).
 // No toca prod ni red. Correr con: npx tsx cloudflare-worker/test/spaces.test.ts
-import { includedSpaceIds } from "../../src/lib/spaces.ts";
+import { includedSpaceIds } from "../src/lib/spaces.ts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const NONE = "00000000-0000-0000-0000-000000000000";

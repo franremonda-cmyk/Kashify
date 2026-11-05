@@ -1,5 +1,5 @@
 // Self-check de detectRecurring. Correr: npx tsx cloudflare-worker/test/recurring.test.ts
-import { detectRecurring, normalizeDesc, type RecTx } from "../../src/lib/recurring.ts";
+import { detectRecurring, normalizeDesc, type RecTx } from "../src/lib/recurring.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {

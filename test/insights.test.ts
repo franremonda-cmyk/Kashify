@@ -6,7 +6,7 @@ import {
   detectSpacePnl, planJustFinished, missingRecurring, newRecurring,
   debtDueSoon, debtStale,
   notifFamily, typesForFamily, NOTIF_FAMILIES,
-} from "../../src/lib/neo/insights.ts";
+} from "../src/lib/neo/insights.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {

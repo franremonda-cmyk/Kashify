@@ -4,7 +4,7 @@ import { runNeo } from "@/lib/neo/engine";
 import type { NeoState } from "@/lib/neo/engine/types";
 
 // Adaptador web del motor unificado de Neo. El motor vive en src/lib/neo/engine
-// y lo comparte WhatsApp (ver src/app/api/process-webhook/route.ts).
+// y lo comparte el Atajo de iPhone (ver src/app/api/neo/atajo/route.ts).
 // El estado de conversación viaja por el cliente (body.pendingContext).
 export async function POST(req: Request) {
   const supabase = await createClient();
