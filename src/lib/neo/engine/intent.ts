@@ -180,7 +180,33 @@ function debtFlow(
 // Detección de intención 100% por reglas (0 tokens). `learnedKeywords` son
 // patrones que el usuario enseñó antes (vía fallback Haiku + confirmación), que
 // permiten resolver sin volver a gastar tokens.
+// Moneda dicha en un gasto o ingreso suelto ("cafe 5 usd", "almuerzo 12 dolares").
+// El parser la tiraba: el monto se anotaba en la moneda principal del perfil, así
+// que un café de USD 5 en Miami entraba como ARS 5 y "dolares" quedaba pegado en
+// la descripción. El commit (actions.ts) ya respeta ctx.currency, solo faltaba
+// mandarla. Va en un envoltorio y no dentro del parser para no romper los comandos
+// que hablan del dólar sin cobrar nada ("poné el dólar a 1500", "cuánto está el dólar").
+// ponytail: las monedas que Fran usa; agregar la que haga falta.
+const TX_CURRENCY: Record<string, string> = {
+  usd: "USD", dolar: "USD", dolares: "USD",
+  eur: "EUR", euro: "EUR", euros: "EUR",
+  brl: "BRL", real: "BRL", reales: "BRL",
+  uyu: "UYU", clp: "CLP", chf: "CHF",
+};
+const TX_CURRENCY_RE = /\b(usd|d[oó]lar(?:es)?|eur|euros?|brl|real(?:es)?|uyu|clp|chf)\b/gi;
+
 export function detectIntent(msg: string, learnedKeywords: LearnedKeyword[] = []): Intent {
+  const intent = detectIntentCore(msg, learnedKeywords);
+  if (intent.type !== "flow" || (intent.ctx.flow !== "expense" && intent.ctx.flow !== "income")) return intent;
+  const hit = normalize(msg).match(TX_CURRENCY_RE);
+  const code = hit && TX_CURRENCY[hit[0].toLowerCase()];
+  if (!code) return intent;
+  // La moneda no es parte de en qué gastaste: "almuerzo dolares" → "almuerzo".
+  const description = intent.ctx.description?.replace(TX_CURRENCY_RE, "").replace(/\s+/g, " ").trim();
+  return { ...intent, ctx: { ...intent.ctx, currency: code, description: description || undefined } };
+}
+
+function detectIntentCore(msg: string, learnedKeywords: LearnedKeyword[] = []): Intent {
   const m = normalize(msg);
 
   // ── Greeting ──────────────────────────────────────────────────────────────

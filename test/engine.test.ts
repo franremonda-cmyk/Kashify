@@ -870,6 +870,17 @@ async function main() {
     check("descripción en minúscula queda en minúscula", nameOf("compré pizza 3000").includes("\"pizza\""));
   }
 
+  // 30) Moneda dicha en un gasto o ingreso suelto (Fran en USA, 16/11/2026)
+  {
+    const ctxOf = (msg: string) => detectIntent(msg).ctx!;
+    check("'cafe 5 usd' se anota en USD", ctxOf("cafe 5 usd").currency === "USD", JSON.stringify(ctxOf("cafe 5 usd")));
+    check("'almuerzo 12 dolares' también", ctxOf("almuerzo 12 dolares").currency === "USD");
+    check("y la moneda no queda en la descripción", ctxOf("almuerzo 12 dolares").description === "almuerzo");
+    check("'cobré 500 usd de freelance' es ingreso en USD", ctxOf("cobre 500 usd de freelance").currency === "USD");
+    check("sin moneda dicha sigue sin currency (usa la del perfil)", ctxOf("nafta 5000").currency === undefined);
+    check("'poné el dólar a 1500' sigue siendo la cotización", detectIntent("poné el dólar a 1500").type === "set_usd_rate");
+  }
+
   console.log(`\n${failures === 0 ? "✅ TODO OK" : `❌ ${failures} fallo(s)`}`);
   process.exit(failures === 0 ? 0 : 1);
 }
